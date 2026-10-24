@@ -302,10 +302,18 @@
       discoveries: {},
       stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
+      name: 'Singu',           // the player's name for their black hole
+      named: false,
       settings: { muted: false, music: true, reducedMotion: null, buyMode: 1 },
       lastSeen: now || 0,
       created: now || 0
     };
+  }
+
+  // A black hole name: printable letters, digits, spaces and a little punctuation, at most 14 characters.
+  function cleanName(v) {
+    if (typeof v !== 'string') return '';
+    return v.replace(/[^A-Za-z0-9 '\-.!?]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
   }
 
   // Accepts anything (including garbage) and returns a valid state plus whether it was intact.
@@ -405,6 +413,8 @@
     s.settings.music = set.music !== false;
     s.settings.reducedMotion = typeof set.reducedMotion === 'boolean' ? set.reducedMotion : null;
     s.settings.buyMode = [1, 10, 100, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
+    s.name = cleanName(raw.name) || 'Singu';
+    s.named = raw.named === true;
     s.lastSeen = nonNeg(raw.lastSeen) || (now || 0);
     s.created = nonNeg(raw.created) || (now || 0);
     return { state: s, ok: ok };
@@ -1523,7 +1533,7 @@
 
   const API = {
     CONFIG: CONFIG, UPG: UPG, CRIT: CRIT,
-    fmt: fmt, clamp: clamp, mulberry32: mulberry32, hashString: hashString,
+    fmt: fmt, clamp: clamp, cleanName: cleanName, mulberry32: mulberry32, hashString: hashString,
     createState: createState, sanitize: sanitize, serialize: serialize, parseSave: parseSave,
     sectorInfo: sectorInfo, sectorFor: sectorFor, dayKey: dayKey, mutationFor: mutationFor,
     researchFlags: researchFlags, discoveryCount: discoveryCount, singuLevelFor: singuLevelFor, singuNext: singuNext,

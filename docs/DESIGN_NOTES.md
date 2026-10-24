@@ -2,6 +2,15 @@
 
 What was built, why, and what is still unproven.
 
+## Final polish before submission
+
+- **Players name their black hole** on their first visit (it defaults to Singu, a Random button suggests names, and it can be renamed in Settings). Names are limited to 14 letters, digits, spaces and simple punctuation, and they replace "Singu" across the game text.
+- **Soundtrack:** "The Quiet Between Stars", softened (treble rolled off, peaks compressed, about 13 dB quieter, fades at the loop seam). It has its own Music switch.
+- **HUD:** one grid: stats top left, tap hint top centre, sector top right, and a bottom row where the buttons and the progress card share one height.
+- **Effects:** screen flashes are smooth washes instead of dither dots, the pulse range is a soft ring that glows gold when a comet is inside it, the Star Reel opens centred on the black hole, and the hatch light rays fade out in a circle instead of being cut off.
+- **Auto Pulse** power (20 levels).
+- The store listing is in `store/LISTING.md`.
+
 ## Version 4: idle tycoon depth, new layout, relics, leaderboard
 
 The owner found version 3 not fun ("no elements of a good tycoon idle game"), and disliked the background, capsules, pets and machine. They asked for dynamic animation, a huge number of upgrades, achievements, a relic tab with rarities and more inventive gambling, many more pets, a much better mobile UI, Muscle Titans' screen arrangement (layout only, not its style), and a CrazyGames leaderboard.

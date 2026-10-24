@@ -268,7 +268,7 @@
         addFloat('+' + fmt(e.n) + ' SHARD' + (e.n >= 2 ? 'S' : ''), CX * PXS - 70, (CY - r * 1.2) * PXS, P.v, 13, 1.4, P['1']);
         break;
       case 'level':
-        addFloat('SINGU LV ' + e.level + '!', CX * PXS, (CY + r * 2.6) * PXS, P.p, 15, 1.6, P['1']);
+        addFloat(String(G.name ? G.name() : 'Singu').toUpperCase() + ' LV ' + e.level + '!', CX * PXS, (CY + r * 2.6) * PXS, P.p, 15, 1.6, P['1']);
         burst(CX, CY, 16, ['p', 'c', 'v']);
         singuMood('happy', 1.2);
         break;

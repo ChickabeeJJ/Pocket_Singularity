@@ -112,6 +112,11 @@
   }
   function setClass(node, cls) { if (node.className !== cls) node.className = cls; }
   function flash(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+  // Swaps the default name in game text for the player's own black hole name.
+  function nameText(text) {
+    const n = state && state.name || 'Singu';
+    return String(text).replace(/\bSINGU\b/g, n.toUpperCase()).replace(/\bSingu(s?)\b/g, function (_, plural) { return n + plural; });
+  }
   function fmtMult(m) { return m < 10 ? m.toFixed(2) : fmt(m); }
 
   // Sprite name for an upgrade-catalog icon key.
@@ -134,6 +139,7 @@
     $('atlas-icon').innerHTML = SPR.img('star', 1.5);
     $('gift-icon').innerHTML = SPR.img('icon_gift2', 1.25);
     $('m-ticket-icon').innerHTML = SPR.img('ticket', 1.5);
+    $('powers-head').textContent = state.name + ' powers';
     el.tabs.querySelectorAll('.ti').forEach(function (n) { n.innerHTML = SPR.img(n.dataset.icon, 1.5); });
     el.reel.querySelectorAll('.slot img').forEach(function (img) { setSlot(img, 'singu'); });
   }
@@ -199,11 +205,11 @@
       setText(row.o, owned ? String(owned) : '');
       const rate = stats.genRates[g.id] || 0;
       const each = g.rate * stats.globalMult * (1 + stats.critters.gen + stats.relics.gen);
-      setText(row.r, owned ? '+' + fmt(rate) + '/s · ' + Math.round(rate / Math.max(1e-9, stats.genPerSec) * 100) + '%' : '+' + fmt(each) + '/s each · ' + g.desc);
+      setText(row.r, owned ? '+' + fmt(rate) + '/s · ' + Math.round(rate / Math.max(1e-9, stats.genPerSec) * 100) + '%' : '+' + fmt(each) + '/s each · ' + nameText(g.desc));
       const nm = PS.nextGenMilestone(owned);
       const prev = CT.GEN_MILESTONES[CT.GEN_MILESTONES.indexOf(nm) - 1] || 0;
       setWidth(row.m, nm ? (owned - prev) / (nm - prev) : 1);
-      row.b.title = g.name + ': ' + g.desc + (nm ? ' · own ' + nm + ' for ×2 output' : '');
+      row.b.title = g.name + ': ' + nameText(g.desc) + (nm ? ' · own ' + nm + ' for ×2 output' : '');
       setHTML(row.c, fmt(q.cost) + '<small>Buy ×' + q.n + '</small>');
       setClass(row.b, 'card gen ' + (can ? 'can' : 'cant'));
     });
@@ -287,7 +293,7 @@
       catalogKey = key;
       upCells.length = 0;
       el.catalog.innerHTML = av.length ? av.map(function (u) {
-        return '<button type="button" class="up" data-up="' + u.id + '" title="' + u.name + ': ' + u.desc + '"><span class="ui">' + SPR.img(iconSprite(u.icon), 2) + '</span><span class="uc num">' + fmt(u.cost) + '</span></button>';
+        return '<button type="button" class="up" data-up="' + u.id + '" title="' + u.name + ': ' + nameText(u.desc) + '"><span class="ui">' + SPR.img(iconSprite(u.icon), 2) + '</span><span class="uc num">' + fmt(u.cost) + '</span></button>';
       }).join('') : '<div class="empty">No upgrades available right now. Keep growing to unlock more.</div>';
       el.catalog.querySelectorAll('.up').forEach(function (b) { upCells.push({ b: b, u: PS.UPGI[b.dataset.up] }); });
     }
@@ -305,7 +311,7 @@
     const b = e.target.closest('[data-up]');
     if (!b) return;
     const u = PS.UPGI[b.dataset.up];
-    if (!PS.buyUpgrade(state, u.id)) { Sound.deny(); toast('<b>' + u.name + '</b>: ' + u.desc + ' · ' + fmt(u.cost) + ' Matter'); return; }
+    if (!PS.buyUpgrade(state, u.id)) { Sound.deny(); toast('<b>' + u.name + '</b>: ' + nameText(u.desc) + ' · ' + fmt(u.cost) + ' Matter'); return; }
     afterUpgrade([u]);
   });
   el.buyAll.addEventListener('click', function () {
@@ -323,7 +329,7 @@
     markDirty();
     Sound.buy();
     Scene.onEvent({ t: 'buy' });
-    toast(list.length === 1 ? '<b>' + list[0].name + '</b> · ' + list[0].desc : '<b>' + list.length + ' upgrades</b> bought', 'green');
+    toast(list.length === 1 ? '<b>' + list[0].name + '</b> · ' + nameText(list[0].desc) : '<b>' + list.length + ' upgrades</b> bought', 'green');
     save();
   }
 
@@ -334,7 +340,7 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'card pow';
-      btn.title = u.name + ': ' + u.desc;
+      btn.title = u.name + ': ' + nameText(u.desc);
       btn.innerHTML = '<span class="ic">' + SPR.img('up_' + u.id, 2) + '</span><span class="nm">' + u.name + '<span class="lv num"></span></span><span class="cost num"></span><span class="fx"></span>';
       btn.addEventListener('click', function () { tryBuyPower(u.id, btn); });
       el.shop.appendChild(btn);
@@ -849,7 +855,7 @@
   function tInfo(a) {
     const s = state.ach[a.id] || 0;
     const cur = PS.statValue(state, a.stat);
-    return '<b>' + a.name + '</b> · ' + a.desc + '<br>' + (s === 2 ? 'Claimed ✓' : s === 1 ? '<b style="color:var(--gold)">Ready! Tap it to claim</b>' : 'Progress: ' + fmt(Math.min(cur, a.n)) + ' / ' + fmt(a.n));
+    return '<b>' + nameText(a.name) + '</b> · ' + nameText(a.desc) + '<br>' + (s === 2 ? 'Claimed ✓' : s === 1 ? '<b style="color:var(--gold)">Ready! Tap it to claim</b>' : 'Progress: ' + fmt(Math.min(cur, a.n)) + ' / ' + fmt(a.n));
   }
   function updateTrophies() {
     const key = JSON.stringify(state.ach) + trophySel;
@@ -869,7 +875,7 @@
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
       h += '<div class="tcat"><h3><span>' + c + '</span><span class="num">' + got + '/' + list.length + '</span></h3><div class="tgrid">' + list.map(function (a) {
         const s = state.ach[a.id] || 0;
-        return '<button type="button" class="tro' + (s === 2 ? ' got' : s === 1 ? ' ready' : '') + (trophySel === a.id ? ' sel' : '') + '" data-ach="' + a.id + '" title="' + a.name + ': ' + a.desc + '">' + SPR.img('icon_trophy', 1.75) + '</button>';
+        return '<button type="button" class="tro' + (s === 2 ? ' got' : s === 1 ? ' ready' : '') + (trophySel === a.id ? ' sel' : '') + '" data-ach="' + a.id + '" title="' + a.name + ': ' + nameText(a.desc) + '">' + SPR.img('icon_trophy', 1.75) + '</button>';
       }).join('') + '</div></div>';
     });
     el.trophies.innerHTML = h;
@@ -998,7 +1004,7 @@
       mode = inRange ? 'comet-in' : 'comet';
       text = inRange ? 'Comet in range! Pulse!' : 'A comet! Catch it in your pulse';
     } else if (state.stats.pulses < 4) {
-      mode = 'first'; text = 'Tap Singu to feed it';
+      mode = 'first'; text = 'Tap ' + state.name + ' to feed it';
     } else if (state.stats.pulses > 300 && world.combo > 0.2) {
       mode = 'hide';
     }
@@ -1040,14 +1046,14 @@
           Sound.form();
           refreshStats();
           markDirty();
-          banner('Singu evolved', f.name + '!', 'Form ' + (e.form + 1) + ' · all Matter ×' + CT.FORM_MULT + (e.form === 4 || e.form === 7 ? ' · new relic slot!' : ''));
+          banner(state.name + ' evolved', f.name + '!', 'Form ' + (e.form + 1) + ' · all Matter ×' + CT.FORM_MULT + (e.form === 4 || e.form === 7 ? ' · new relic slot!' : ''));
           Platform.happytime();
           break;
         }
         case 'ach': {
           const a = PS.ACH[e.id];
           markDirty();
-          if (a && !COVER) { Sound.achieve(); toast(SPR.img('icon_trophy', 1) + '<span><b>' + a.name + '</b> · ' + a.desc + '</span>', 'ach'); }
+          if (a && !COVER) { Sound.achieve(); toast(SPR.img('icon_trophy', 1) + '<span><b>' + a.name + '</b> · ' + nameText(a.desc) + '</span>', 'ach'); }
           break;
         }
         case 'sector': {
@@ -1063,7 +1069,7 @@
           const d = C.discoveries.find(function (x) { return x.id === e.id; });
           markDirty();
           if (d) {
-            setTimeout(function () { Sound.discover(); toast('<b>' + d.name + '</b> discovered · +' + Math.round(C.atlasStep * 100) + '% · +' + C.tickets.discovery + ' tickets'); }, 250);
+            setTimeout(function () { Sound.discover(); toast('<b>' + nameText(d.name) + '</b> discovered · +' + Math.round(C.atlasStep * 100) + '% · +' + C.tickets.discovery + ' tickets'); }, 250);
             flash(el.atlasBtn, 'flash');
           }
           break;
@@ -1121,10 +1127,10 @@
     e.symbols.forEach(function (s) { counts[s] = (counts[s] || 0) + 1; });
     e.symbols.forEach(function (s, i) { if (counts[s] >= 2) slots[i].classList.add('hit'); });
     const big = e.result === 'singu3' || e.result === 'comet3' || e.result === 'crystal3';
-    el.reelResult.innerHTML = e.name + '<small>+' + fmt(e.matter) + ' Matter' + (e.tickets ? ' · +' + e.tickets + ' tickets' : '') + (e.surge ? ' · SURGE!' : '') + '</small>';
+    el.reelResult.innerHTML = nameText(e.name) + '<small>+' + fmt(e.matter) + ' Matter' + (e.tickets ? ' · +' + e.tickets + ' tickets' : '') + (e.surge ? ' · SURGE!' : '') + '</small>';
     if (big) el.reel.classList.add('jackpot');
     Sound.reelWin(big);
-    if (e.result === 'singu3') { banner('Star Reel', 'SINGU JACKPOT!', '+' + fmt(e.matter) + ' Matter · +' + e.tickets + ' tickets'); Platform.happytime(); }
+    if (e.result === 'singu3') { banner('Star Reel', nameText('SINGU JACKPOT!'), '+' + fmt(e.matter) + ' Matter · +' + e.tickets + ' tickets'); Platform.happytime(); }
     clearTimeout(reelHide);
     reelHide = setTimeout(function () { el.reel.hidden = true; }, 2100);
   }
@@ -1189,6 +1195,7 @@
     modalOpen = null;
     el.modal.hidden = true;
     if (kind === 'away' && awayPending) awayPending = null;
+    if (kind === 'name' && !state.named) { state.named = true; save(); }
     if (state.stats.pulses) Platform.gameplayStart();
   }
   el.modalX.addEventListener('click', closeModal);
@@ -1204,9 +1211,9 @@
       '<p>Fold this universe into <b>Stardust</b>. Every future run produces more Matter.</p>' +
       '<div class="big-gain" style="color:var(--lav)">+' + gain + ' Stardust</div>' +
       '<p>Matter multiplier <b>×' + stats.sdMult.toFixed(2) + '</b> > <b style="color:var(--lav)">×' + (1 + C.collapse.step * after).toFixed(2) + '</b> · plus <b>' + C.shards.collapse * gain + ' relic shards</b></p>' +
-      (unlocks.length ? '<p>Unlocks: ' + unlocks.map(function (r) { return '<b style="color:var(--lav)">' + r.name + '</b>: ' + r.desc; }).join('<br>') + '</p>' : '') +
-      '<div class="cols"><div><h3 class="h-reset">Resets</h3><ul><li>Matter (' + fmt(state.matter) + ')</li><li>Harvesters &amp; upgrades</li><li>Singu powers' + (anchor ? ' (except Horizon &amp; Density)' : '') + '</li><li>Sector progress</li></ul></div>' +
-      '<div><h3 class="h-keep">Stays forever</h3><ul><li>Stardust</li><li>Pets, relics &amp; tickets</li><li>Form, Singu level &amp; trophies</li><li>Atlas &amp; research</li></ul></div></div>' +
+      (unlocks.length ? '<p>Unlocks: ' + unlocks.map(function (r) { return '<b style="color:var(--lav)">' + r.name + '</b>: ' + nameText(r.desc); }).join('<br>') + '</p>' : '') +
+      '<div class="cols"><div><h3 class="h-reset">Resets</h3><ul><li>Matter (' + fmt(state.matter) + ')</li><li>Harvesters &amp; upgrades</li><li>' + state.name + ' powers' + (anchor ? ' (except Horizon &amp; Density)' : '') + '</li><li>Sector progress</li></ul></div>' +
+      '<div><h3 class="h-keep">Stays forever</h3><ul><li>Stardust</li><li>Pets, relics &amp; tickets</li><li>Form, ' + state.name + ' level &amp; trophies</li><li>Atlas &amp; research</li></ul></div></div>' +
       '<p class="small">Waiting longer earns more Stardust. There is no rush: Collapse whenever you like.</p>';
     openModal('collapse', 'Collapse this universe?', body, [
       { label: 'Not yet', fn: closeModal },
@@ -1231,14 +1238,14 @@
     resetKeys();
     banner('Universe collapsed', '+' + gain + ' Stardust', 'Matter ×' + stats.sdMult.toFixed(2) + ' · a new universe begins');
     C.research.forEach(function (r) {
-      if (before < r.at && state.stardust >= r.at) setTimeout(function () { toast('<b>Research unlocked:</b> ' + r.name + ': ' + r.desc, 'violet'); }, 1200);
+      if (before < r.at && state.stardust >= r.at) setTimeout(function () { toast('<b>Research unlocked:</b> ' + r.name + ': ' + nameText(r.desc), 'violet'); }, 1200);
     });
     collapsing = false;
   }
   function openResearch() {
     const flags = PS.researchFlags(state);
     const list = C.research.map(function (r) {
-      return '<div class="rnode' + (flags[r.id] ? ' on' : '') + '"><span class="rn">' + r.name + '</span><span class="rc">' + (flags[r.id] ? 'Active' : r.at + ' SD') + '</span><span class="rd">' + r.desc + '</span></div>';
+      return '<div class="rnode' + (flags[r.id] ? ' on' : '') + '"><span class="rn">' + r.name + '</span><span class="rc">' + (flags[r.id] ? 'Active' : r.at + ' SD') + '</span><span class="rd">' + nameText(r.desc) + '</span></div>';
     }).join('');
     const body = '<p>Collapse a universe after reaching <b>' + PS.sectorInfo(C.collapse.minSector).name + '</b> to earn Stardust. Each one adds <b>+' + Math.round(C.collapse.step * 100) + '% Matter</b> forever, and lifetime Stardust unlocks research.</p>' +
       '<p>You have <b class="sd">' + state.stardust + ' Stardust</b> · multiplier <b>×' + stats.sdMult.toFixed(2) + '</b>' + (state.collapses ? ' · ' + state.collapses + ' collapse' + (state.collapses > 1 ? 's' : '') : '') + '</p>' +
@@ -1251,7 +1258,7 @@
     const n = PS.discoveryCount(state);
     const items = C.discoveries.map(function (d) {
       const got = !!state.discoveries[d.id];
-      return '<div class="ae ' + (got ? 'got' : 'locked') + '"><span class="an">' + (got ? d.name : '???') + '</span><span class="ad">' + d.desc + '</span></div>';
+      return '<div class="ae ' + (got ? 'got' : 'locked') + '"><span class="an">' + (got ? nameText(d.name) : '???') + '</span><span class="ad">' + nameText(d.desc) + '</span></div>';
     }).join('');
     const body = '<p>Each discovery permanently adds <b>+' + Math.round(C.atlasStep * 100) + '% Matter</b> and gives <b>' + C.tickets.discovery + ' tickets</b>. Current bonus: <b style="color:var(--butter)">×' + stats.atlasMult.toFixed(2) + '</b> (' + n + '/' + C.discoveries.length + ').</p><div class="atlas">' + items + '</div>';
     openModal('atlas', 'Discovery Atlas', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
@@ -1262,10 +1269,41 @@
       '<p class="small">A different mutation, new daily quests and the next login reward arrive tomorrow.</p>';
     openModal('mutation', "Today's Cosmic Mutation", body, [{ label: 'Nice', cls: 'primary', fn: closeModal }]);
   }
+  // Naming: players name their black hole when they start (it defaults to Singu).
+  const NAME_IDEAS = ['Singu', 'Nibbles', 'Voidy', 'Gulp', 'Mochi', 'Sir Slurp', 'Nomnom', 'Blackbean', 'Cosmo', 'Munch', 'Bloop', 'Pip', 'Waffles', 'Duchess', 'Biscuit', 'Hungry Hal'];
+  function openNaming() {
+    const first = !state.named;
+    const body = '<p>' + (first ? 'Every universe starts with a tiny, hungry black hole. ' : '') + 'What will you call yours?</p>' +
+      '<div class="name-row"><input id="name-input" class="name-input" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Black hole name" value="' + state.name + '">' +
+      '<button id="name-dice" class="btn sm" type="button">Random</button></div>' +
+      '<p class="small">Letters, numbers and spaces, up to 14 characters. You can rename it any time in Settings.</p>';
+    openModal('name', first ? 'Name your black hole' : 'Rename your black hole', body, [{ label: first ? "Let's eat!" : 'Save name', cls: 'gold', fn: confirmName }]);
+    const input = $('name-input');
+    $('name-dice').addEventListener('click', function () {
+      const pool = NAME_IDEAS.filter(function (n) { return n !== input.value; });
+      input.value = pool[Math.floor(Math.random() * pool.length)];
+      Sound.unlock(); Sound.wobble();
+    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); confirmName(); } });
+    setTimeout(function () { try { input.focus({ preventScroll: true }); input.select(); } catch (e) { /* ignore */ } }, 60);
+  }
+  function confirmName() {
+    const input = $('name-input');
+    const v = PS.cleanName(input ? input.value : '') || state.name || 'Singu';
+    const changed = v !== state.name || !state.named;
+    state.name = v;
+    state.named = true;
+    save();
+    closeModal();
+    resetKeys();
+    hintMode = null;
+    if (changed) { Sound.unlock(); Sound.level(); toast('Say hi to <b>' + v + '</b>! Tap or hold to feed it.', 'pink'); }
+  }
+
   function openMults() {
     const rows = [
       ['Form · ' + CT.FORMS[state.form].name, stats.formMult], ['Stardust', stats.sdMult], ['Pets', stats.critterMult * stats.petMult],
-      ['Trophies', stats.achMult], ['Atlas', stats.atlasMult], ['Singu level ' + state.singuLevel, stats.singuMult],
+      ['Trophies', stats.achMult], ['Atlas', stats.atlasMult], [state.name + ' level ' + state.singuLevel, stats.singuMult],
       ['Upgrades', stats.upgrades.global], ['Relics', 1 + stats.relics.global]
     ];
     const body = '<p>Everything that multiplies your income. Pulses also get <b>Pulse Focus ×' + fmtMult(stats.focusMult) + '</b>, combo and chains.</p><div class="mults">' +
@@ -1276,8 +1314,8 @@
 
   function openLeaderboard() {
     const can = Platform.canLeaderboard();
-    const body = '<div class="lb-score">' + SPR.img('singu', 3) + '<div><div class="small">Your score: Singu level</div><div class="big-gain num">' + state.singuLevel + '</div></div></div>' +
-      '<p>Singu gains a level every time the Matter it has ever eaten doubles. Your best level is your leaderboard score.</p>' +
+    const body = '<div class="lb-score">' + SPR.img('singu', 3) + '<div><div class="small">Your score: ' + state.name + ' level</div><div class="big-gain num">' + state.singuLevel + '</div></div></div>' +
+      '<p>' + state.name + ' gains a level every time the Matter it has ever eaten doubles. Your best level is your leaderboard score.</p>' +
       (can ? '<p>Your score is submitted automatically. The leaderboard is shown on the <b>CrazyGames</b> game page.</p>'
         : '<p class="small">The leaderboard works when the game runs on CrazyGames with its leaderboard set up. Your progress is still saved here.</p>') +
       '<p class="small">Lifetime ' + fmt(state.lifetime) + ' Matter · Form ' + (state.form + 1) + ' ' + CT.FORMS[state.form].name + ' · ' + PS.achievementCount(state) + ' trophies · ' + Object.keys(state.critters).length + ' pets</p>';
@@ -1288,10 +1326,11 @@
 
   function openSettings() {
     const body =
+      '<div class="toggle-row"><span>Black hole: <b>' + state.name + '</b></span><button class="btn sm" data-set="rename" type="button">Rename</button></div>' +
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold Singu, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
+      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
       '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
       '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
@@ -1302,6 +1341,7 @@
     el.modalBody.querySelectorAll('[data-set]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const k = btn.dataset.set;
+        if (k === 'rename') { openNaming(); return; }
         if (k === 'sound') toggleMute();
         else if (k === 'music') { state.settings.music = !state.settings.music; Sound.unlock(); Sound.setMusic(state.settings.music); save(); }
         else setReduced(!reduced);
@@ -1326,7 +1366,8 @@
       } }
     ]);
   }
-  function resetKeys() { collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
+  function resetKeys() { $('powers-head').textContent = state.name + ' powers'; resetPanelKeys(); }
+  function resetPanelKeys() { collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
   function playTimeText(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? h + 'h ' + m + 'm' : m + 'm ' + Math.floor(s % 60) + 's';
@@ -1345,7 +1386,7 @@
     if (viaModal && a.ms >= 60000) {
       awayPending = { gain: a.gain, doubled: false };
       const capped = ms > C.offlineCapMs;
-      const body = '<p>Your harvesters kept Singu fed for <b>' + playTimeText(a.ms / 1000) + '</b>' + (capped ? ' (the 2 h maximum)' : '') + ' at ' + Math.round(stats.offlineRate * 100) + '% speed.</p>' +
+      const body = '<p>Your harvesters kept ' + state.name + ' fed for <b>' + playTimeText(a.ms / 1000) + '</b>' + (capped ? ' (the 2 h maximum)' : '') + ' at ' + Math.round(stats.offlineRate * 100) + '% speed.</p>' +
         '<div class="big-gain num">+' + fmt(a.gain) + ' Matter</div>' +
         '<p class="small">Away income is capped at 2 hours. Playing is always faster.</p>';
       const actions = [{ label: 'Collect', cls: 'primary', fn: closeModal }];
@@ -1474,6 +1515,7 @@
     updateHud();
     updatePanel(false);
     if (tab === 'pets') drawMachine(performance.now() < crankUntil ? Math.floor(tNow / 90) % 4 : 0);
+    if (!state.named && !COVER && !modalOpen && !hatching) openNaming();
     // The daily login calendar pops up for returning players, and for new ones once they have settled in.
     if (!pendingLogin && !COVER && PS.loginReady(state, todayKey) && PS.playToday(state) > 45 && state.milestones.firstBuy) pendingLogin = true;
     if (pendingLogin && !modalOpen && !hatching && PS.loginReady(state, todayKey)) { pendingLogin = false; openLogin(); }
@@ -1503,6 +1545,7 @@
     el.sound.classList.toggle('muted', state.settings.muted);
     Scene.init({
       canvas: el.cv, container: el.scene,
+      name: function () { return state.name; },
       state: function () { return state; }, stats: function () { return stats; }, world: function () { return world; }, reduced: function () { return reduced; }
     });
     staticArt();

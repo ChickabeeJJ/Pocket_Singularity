@@ -56,11 +56,27 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     return p;
   }
   const S = (p, fn, arg) => p.evaluate(fn, arg);
+  // A fresh universe first asks for the black hole's name.
+  async function named(p) {
+    await p.waitForTimeout(120);
+    if (await p.isVisible('#name-input')) { await p.click('#modal-actions .btn.gold'); await p.waitForTimeout(60); }
+  }
   async function shot(p, name) { if (SHOTS) await p.screenshot({ path: path.join(SHOTS, name + '.png') }); }
 
   let p = await page();
   await p.goto(URL);
   await p.waitForTimeout(400);
+
+  await check('a new player names their black hole first', async () => {
+    await p.waitForSelector('#name-input');
+    await shot(p, '907-name');
+    await p.fill('#name-input', 'Mochi<b>!');
+    await p.press('#name-input', 'Enter');
+    await p.waitForTimeout(100);
+    const st = await S(p, () => ({ n: __ps.state.name, ok: __ps.state.named, open: !document.getElementById('modal').hidden }));
+    assert(st.n === 'Mochib!' && st.ok && !st.open, JSON.stringify(st));
+    assert(/Mochib!/.test(await p.textContent('#powers-head')), 'name used in the UI');
+  });
 
   await check('starts directly in the universe with the tap hint and panel visible', async () => {
     assert(await p.isVisible('#cv'), 'canvas');
@@ -182,7 +198,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
 
   await check('form bar and goals show what is next after reload', async () => {
     await S(p, () => __ps.save());
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(300);
     const f = await S(p, () => __ps.PS.CT.FORMS[__ps.state.form].name);
     assert((await p.textContent('#form-name')) === f, 'form name');
@@ -194,7 +210,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   await check('progress survives a refresh', async () => {
     await S(p, () => __ps.save());
     const before = await S(p, () => JSON.stringify(__ps.state.levels));
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(300);
     assert((await S(p, () => JSON.stringify(__ps.state.levels))) === before);
   });
@@ -228,7 +244,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(st.c === 1, 'collapses ' + st.c);
     assert(st.sec === 0, 'sector reset');
     assert(st.a >= atlas, 'atlas kept');
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(300);
     assert((await S(p, () => __ps.state.stardust)) === expected, 'stardust persisted');
   });
@@ -243,7 +259,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
       localStorage.setItem('pocket-singularity:save', JSON.stringify(raw));
     });
     const m0 = await S(p, () => JSON.parse(localStorage.getItem('pocket-singularity:save')).matter);
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForSelector('#modal:not([hidden])');
     assert(/Welcome back/.test(await p.textContent('#modal-title')), 'welcome modal');
     await shot(p, '907-welcome-back');
@@ -253,7 +269,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('#modal-actions .btn.primary');
     await S(p, () => __ps.save());
     const m1 = await S(p, () => __ps.state.matter);
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(400);
     assert(await p.isHidden('#modal'), 'modal should not reappear');
     const m2 = await S(p, () => __ps.state.matter);
@@ -269,7 +285,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
       localStorage.setItem('pocket-singularity:save', JSON.stringify(raw));
     });
     const m0 = await S(p, () => JSON.parse(localStorage.getItem('pocket-singularity:save')).matter);
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(300);
     assert(await p.isHidden('#modal'), 'no modal');
     const st = await S(p, () => ({ m: __ps.state.matter, rate: __ps.stats.genPerSec }));
@@ -280,13 +296,13 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   await check('corrupted save fails safely and restores the backup', async () => {
     const life = await S(p, () => { __ps.save(); localStorage.setItem('pocket-singularity:backup', localStorage.getItem('pocket-singularity:save')); return __ps.state.lifetime; });
     await S(p, () => { __ps.freeze(); localStorage.setItem('pocket-singularity:save', '{"v":1,"matter":12,,,garbage'); });
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(800);
     const restored = await S(p, () => __ps.state.lifetime);
     assert(Math.abs(restored - life) / life < 0.01, 'backup not restored');
     assert(/backup/i.test(await p.textContent('#toasts')), 'notice toast');
     await S(p, () => { __ps.freeze(); localStorage.setItem('pocket-singularity:save', 'nonsense'); localStorage.setItem('pocket-singularity:backup', 'also nonsense'); });
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(400);
     assert((await S(p, () => __ps.state.lifetime)) >= 0, 'fresh start');
     assert(await p.isVisible('#cv'));
@@ -297,7 +313,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('#btn-settings');
     await p.click('[data-set="motion"]');
     await p.keyboard.press('Escape');
-    await p.reload();
+    await p.reload(); await named(p);
     await p.waitForTimeout(300);
     const s = await S(p, () => __ps.state.settings);
     assert(s.muted === true && s.reducedMotion === true, JSON.stringify(s));
@@ -496,6 +512,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   p = await page({ viewport: { width: 1920, height: 1080 } });
   await p.goto(URL);
   await p.waitForTimeout(400);
+  await named(p);
   await check('1920×1080 layout has no overflow', async () => {
     await p.mouse.click(600, 500);
     await p.waitForTimeout(500);
@@ -515,6 +532,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   p = await page({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
   await p.goto(URL);
   await p.waitForTimeout(400);
+  await named(p);
   await check('phone portrait: tap pulses, playfield above panel, tab bar at the bottom, no horizontal scroll', async () => {
     await p.touchscreen.tap(195, 200);
     await p.waitForFunction(() => __ps.state.stats.pulses === 1, null, { timeout: 2000 });
@@ -565,6 +583,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   p = await page({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
   await p.goto(URL);
   await p.waitForTimeout(400);
+  await named(p);
   await check('phone landscape: everything reachable', async () => {
     const o = await S(p, () => ({ sw: document.documentElement.scrollWidth, w: innerWidth, b: document.getElementById('tabs').getBoundingClientRect().bottom, h: innerHeight }));
     assert(o.sw <= o.w && o.b <= o.h, JSON.stringify(o));

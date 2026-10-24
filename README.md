@@ -1,6 +1,6 @@
 # Pocket Singularity
 
-A cozy pixel-art idle tycoon / clicker for CrazyGames. Feed **Singu**, a tiny hungry black hole: tap or hold to pulse cosmic bits into it and build a combo, buy 15 kinds of harvesters, unlock 260 upgrades, hatch 48 pets across 5 rarities, forge push-your-luck relics, collect 163 trophies, and grow through 12 forms from a Speck to an Omniverse Maw. A Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours), and Singu's level is submitted to the CrazyGames leaderboard.
+A cozy pixel-art idle tycoon / clicker for CrazyGames. Name your own tiny, hungry black hole (it defaults to **Singu**) and feed it: tap or hold to pulse cosmic bits into it and build a combo, buy 15 kinds of harvesters, unlock 260 upgrades, hatch 48 pets across 5 rarities, forge push-your-luck relics, collect 163 trophies, and grow through 12 forms from a Speck to an Omniverse Maw. A Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours), and Singu's level is submitted to the CrazyGames leaderboard.
 
 **Play locally:** open `index.html` in a browser, or serve the folder (`npx http-server .`) and open it there. There is no build step needed to play.
 
@@ -61,8 +61,8 @@ Add `?debug` to the URL to see playtest timings (first pulse, first purchase, ea
 
 **CrazyGames:**
 1. `npm run build`.
-2. Upload `dist/pocket-singularity.zip` (a single `index.html`, about 84 KB zipped).
-3. Use the images in `store/` as covers (1920×1080, 800×1200, 800×800). Check them against the current size requirements in the developer portal first.
+2. Upload `dist/pocket-singularity.zip` (`index.html` plus the soundtrack, about 2.1 MB).
+3. Use `store/` for the listing: three covers, two preview videos, and the description, tags and controls in [`store/LISTING.md`](store/LISTING.md).
 4. Category **Clicker**, secondary tag **Idle**. Mobile/touch is supported.
 
 `index.html` loads the CrazyGames SDK v3 from `sdk.crazygames.com`. The game starts without waiting for it and works the same if it fails to load. When it does load, the game:

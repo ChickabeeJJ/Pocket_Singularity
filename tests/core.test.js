@@ -494,3 +494,13 @@ test('version 1 saves still load', () => {
   assert.equal(r.state.levels.luck, 0);
   assert.equal(r.state.tickets, 0);
 });
+
+test('black hole names are cleaned and default to Singu', () => {
+  assert.strictEqual(PS.createState(0).name, 'Singu');
+  assert.strictEqual(PS.cleanName('  Mochi<script>  '), 'Mochiscript');
+  assert.strictEqual(PS.cleanName('A very very long black hole name'), 'A very very lo');
+  const s = PS.sanitize({ v: 3, name: '<img onerror=x>', named: true }, 0).state;
+  assert.strictEqual(s.name, 'img onerrorx');
+  assert.strictEqual(s.named, true);
+  assert.strictEqual(PS.sanitize({ v: 3, name: 42 }, 0).state.name, 'Singu');
+});

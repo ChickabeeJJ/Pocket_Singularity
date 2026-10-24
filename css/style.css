@@ -455,10 +455,18 @@ kbd { font: inherit; }
 .lb-score { display: flex; gap: 12px; align-items: center; margin: 6px 0 12px; }
 .lb-score .big-gain { margin: 0; color: var(--gold); }
 
+/* Naming. */
+.name-row { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0 10px; }
+.name-input { flex: 1; min-width: 0; height: 38px; padding: 0 10px; font: inherit; font-size: 18px; font-weight: 700; color: var(--butter); background: var(--ink); border: 0; outline: none;
+  box-shadow: 0 0 0 2px var(--line); user-select: text; -webkit-user-select: text; }
+.name-input:focus { box-shadow: 0 0 0 2px var(--butter); }
+.name-row .btn { height: 38px; margin: 0; }
+
 /* Hatch (gacha reveal). */
 .hatch { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 240px; justify-content: center; position: relative; }
-.hatch .stage { position: relative; width: 200px; height: 160px; display: flex; align-items: center; justify-content: center; }
-.rays { position: absolute; inset: -20px; animation: rays 4s steps(24) infinite; opacity: 0; }
+.hatch .stage { position: relative; width: 240px; height: 200px; display: flex; align-items: center; justify-content: center; }
+.rays { position: absolute; left: 50%; top: 50%; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%; animation: rays 4s steps(24) infinite; opacity: 0;
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 30%, rgba(0, 0, 0, .6) 55%, transparent 100%); mask-image: radial-gradient(circle closest-side, #000 30%, rgba(0, 0, 0, .6) 55%, transparent 100%); }
 .rays.on { opacity: 1; }
 .rays.r0 { background: repeating-conic-gradient(rgba(195, 207, 219, .18) 0 12deg, transparent 12deg 30deg); }
 .rays.r1 { background: repeating-conic-gradient(rgba(65, 166, 246, .28) 0 12deg, transparent 12deg 30deg); }
