@@ -314,6 +314,13 @@
       b.fillRect(x, y, 1, 1);
     }
   }
+  function overlay(hex, a) {
+    if (a <= 0.005) return;
+    b.globalAlpha = Math.min(1, a);
+    b.fillStyle = hex;
+    b.fillRect(0, 0, BW, BH);
+    b.globalAlpha = 1;
+  }
   function sprite(name, x, y, size) {
     const s = SPR.get(name);
     if (size) b.drawImage(s, Math.round(x - size / 2), Math.round(y - size / 2), size, size);
@@ -372,10 +379,19 @@
     const r = coreR();
     const surge = world.surge > 0;
 
-    // Pulse range.
+    // Pulse range: a soft solid ring; it glows gold while a comet is inside it.
     const R = stats.pulseRadius * S;
     const cometIn = world.comet && !world.comet.caught && Math.hypot(world.comet.x, world.comet.y / 0.82) <= stats.pulseRadius;
-    ellipse(CX, CY, R, R * 0.82, cometIn ? (Math.floor(t * 8) % 2 ? '4' : '3') : surge ? '3' : world.cooldown <= 0 ? 'd' : 'e', cometIn ? 2 : 5, Math.floor(t * 6));
+    if (cometIn) {
+      const glow = 0.55 + 0.35 * Math.sin(t * 10);
+      b.globalAlpha = glow * 0.35; ellipse(CX, CY, R + 1, (R + 1) * 0.82, '3', 0);
+      b.globalAlpha = glow; ellipse(CX, CY, R, R * 0.82, '4', 0);
+      b.globalAlpha = 1;
+    } else {
+      b.globalAlpha = surge ? 0.6 : world.cooldown <= 0 ? 0.32 : 0.16;
+      ellipse(CX, CY, R, R * 0.82, surge ? '3' : 'd', 0);
+      b.globalAlpha = 1;
+    }
 
     if (tapPoint && !reduced) {
       tapPoint.t += dt;
@@ -435,14 +451,15 @@
       b.fillStyle = P[s.key]; b.fillRect(Math.round(x), Math.round(y), 2, 2);
     }
 
-    if (fx.lucky > 0) { b.fillStyle = pattern('5', Math.ceil(fx.lucky * 3)); b.fillRect(0, 0, BW, BH); fx.lucky = Math.max(0, fx.lucky - dt * 5); }
-    if (fx.ocWin > 0) { b.fillStyle = pattern('4', Math.ceil(fx.ocWin * 6)); b.fillRect(0, 0, BW, BH); fx.ocWin = Math.max(0, fx.ocWin - dt * 2); }
-    if (fx.ocLose > 0) { b.fillStyle = pattern('0', Math.ceil(fx.ocLose * 8)); b.fillRect(0, 0, BW, BH); fx.ocLose = Math.max(0, fx.ocLose - dt * 1.5); }
-    if (fx.flash > 1) { b.fillStyle = pattern('c', Math.ceil((fx.flash - 1) * 3)); b.fillRect(0, 0, BW, BH); }
+    // Screen-wide flashes are smooth translucent washes (no dither dots).
+    if (fx.lucky > 0) { overlay('#a7f070', fx.lucky * 0.22); fx.lucky = Math.max(0, fx.lucky - dt * 5); }
+    if (fx.ocWin > 0) { overlay('#ffcd75', fx.ocWin * 0.3); fx.ocWin = Math.max(0, fx.ocWin - dt * 2); }
+    if (fx.ocLose > 0) { overlay('#0b0b16', fx.ocLose * 0.45); fx.ocLose = Math.max(0, fx.ocLose - dt * 1.5); }
+    if (fx.flash > 1) overlay('#fff6dc', Math.min(0.35, (fx.flash - 1) * 0.25));
     if (fx.collapse > 0) {
-      b.fillStyle = pattern('k', Math.max(1, Math.min(15, Math.ceil(fx.collapse * 10)))); b.fillRect(0, 0, BW, BH);
+      overlay('#07070f', Math.min(0.95, fx.collapse * 0.7));
       const rr = (1.6 - fx.collapse) * Math.max(BW, BH);
-      ellipse(CX, CY, rr, rr * 0.82, 'v', 2);
+      ellipse(CX, CY, rr, rr * 0.82, 'v', 0);
       fx.collapse -= dt;
     }
     b.restore();

@@ -135,7 +135,7 @@
     $('gift-icon').innerHTML = SPR.img('icon_gift2', 1.25);
     $('m-ticket-icon').innerHTML = SPR.img('ticket', 1.5);
     el.tabs.querySelectorAll('.ti').forEach(function (n) { n.innerHTML = SPR.img(n.dataset.icon, 1.5); });
-    el.reel.querySelectorAll('.slot img').forEach(function (img) { img.src = SPR.url('singu', 1); });
+    el.reel.querySelectorAll('.slot img').forEach(function (img) { setSlot(img, 'singu'); });
   }
 
   // ---------------------------------------------------------------------------
@@ -1073,8 +1073,16 @@
   }
 
   // Star Reel overlay -----------------------------------------------------------
-  const REEL_ICONS = { dust: 'dust', ice: 'ice', shard: 'shard', crystal: 'crystal', comet: 'comet', singu: 'singu' };
+  const REEL_ICONS = { dust: 'dust', ice: 'ice', shard: 'shard', crystal: 'crystal', comet: 'reelComet', singu: 'singu' };
   let reelAnim = null, reelHide = 0;
+  // Whole-number scaling keeps every symbol crisp and centred in its slot.
+  function setSlot(img, name) {
+    const sp = SPR.get(name);
+    const k = Math.max(1, Math.floor(32 / Math.max(sp.width, sp.height)));
+    img.src = SPR.url(name, 1);
+    img.style.width = sp.width * k + 'px';
+    img.style.height = sp.height * k + 'px';
+  }
   function startReelAnim(e) {
     const slots = el.reel.querySelectorAll('.slot');
     const imgs = el.reel.querySelectorAll('.slot img');
@@ -1094,12 +1102,12 @@
         if (stopped[i]) continue;
         if (t >= stopAt[i]) {
           stopped[i] = true;
-          imgs[i].src = SPR.url(REEL_ICONS[e.symbols[i]], 1);
+          setSlot(imgs[i], REEL_ICONS[e.symbols[i]]);
           slots[i].classList.remove('spin');
           const hit = i > 0 && e.symbols.slice(0, i + 1).filter(function (s) { return s === e.symbols[i]; }).length >= 2;
           Sound.reelStop(hit);
         } else {
-          imgs[i].src = SPR.url(REEL_ICONS[ids[Math.floor(Math.random() * ids.length)]], 1);
+          setSlot(imgs[i], REEL_ICONS[ids[Math.floor(Math.random() * ids.length)]]);
         }
       }
       if (!stopped[2]) Sound.reelTick();
