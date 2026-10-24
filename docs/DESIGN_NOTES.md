@@ -2,6 +2,35 @@
 
 What was built, why, and what is still unproven.
 
+## Economy: classic incremental scaling
+
+**No unbought income.** Fragments that drift into the black hole on their own no longer pay anything. Matter comes only from pulses and from harvesters (or Auto Pulse and Echo Pulse) the player bought, so "+0 /sec" means exactly that.
+
+The curve follows Cookie Clicker and AdVenture Capitalist:
+- **Harvester costs and income:** each harvester costs ×1.15 more than the last, and every tier costs far more and earns more, so each new tier takes longer to pay back.
+- **×2 boosts:** come from tier upgrades at 1/10/25/50/100… owned (costing 10× to 10^17× the base price) and from owned milestones (25/50/100/200/300/400/500/750/1000).
+- **Pulse value:**
+  - *Pulse Focus* is linear with a doubling every 25 levels ((1 + 0.25·L) × 2^⌊L/25⌋), replacing 1.32^L, which reached ×10 million by level 59.
+  - Only the first three Gravity Gloves double a pulse. The rest add 1% of /sec to each pulse, so pulses keep up with harvesters.
+- **Cosmic Catalysts:** ×1.25 each, spaced every ×80 of lifetime Matter.
+- **Stardust:** ⌊∛(run Matter / 1M)⌋, each worth +10% Matter. A run of 1B pays 10, 1T pays 100, and 1Qa pays 1,000.
+
+`npm run sim -- 40 smart` (first run, no Collapse):
+
+| Time | Milestone |
+|---|---|
+| 3:30 | sector 2 |
+| 4:21 | Comet Net |
+| 7:05 | sector 3 |
+| 7:59 | Orbital Drone |
+| 10:29 | Collapse available |
+| 10:23 / 12:48 / 16:45 / 22:33 / 29:34 | Moon Miner / Asteroid Hauler / Solar Sail / Ion Harvester / Siphon |
+| 15:42 | Star Swallower (1B) |
+| 27:22 | Nebula Devourer (1T) |
+| 40 | 40T Matter this run, 343 Stardust available |
+
+The old balance went from 2M to 19Qa (×10 billion) between minutes 8 and 15.
+
 ## Skins and crates
 
 A **Skins** tab adds cosmetic gacha with real buffs. **Cosmic Keys** open crates and are earned only by playing:
@@ -75,8 +104,8 @@ The owner found version 3 not fun ("no elements of a good tycoon idle game"), an
 ### Tycoon systems
 | System | Rule |
 |---|---|
-| **Harvesters** | 15 tiers, from Stardust Sweeper to Big Bang Loom. Cost ×1.15 each, buy ×1, ×10, ×100 or Max. Every owned milestone (25, 50, 100, 150 … 1000) **doubles** that tier. The next tier appears once you own the previous one; one locked "???" row always teases what is next. A *Next goals* strip shows the nearest milestone, the next upgrade and the next form. |
-| **Upgrades** | **260** one-time upgrades. Each tier has 10 ×2 upgrades at owned counts; there are 15 Gravity Gloves (pulse ×2 plus 1% of /sec per pulse), 30 Cosmic Catalysts (+25% all Matter), and lines for ice, crystals, blasts, comets, luck, tickets, combo, Star Reel, pet synergy and trophy synergy. They unlock from play stats and are shown cheapest first, with *Buy all affordable* and a "Next unlock: X · Own 25 Comet Nets" line. The old levelled upgrades remain as *Singu powers*, joined by **Auto Pulse** (20 levels: Singu pulses by itself every 4 s at level 1, down to about 0.6 s at level 20; auto pulses reach 85% as far, pay half the tap value and do not build combo or charge the Star Reel). |
+| **Harvesters** | 15 tiers, from Stardust Sweeper to Big Bang Loom. Cost ×1.15 each, buy ×1, ×10, ×100 or Max. Every owned milestone (25, 50, 100, 200, 300, 400, 500, 750, 1000) **doubles** that tier. The next tier appears once you own the previous one; one locked "???" row always teases what is next. A *Next goals* strip shows the nearest milestone, the next upgrade and the next form. |
+| **Upgrades** | **260** one-time upgrades. Each tier has 10 ×2 upgrades at owned counts; there are 15 Gravity Gloves (the first three double a pulse, the rest each add 1% of /sec to every pulse), 30 Cosmic Catalysts (+25% all Matter), and lines for ice, crystals, blasts, comets, luck, tickets, combo, Star Reel, pet synergy and trophy synergy. They unlock from play stats and are shown cheapest first, with *Buy all affordable* and a "Next unlock: X · Own 25 Comet Nets" line. The old levelled upgrades remain as *Singu powers*, joined by **Auto Pulse** (20 levels: Singu pulses by itself every 4 s at level 1, down to about 0.6 s at level 20; auto pulses reach 85% as far, pay half the tap value and do not build combo or charge the Star Reel). |
 | **Combo** | Fast manual pulses fill a combo bar that multiplies everything a pulse earns (up to ×2, more with upgrades, pets and relics). It decays when you stop. A full combo fires flames around Singu. |
 | **Forms** | 12 forms by lifetime Matter (Speck → Omniverse Maw). Each gives ×1.15 Matter, grows Singu and its disk, and is celebrated with a banner. Forms 5 and 8 add relic slots. |
 | **Trophies** | **163** achievements in 9 categories. Each unlocked trophy gives +1.5% Matter forever, plus 3 tickets and a shard when claimed. *Claim all* is included. |
@@ -138,7 +167,7 @@ All claims are pure functions in `core.js` that pay out once (tested), and rewar
 | **Capsules** (gacha) | first hatch at about 30–50 s, then about 1–2 per minute when active | 13 critters in 4 rarities, each a permanent bonus that stars up to ★5 |
 | Singu levels | log scale on lifetime Matter | +3% Matter and 3 tickets per level; never resets |
 | Sectors | about 3:50, 5:55, 7:30, 9:00, 10:40, then endless | new sky, ambient scene and fragment mix, plus 10 tickets each |
-| Collapse / Stardust | optional from about 7:30 | +25% Matter per Stardust forever, plus 4 research unlocks |
+| Collapse / Stardust | optional from about 10:30 | +10% Matter per Stardust forever (v4 economy), plus 4 research unlocks |
 | Daily | once per local day | Cosmic Mutation (always positive), login calendar, 3 quests, 5 play gifts; nothing is ever lost |
 
 Times are from `npm run sim` with an active player. In 20 minutes it gets about 40 hatches, 90 reel spins and 500 lucky pulses; an idle-ish player gets about 10 hatches in 6 minutes.

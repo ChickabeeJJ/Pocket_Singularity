@@ -52,7 +52,7 @@
     sectorGrowth: 20,       // threshold multiplier for each generated sector after the fifth
     sectorValueGrowth: 1.5,
 
-    collapse: { minSector: 3, base: 1.5e5, step: 0.25 },  // Stardust = floor(cbrt(run / base)); +25% each
+    collapse: { minSector: 3, base: 1e6, step: 0.1 },  // Stardust = floor(cbrt(run / base)); +10% Matter each
 
     research: [
       { id: 'echo',   at: 3,  name: 'Echo Pulse',     desc: 'Singu pulses by itself every 5 s' },
@@ -1024,7 +1024,8 @@
     const atlasMult = 1 + CONFIG.atlasStep * discoveryCount(state);
     const singuMult = 1 + CONFIG.singu.perLevel * state.singuLevel;
     const critterMult = (1 + cb.matter) * cb.mult;
-    const focusMult = Math.pow(1.32, L.focus);
+    // Pulse Focus: +25% per level, doubled every 25 levels (an AdVenture-style curve).
+    const focusMult = (1 + 0.25 * L.focus) * Math.pow(2, Math.floor(L.focus / 25));
     const uf = upgradeEffects(state);
     const rb0 = relicBonus(state);
     const sb = skinBonus(state);
@@ -1524,11 +1525,9 @@
         f.spin += dt * (f.type === 'shard' ? 2.4 : 0.8);
         f.inRange = fragDist(f) <= stats.pulseRadius;
         if (f.r <= CONFIG.swallowRadius) {
-          // Drifted all the way in: the core eats it on its own (no chain bonus).
-          const value = stats.typeValue[f.type] * stats.valueMult * surgeMult;
-          earn(state, value);
-          discover(state, 'f_' + f.type, ev);
-          if (ev) ev.push({ t: 'swallow', type: f.type, value: value });
+          // Drifted all the way in: it fades into the core without paying anything.
+          // Income only ever comes from pulses and from harvesters you bought.
+          if (ev) ev.push({ t: 'swallow', type: f.type, value: 0 });
           w.frags.splice(i, 1);
         }
       } else {

@@ -35,7 +35,7 @@
   // Higher tiers get progressively pricier so the ladder stretches over a long first run.
   GENERATORS.forEach(function (g, i) { g.cost *= Math.pow(2, i); });
   const GEN_GROWTH = 1.15;
-  const GEN_MILESTONES = [25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const GEN_MILESTONES = [25, 50, 100, 200, 300, 400, 500, 750, 1000];
 
   // ---------------------------------------------------------------------------
   // Forms: Singu evolves as lifetime Matter grows. Each form multiplies everything.
@@ -61,8 +61,8 @@
   // Effects: { gen: id, x } multiplies one harvester; { tap: x, tapCps: f } boosts pulses;
   // { global: x }; { ice|crystal: x }; { blast|comet|luck|tickets|combo|reel: add }; { petSyn }; { achSyn }.
   // ---------------------------------------------------------------------------
-  const GEN_UP_AT = [1, 5, 25, 50, 100, 150, 200, 250, 300, 400];
-  const GEN_UP_COST = [10, 50, 500, 5e4, 5e6, 5e8, 5e10, 5e12, 5e14, 5e16];
+  const GEN_UP_AT = [1, 10, 25, 50, 100, 150, 200, 250, 300, 400];
+  const GEN_UP_COST = [10, 100, 1e3, 1e5, 1e7, 1e9, 1e11, 1e13, 1e15, 1e17];
   const UP_NAMES = ['Tuned', 'Polished', 'Overclocked', 'Gilded', 'Quantum', 'Stellar', 'Hyper', 'Eternal', 'Mythic', 'Godly'];
 
   function buildUpgrades() {
@@ -74,10 +74,12 @@
     });
     const gloveNeed = [10, 50, 150, 400, 1000, 2000, 4000, 7000, 12000, 20000, 30000, 45000, 65000, 90000, 125000];
     gloveNeed.forEach(function (n, t) {
-      list.push({ id: 'glove_' + t, name: 'Gravity Gloves ' + roman(t + 1), desc: 'Pulse value ×2 and +1% of /sec per pulse', cost: 100 * Math.pow(7, t), need: { stat: 'pulses', n: n }, fx: { tap: 2, tapCps: 0.01 }, icon: 'glove', tier: t });
+      // Like classic clickers: the first three gloves double a pulse, the rest add a slice of your /sec to it.
+      const fx = t < 3 ? { tap: 2 } : { tapCps: 0.01 };
+      list.push({ id: 'glove_' + t, name: 'Gravity Gloves ' + roman(t + 1), desc: t < 3 ? 'Pulse value ×2' : 'Each pulse also earns +1% of your /sec', cost: 100 * Math.pow(8, t), need: { stat: 'pulses', n: n }, fx: fx, icon: 'glove', tier: t });
     });
     for (let t = 0; t < 30; t++) {
-      list.push({ id: 'cat_' + t, name: 'Cosmic Catalyst ' + roman(t + 1), desc: 'All Matter ×1.25', cost: 2e4 * Math.pow(70, t), need: { stat: 'lifetime', n: 2e4 * Math.pow(60, t) }, fx: { global: 1.25 }, icon: 'catalyst', tier: t });
+      list.push({ id: 'cat_' + t, name: 'Cosmic Catalyst ' + roman(t + 1), desc: 'All Matter ×1.25', cost: 5e4 * Math.pow(100, t), need: { stat: 'lifetime', n: 5e4 * Math.pow(80, t) }, fx: { global: 1.25 }, icon: 'catalyst', tier: t });
     }
     const lines = [
       { key: 'ice',     name: 'Ice Polish',    desc: 'Ice fragments ×2',            fx: { ice: 2 },        n: 5,  base: 300,  icon: 'ice' },
