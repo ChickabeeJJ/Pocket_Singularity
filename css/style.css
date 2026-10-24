@@ -82,9 +82,11 @@ kbd { font: inherit; }
 .combo-bar i { display: block; height: 100%; width: 0; background: var(--peach); box-shadow: inset 0 2px 0 0 var(--butter); }
 .combo.full .combo-bar i { animation: fullFlash 200ms steps(2) infinite; }
 .combo b { color: var(--butter); min-width: 40px; }
-.purse { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.coin { pointer-events: auto; min-width: 0; height: 24px; display: inline-flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 6px; font-size: 13px; overflow: hidden; white-space: nowrap; background: rgba(11, 11, 22, .78); box-shadow: 0 0 0 2px var(--dusk); }
-.coin b { color: var(--cream); overflow: hidden; text-overflow: ellipsis; }
+.purse { display: flex; flex-direction: column; gap: 4px; }
+.coin { pointer-events: auto; min-width: 0; height: 21px; display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 0 6px; font-size: 12px; white-space: nowrap; background: rgba(11, 11, 22, .78); box-shadow: 0 0 0 2px var(--dusk); }
+.coin b { color: var(--cream); }
+.coin small { margin-left: auto; font-size: 10px; color: var(--mist); }
+.coin img { width: 14px; height: auto; }
 .coin img { flex: 0 0 auto; }
 .coin.flash { animation: chipFlash 700ms steps(4); }
 @keyframes chipFlash { 50% { background: var(--plum); box-shadow: 0 0 0 2px var(--butter); } }
@@ -167,7 +169,7 @@ kbd { font: inherit; }
 .reel { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); padding: 6px 10px 8px; text-align: center; background: var(--plum); box-shadow: 0 0 0 3px var(--ink), inset 0 3px 0 0 var(--berry), 0 6px 0 0 var(--ink); pointer-events: none; z-index: 2; }
 .reel[hidden] { display: none; }
 .reel-title { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--pink); }
-.reel-row { display: flex; gap: 6px; margin-top: 3px; }
+.reel-row { display: flex; justify-content: center; gap: 6px; margin-top: 3px; }
 .slot { width: 44px; height: 44px; background: var(--cream); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 3px 0 0 var(--mist), 0 0 0 2px var(--ink); }
 .slot img { display: block; }
 .slot.spin img { animation: spinJitter 90ms steps(2) infinite; }
@@ -657,3 +659,5 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
 .cover-title { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; pointer-events: none; line-height: .95; }
 .cover-title .ct1 { font-size: 7vmin; font-weight: 700; letter-spacing: .3em; color: var(--cyan); margin-right: -.3em; text-shadow: .5vmin .5vmin 0 var(--ink); }
 .cover-title .ct2 { font-size: 14vmin; font-weight: 700; color: var(--butter); text-shadow: 1vmin 1vmin 0 var(--berry), -.5vmin -.5vmin 0 var(--ink), .5vmin -.5vmin 0 var(--ink), -.5vmin .5vmin 0 var(--ink); }
+.shard-line { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 13px; color: var(--mist); background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.shard-line b { color: var(--lav); font-size: 15px; }

@@ -693,19 +693,20 @@
       '<span class="rb"><button type="button" class="' + (equipped ? '' : 'eq') + '" data-rel="' + (equipped ? 'unequip' : 'equip') + ':' + r.uid + '">' + (equipped ? 'Remove' : 'Equip') + '</button>' +
       (equipped ? '' : '<button type="button" data-rel="salvage:' + r.uid + '" title="Salvage for shards">+' + RL.rarities[r.r].salvage + '</button>') + '</span></div>';
   }
+  function shardLine() { return '<div class="shard-line">' + SPR.img('icon_shardc', 1) + ' You have <b>' + fmt(Math.floor(state.shards)) + '</b> shards</div>'; }
   function forgeHTML() {
     const f = state.forge;
     const odds = PS.relicOdds();
     const ladder = '<div class="ladder">' + RL.rarities.map(function (x, i) { return '<span class="r' + i + (f && f.r === i ? ' on' : '') + '">' + x.name + '</span>'; }).join('') + '</div>';
     if (!f) {
-      return '<h3>Relic Forge</h3><div class="fdesc">Spend <b>' + RL.cost + '</b> shards to forge a relic, then <b>push your luck</b> to raise its rarity.</div>' +
+      return '<h3>Relic Forge</h3>' + shardLine() + '<div class="fdesc">Spend <b>' + RL.cost + '</b> shards to forge a relic, then <b>push your luck</b> to raise its rarity.</div>' +
         '<div class="anvil">' + SPR.img('icon_shardc', 4) + '</div>' + ladder +
         '<div class="fdesc">Forge odds: ' + RL.rarities.map(function (x, i) { return '<b class="r' + i + '">' + (odds[i] * 100).toFixed(odds[i] < 0.01 ? 1 : 0) + '%</b>'; }).join(' · ') + '</div>' +
         '<div class="fbtns"><button class="btn gold" type="button" data-rel="forge"' + (state.shards < RL.cost ? ' disabled' : '') + '>Forge <small>' + RL.cost + ' shards</small></button></div>';
     }
     const top = f.r >= RL.rarities.length - 1;
     const chance = top ? 0 : RL.push[f.r];
-    return '<h3>Relic Forge</h3>' +
+    return '<h3>Relic Forge</h3>' + shardLine() + '' +
       '<div class="anvil r' + f.r + (forgeAnim ? ' ' + forgeAnim : '') + '">' + SPR.img(relicSprite(f), 4) + '</div>' + ladder +
       '<div class="rname r' + f.r + '">' + f.name + '</div><div class="affix">' + f.a.map(PS.relicText).join(' · ') + '</div>' +
       (top ? '<div class="fdesc">Mythic! It cannot go any higher.</div>' : '<div class="fdesc">Push: <b>' + Math.round(chance * 100) + '%</b> to become <b class="r' + (f.r + 1) + '">' + RL.rarities[f.r + 1].name + '</b>, otherwise it shatters (refund ' + RL.shatterRefund + ' shards).</div>') +
