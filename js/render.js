@@ -71,7 +71,7 @@
   function buildStars() {
     stars.length = 0;
     const rng = PS.mulberry32(77);
-    for (let i = 0; i < Math.round(BW * BH / 60); i++) {
+    for (let i = 0; i < Math.round(BW * BH / 80); i++) {
       const layer = i % 3;
       stars.push({ x: rng() * BW, y: rng() * BH * 0.8, layer: layer, p: rng() * 6.28, s: 0.6 + rng() * 2, big: rng() > 0.93 });
     }
@@ -117,7 +117,7 @@
     }
     g.globalCompositeOperation = 'source-over';
     // Static dim stars.
-    for (let i = 0; i < BW * BH / 90; i++) {
+    for (let i = 0; i < BW * BH / 120; i++) {
       g.fillStyle = hexA('#dfe8ff', 0.15 + rng() * 0.35);
       g.fillRect(Math.floor(rng() * BW), Math.floor(rng() * BH * 0.85), 1, 1);
     }
@@ -277,7 +277,18 @@
         burst(CX, CY, 60, ['c', '4', 'v', 'b']);
         singuMood('star', 3);
         break;
-      case 'surge': fx.flash = 1.5; burst(CX, CY, 40, ['4', 'c', '3']); singuMood('star', e.dur); break;
+      case 'comet':
+        addFloat('A COMET APPEARS!', CX * PXS, Math.max(60, (CY - r * 3.6) * PXS), P['4'], 20, 1.8, P['2']);
+        break;
+      case 'surge': {
+        // Caught: a big golden shockwave, screen shake and a shower of sparks.
+        fx.flash = 2.2;
+        if (!G.reduced()) fx.shake = 1;
+        for (let k = 0; k < 3; k++) blasts.push({ x: CX, y: CY, r: S * (0.9 + k * 0.35), t: -k * 0.12, gold: true });
+        burst(CX, CY, 90, ['4', 'c', '3', 'b']);
+        singuMood('star', e.dur);
+        break;
+      }
       case 'reel': if (e.result === 'singu3') { fx.flash = 2; singuMood('happy', 4); } else if (e.result !== 'none' && e.result !== 'pair') singuMood('happy', 1.5);
         burst(CX, CY - 6, /3$|triple/.test(e.result) ? 40 : 14, ['4', 'c', 'p']); break;
       case 'overcharge':
@@ -412,9 +423,15 @@
     for (let i = blasts.length - 1; i >= 0; i--) {
       const bl = blasts[i];
       bl.t += dt;
-      const p = bl.t / 0.35;
+      if (bl.t < 0) continue;
+      const p = bl.t / (bl.gold ? 0.6 : 0.35);
       if (p >= 1) { blasts.splice(i, 1); continue; }
-      ellipse(bl.x, bl.y, bl.r * p + 1, (bl.r * p + 1) * 0.82, p < 0.5 ? '3' : '2', p < 0.5 ? 0 : 2);
+      if (bl.gold) {
+        b.globalAlpha = 1 - p;
+        ellipse(bl.x, bl.y, bl.r * p + 1, (bl.r * p + 1) * 0.82, p < 0.4 ? 'c' : '4', 0);
+        ellipse(bl.x, bl.y, bl.r * p + 2, (bl.r * p + 2) * 0.82, '3', 0);
+        b.globalAlpha = 1;
+      } else ellipse(bl.x, bl.y, bl.r * p + 1, (bl.r * p + 1) * 0.82, p < 0.5 ? '3' : '2', p < 0.5 ? 0 : 2);
     }
 
     drawSats(dt, t, r, true);
@@ -622,24 +639,58 @@
     }
   }
 
+  // Comets: a big glowing head with a long, wide, sparkling tail.
+  function glow(x, y, r, hex, a) {
+    const g = b.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, hexA(hex, a)); g.addColorStop(1, hexA(hex, 0));
+    b.fillStyle = g;
+    b.fillRect(x - r, y - r, r * 2, r * 2);
+  }
   function drawComet(t, world) {
     const c = world.comet;
     if (!c) return;
     const x = sx(c.x), y = sy(c.y);
     const sp = Math.hypot(c.vx, c.vy) || 1;
     const ux = -c.vx / sp, uy = -c.vy / sp;
-    const len = Math.round(0.4 * S);
-    const keys = ['c', '4', '4', '3', '3', '2', '1'];
-    for (let i = 2; i < len; i++) {
+    const len = Math.round(0.75 * S);
+    const keys = ['c', 'c', '4', '4', 'a', 'b', '3', '9'];
+    // Soft glow behind everything.
+    b.globalCompositeOperation = 'lighter';
+    glow(x, y, 16, '#ffe9a0', 0.55);
+    glow(x + ux * len * 0.3, y + uy * len * 0.3, len * 0.35, '#73eff7', 0.18);
+    b.globalCompositeOperation = 'source-over';
+    // Tail: widest near the head, flickering, colour shifting from white-gold to cyan.
+    for (let i = 3; i < len; i++) {
       const fr = i / len;
-      const wob = Math.round(Math.sin(i * 0.7 - t * 12) * fr * 1.5);
-      const px = Math.round(x + ux * i - uy * wob), py = Math.round(y + uy * i + ux * wob);
-      if (!dith(px, py, 1 - fr * 0.9)) continue;
-      b.fillStyle = P[keys[Math.min(keys.length - 1, Math.floor(fr * keys.length))]];
-      b.fillRect(px, py, 1, 1);
+      const width = Math.max(1, Math.round((1 - fr) * 4));
+      const wob = Math.sin(i * 0.45 - t * 14) * fr * 2.5;
+      for (let k = -width; k <= width; k++) {
+        const px = Math.round(x + ux * i - uy * (wob + k * 0.9)), py = Math.round(y + uy * i + ux * (wob + k * 0.9));
+        if (!dith(px, py, (1 - fr) * (1 - Math.abs(k) / (width + 1)) * 1.3)) continue;
+        b.fillStyle = P[keys[Math.min(keys.length - 1, Math.floor(fr * keys.length + Math.abs(k) * 0.6))]];
+        b.fillRect(px, py, 1, 1);
+      }
     }
-    sprite('cometHead', x, y);
-    if (Math.floor(t * 6) % 2) { b.fillStyle = P.c; b.fillRect(x - 3, y, 1, 1); b.fillRect(x + 3, y, 1, 1); b.fillRect(x, y - 3, 1, 1); b.fillRect(x, y + 3, 1, 1); }
+    // Sparkles shed from the tail.
+    if (!G.reduced() && Math.random() < 0.8) {
+      const d = Math.random() * len * 0.6;
+      addParticle(x + ux * d + (Math.random() - 0.5) * 6, y + uy * d + (Math.random() - 0.5) * 6, ux * 8 + (Math.random() - 0.5) * 10, uy * 8 + (Math.random() - 0.5) * 10, 0.5 + Math.random() * 0.4, Math.random() < 0.5 ? 'c' : '4');
+    }
+    // Head: a bright rounded core twice the old size, pulsing.
+    const hr = 4 + Math.round(Math.sin(t * 12));
+    for (let dy = -hr; dy <= hr; dy++) for (let dx = -hr; dx <= hr; dx++) {
+      const d = Math.hypot(dx, dy);
+      if (d > hr + 0.3) continue;
+      b.fillStyle = d < hr * 0.45 ? P.c : d < hr * 0.8 ? '#fff3b0' : P['4'];
+      b.fillRect(x + dx, y + dy, 1, 1);
+    }
+    // Twinkling cross.
+    const arm = 6 + Math.round(Math.abs(Math.sin(t * 7)) * 4);
+    b.fillStyle = P.c;
+    for (let i = hr + 1; i < hr + arm; i++) {
+      if (i > hr + arm * 0.6 && (i + Math.floor(t * 20)) % 2) continue;
+      b.fillRect(x + i, y, 1, 1); b.fillRect(x - i, y, 1, 1); b.fillRect(x, y + i, 1, 1); b.fillRect(x, y - i, 1, 1);
+    }
   }
 
   root.PSScene = { init: init, resize: resize, rebuild: rebuild, sync: sync, draw: draw, onEvent: onEvent, tap: tap, bigFlash: bigFlash, collapseFx: collapseFx, mood: singuMood };

@@ -171,6 +171,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'card gen';
+      b.dataset.gen = g.id;
       b.innerHTML = '<span class="gi">' + SPR.img('gen' + i, 2) + '<span class="go num"></span></span><span class="gn"></span><span class="gr num"></span><span class="gm"><i></i></span><span class="gc num"></span>';
       b.addEventListener('click', function () { tryBuyGen(g.id, b); });
       el.gens.appendChild(b);
@@ -271,6 +272,63 @@
   });
 
   // ---------------------------------------------------------------------------
+  // Hold to read: pressing and holding an upgrade or harvester shows what it does.
+  // Releasing after the tip appeared does not buy anything.
+  // ---------------------------------------------------------------------------
+  const tipEl = document.createElement('div');
+  tipEl.className = 'tip';
+  tipEl.hidden = true;
+  document.body.appendChild(tipEl);
+  let tipTimer = 0, tipNode = null, tipSwallow = false;
+  function tipHTML(n) {
+    if (n.dataset.up) {
+      const u = PS.UPGI[n.dataset.up];
+      return '<b>' + u.name + '</b><span>' + nameText(u.desc) + '</span><em class="' + (u.cost <= state.matter ? 'ok' : '') + '">' + fmt(u.cost) + ' Matter</em>';
+    }
+    if (n.dataset.pow) {
+      const u = PS.UPG[n.dataset.pow];
+      return '<b>' + u.name + '</b><span>' + nameText(u.desc) + '</span><em>' + effectText(u.id, state.levels[u.id]).replace(/<[^>]+>/g, '') + '</em>';
+    }
+    if (n.dataset.gen) {
+      const g = PS.GEN[n.dataset.gen];
+      if (!PS.genVisible(state, g.id)) return '<b>???</b><span>A new harvester. Keep growing to reveal it.</span>';
+      const nxt = PS.nextGenMilestone(state.gens[g.id] || 0);
+      return '<b>' + g.name + '</b><span>' + nameText(g.desc) + '. Earns Matter every second, even while you are away.</span>' + (nxt ? '<em>Own ' + nxt + ' to double its output</em>' : '');
+    }
+    return '';
+  }
+  function showTip(n) {
+    const html = tipHTML(n);
+    if (!html) return;
+    tipEl.innerHTML = html;
+    tipEl.hidden = false;
+    const r = n.getBoundingClientRect(), tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+    let x = r.left + r.width / 2 - tw / 2, y = r.top - th - 8;
+    if (y < 6) y = r.bottom + 8;
+    x = Math.max(6, Math.min(innerWidth - tw - 6, x));
+    tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+    tipSwallow = true;
+    Sound.unlock(); Sound.wobble();
+  }
+  function hideTip() { clearTimeout(tipTimer); tipNode = null; tipEl.hidden = true; }
+  document.addEventListener('pointerdown', function (e) {
+    const n = e.target.closest && e.target.closest('[data-up], [data-pow], [data-gen]');
+    hideTip();
+    tipSwallow = false;
+    if (!n) return;
+    tipNode = n;
+    tipTimer = setTimeout(function () { if (tipNode === n) showTip(n); }, 380);
+  });
+  ['pointerup', 'pointercancel'].forEach(function (t) { document.addEventListener(t, hideTip); });
+  document.addEventListener('scroll', hideTip, true);
+  // A press that showed a tip is a "read", not a "buy".
+  document.addEventListener('click', function (e) {
+    if (tipSwallow && e.target.closest && e.target.closest('[data-up], [data-pow], [data-gen]')) { e.stopPropagation(); e.preventDefault(); }
+    tipSwallow = false;
+  }, true);
+  document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('[data-up], [data-pow], [data-gen], [data-pet]')) e.preventDefault(); });
+
+  // ---------------------------------------------------------------------------
   // Upgrades tab: catalog, Singu powers, Collapse
   // ---------------------------------------------------------------------------
   const STAT_TEXT = {
@@ -340,6 +398,7 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'card pow';
+      btn.dataset.pow = u.id;
       btn.title = u.name + ': ' + nameText(u.desc);
       btn.innerHTML = '<span class="ic">' + SPR.img('up_' + u.id, 2) + '</span><span class="nm">' + u.name + '<span class="lv num"></span></span><span class="cost num"></span><span class="fx"></span>';
       btn.addEventListener('click', function () { tryBuyPower(u.id, btn); });
@@ -410,6 +469,7 @@
     const nextLine = next ? 'Next research: <b>' + next.name + '</b> at <span class="sd">' + next.at + '</span>' : 'All Stardust research unlocked';
     let key, html;
     if (!can) {
+      el.collapse.classList.remove('ready');
       const p = Math.min(1, Math.log10(1 + state.runTotal) / Math.log10(1 + PS.sectorInfo(C.collapse.minSector).at));
       key = 'L' + Math.floor(p * 100) + '_' + state.stardust;
       html = '<div class="row"><span class="ct">Collapse</span><span class="cs">' + (state.stardust ? '<span class="sd">' + state.stardust + ' Stardust</span> ×' + stats.sdMult.toFixed(2) : 'Locked') + '</span></div>' +
@@ -418,6 +478,7 @@
         (state.stardust ? '<div class="cs">' + nextLine + '</div>' : '');
     } else {
       key = 'A' + gain + '_' + state.stardust;
+      el.collapse.classList.add('ready');
       html = '<div class="row"><span class="ct">Collapse ready!</span><span class="cs"><span class="sd">' + state.stardust + ' Stardust</span></span></div>' +
         '<div class="row"><span class="cs">Gain <span class="sd">+' + gain + '</span> · Matter ×' + stats.sdMult.toFixed(2) + ' > ×' + (1 + C.collapse.step * (state.stardust + gain)).toFixed(2) + '</span>' +
         '<button class="btn violet sm" type="button" data-act="collapse">Collapse</button></div>' +
@@ -471,11 +532,34 @@
       });
       el.collection.innerHTML = sorted.map(function (c) {
         const own = state.critters[c.id];
-        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + '" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : RARITY_NAMES[c.rarity] + ' pet, not hatched yet') + '">' +
+        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + '" data-pet="' + c.id + '" role="button" tabindex="0" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : RARITY_NAMES[c.rarity] + ' pet, not hatched yet') + '">' +
           SPR.img('pet_' + c.id, 2) + '<span class="cn">' + (own ? c.name : '???') + '</span><span class="st r' + c.rarity + '">' + (own ? '★'.repeat(own.stars) : RARITY_NAMES[c.rarity]) + '</span></div>';
       }).join('');
       Scene.sync();
     }
+  }
+  // Tap a pet to see what it does.
+  el.collection.addEventListener('click', function (e) { const n = e.target.closest('[data-pet]'); if (n) openPet(n.dataset.pet); });
+  function openPet(id) {
+    const c = PS.CRIT[id], own = state.critters[id], G = C.gacha;
+    Sound.unlock(); Sound.wobble();
+    let body;
+    if (own) {
+      const next = own.stars < G.maxStars ? G.starNeed[own.stars] : 0;
+      body = '<div class="pet-card ra' + c.rarity + '"><div class="pet-art">' + SPR.img('pet_' + c.id, 4) + '</div><div class="pet-info">' +
+        '<div class="rarity r' + c.rarity + '">' + RARITY_NAMES[c.rarity] + '</div>' +
+        '<div class="stars">' + '★'.repeat(own.stars) + '<span class="dim">' + '★'.repeat(G.maxStars - own.stars) + '</span></div>' +
+        '<p class="pet-bonus">' + PS.critterText(c, own.stars) + '</p>' +
+        (own.stars < G.maxStars
+          ? '<p class="small">Next star: ' + own.copies + ' / ' + next + ' extra copies · at ★' + (own.stars + 1) + ': <b>' + PS.critterText(c, own.stars + 1) + '</b></p>'
+          : '<p class="small">Fully starred! Extra copies refund ' + G.rarities[c.rarity].refund + ' tickets.</p>') +
+        '<p class="small">Max at ★' + G.maxStars + ': ' + PS.critterText(c, G.maxStars) + '</p></div></div>';
+    } else {
+      body = '<div class="pet-card locked"><div class="pet-art">' + SPR.img('pet_' + c.id, 4) + '</div><div class="pet-info">' +
+        '<div class="rarity r' + c.rarity + '">' + RARITY_NAMES[c.rarity] + '</div><p>Not hatched yet. Hatch capsules on this tab to find it.</p>' +
+        '<p class="small">Odds of a ' + RARITY_NAMES[c.rarity] + ' pet: ' + (G.rarities[c.rarity].w) + '% per hatch, shared by ' + C.critters.filter(function (x) { return x.rarity === c.rarity; }).length + ' pets.</p></div></div>';
+    }
+    openModal('pet', own ? c.name : '???', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
   el.pull1.addEventListener('click', function () { doPull(1); });
   el.pull10.addEventListener('click', function () { doPull(10); });
@@ -852,10 +936,11 @@
   // ---------------------------------------------------------------------------
   let trophyKey = '';
   let trophySel = null;
+  const TIER_NAMES = ['Bronze', 'Silver', 'Gold', 'Spectral'];
   function tInfo(a) {
     const s = state.ach[a.id] || 0;
     const cur = PS.statValue(state, a.stat);
-    return '<b>' + nameText(a.name) + '</b> · ' + nameText(a.desc) + '<br>' + (s === 2 ? 'Claimed ✓' : s === 1 ? '<b style="color:var(--gold)">Ready! Tap it to claim</b>' : 'Progress: ' + fmt(Math.min(cur, a.n)) + ' / ' + fmt(a.n));
+    return '<b class="tt' + a.tier + '">' + TIER_NAMES[a.tier] + '</b> · <b>' + nameText(a.name) + '</b> · ' + nameText(a.desc) + '<br>' + (s === 2 ? 'Claimed ✓' : s === 1 ? '<b style="color:var(--gold)">Ready! Tap it to claim</b>' : 'Progress: ' + fmt(Math.min(cur, a.n)) + ' / ' + fmt(a.n));
   }
   function updateTrophies() {
     const key = JSON.stringify(state.ach) + trophySel;
@@ -875,7 +960,7 @@
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
       h += '<div class="tcat"><h3><span>' + c + '</span><span class="num">' + got + '/' + list.length + '</span></h3><div class="tgrid">' + list.map(function (a) {
         const s = state.ach[a.id] || 0;
-        return '<button type="button" class="tro' + (s === 2 ? ' got' : s === 1 ? ' ready' : '') + (trophySel === a.id ? ' sel' : '') + '" data-ach="' + a.id + '" title="' + a.name + ': ' + nameText(a.desc) + '">' + SPR.img('icon_trophy', 1.75) + '</button>';
+        return '<button type="button" class="tro t' + a.tier + (s === 2 ? ' got' : s === 1 ? ' ready' : '') + (trophySel === a.id ? ' sel' : '') + '" data-ach="' + a.id + '" title="' + a.name + ': ' + nameText(a.desc) + '">' + SPR.img('trophy' + a.tier, 1.75) + '</button>';
       }).join('') + '</div></div>';
     });
     el.trophies.innerHTML = h;
@@ -923,13 +1008,20 @@
     if (b.hidden === show) b.hidden = !show;
     if (show) setText(b, text || String(n));
   }
+  let collapseAnnounced = false;
   function updateBadges() {
     let gens = 0;
     CT.GENERATORS.forEach(function (g) { if (PS.genVisible(state, g.id) && PS.genCost(g.id, state.gens[g.id] || 0, 1) <= state.matter) gens++; });
     setBadge('harvest', gens, '!');
     let ups = 0;
     for (const u of PS.availableUpgrades(state)) { if (u.cost > state.matter) break; ups++; }
-    setBadge('upgrades', ups);
+    const canCol = PS.canCollapse(state);
+    setBadge('upgrades', ups || (canCol ? 1 : 0), ups ? '' : '!');
+    if (canCol && !collapseAnnounced) {
+      collapseAnnounced = true;
+      toast('<b>Collapse is ready!</b> Fold this universe into Stardust on the Upgrades tab', 'violet');
+      Sound.discover();
+    } else if (!canCol) collapseAnnounced = false;
     setBadge('pets', state.tickets >= C.gacha.cost ? 1 : 0, '!');
     setBadge('relics', (state.shards >= RL.cost || state.forge) ? 1 : 0, '!');
     let ach = 0;
@@ -1035,7 +1127,7 @@
         case 'comboFull': Sound.lucky(); break;
         case 'surge':
           Sound.surge();
-          banner('Comet captured', 'Surge ×' + C.comet.surgeMult, 'All Matter ×' + C.comet.surgeMult + ' for ' + Math.round(e.dur) + ' seconds');
+          banner('Surge ×' + C.comet.surgeMult, 'COMET CAUGHT!', 'All Matter ×' + C.comet.surgeMult + ' for ' + Math.round(e.dur) + ' seconds');
           Platform.happytime();
           break;
         case 'reelStart': startReelAnim(e); break;
@@ -1053,7 +1145,7 @@
         case 'ach': {
           const a = PS.ACH[e.id];
           markDirty();
-          if (a && !COVER) { Sound.achieve(); toast(SPR.img('icon_trophy', 1) + '<span><b>' + a.name + '</b> · ' + nameText(a.desc) + '</span>', 'ach'); }
+          if (a && !COVER) { Sound.achieve(); toast(SPR.img('trophy' + a.tier, 1) + '<span><b class="tt' + a.tier + '">' + TIER_NAMES[a.tier] + '</b> · <b>' + a.name + '</b> · ' + nameText(a.desc) + '</span>', 'ach'); }
           break;
         }
         case 'sector': {

@@ -136,6 +136,18 @@
     [10, 100].forEach(function (n, i) { add('sp_' + i, ['Spinner', 'Reel Regular'][i], 'Spin the Star Reel ' + n + ' times', 'spins', n, 'Luck'); });
     add('jack', 'JACKPOT!', 'Line up three Singus on the Star Reel', 'jackpots', 1, 'Luck');
     [10, 25, 50].forEach(function (n, i) { add('lv_' + i, 'Growing Up ' + roman(i + 1), 'Reach Singu level ' + n, 'singuLevel', n, 'Space'); });
+    // Trophy tier by difficulty within its series: 0 bronze, 1 silver, 2 gold, 3 spectral.
+    const series = {};
+    list.forEach(function (a) { (series[a.stat] = series[a.stat] || []).push(a); });
+    Object.keys(series).forEach(function (k) {
+      const xs = series[k].sort(function (a, b) { return a.n - b.n; });
+      xs.forEach(function (a, i) {
+        if (xs.length === 1) a.tier = 2;
+        else if (xs.length <= 3) a.tier = i;
+        else { const f = i / (xs.length - 1); a.tier = f < 0.3 ? 0 : f < 0.6 ? 1 : f < 0.9 ? 2 : 3; }
+      });
+    });
+    ['r_myth', 'jack'].forEach(function (id) { list.forEach(function (a) { if (a.id === id) a.tier = 3; }); });
     return list;
   }
 

@@ -10,6 +10,14 @@ What was built, why, and what is still unproven.
 - **Effects:** screen flashes are smooth washes instead of dither dots, the pulse range is a soft ring that glows gold when a comet is inside it, the Star Reel opens centred on the black hole, and the hatch light rays fade out in a circle instead of being cut off.
 - **Auto Pulse** power (20 levels).
 - The store listing is in `store/LISTING.md`.
+- **More polish:**
+  - About 25% fewer background stars.
+  - Tap a pet to see its bonus, stars and what the next star gives.
+  - Press and hold an upgrade, power or harvester to read what it does; releasing after the tip appears never buys.
+  - The Collapse card glows (with a one-time toast) once a Collapse is possible.
+  - Trophies come in bronze, silver, gold and animated spectral tiers by difficulty within each series.
+  - Comets are bigger: a glowing head, a long sparkling tail, an arrival callout, and a golden shockwave with screen shake when caught.
+  - The digit 4 now uses Pixelify Sans, because Silkscreen's 4 was hard to read.
 
 ## Version 4: idle tycoon depth, new layout, relics, leaderboard
 

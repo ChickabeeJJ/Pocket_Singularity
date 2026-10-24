@@ -680,13 +680,23 @@
     combo: function (P) { P.tri(3, 14, 13, 14, 8, 1, '#ef4f6b'); P.tri(5, 14, 11, 14, 8, 5, '#ffa34d'); P.tri(7, 14, 10, 14, 8, 9, '#ffe9a0'); },
     reel: function (P) { P.rect(1, 3, 14, 10, '#5d275d'); for (const x of [2, 7, 12]) P.rect(x, 5, 3, 6, '#f4f4f4'); P.set(3, 7, '#ef4f6b'); P.set(8, 7, '#ef4f6b'); P.set(13, 7, '#ef4f6b'); P.rect(1, 3, 14, 1, '#ff8fb1'); },
     treat: function (P) { P.ell(4, 6, 2.5, 2.5, '#f3e2c0'); P.ell(4, 10, 2.5, 2.5, '#f3e2c0'); P.ell(12, 6, 2.5, 2.5, '#f3e2c0'); P.ell(12, 10, 2.5, 2.5, '#f3e2c0'); P.rect(4, 6, 8, 4, '#f3e2c0'); P.rect(4, 6, 8, 1, '#fffaf0'); },
-    trophy: function (P) { const T = tones('#ffcd4d'); P.rect(4, 2, 8, 6, T.base); P.ell(8, 7, 4, 3, T.base); P.rect(4, 2, 2, 6, T.light); P.set(2, 3, T.dark); P.set(2, 4, T.dark); P.set(3, 5, T.dark); P.set(13, 3, T.dark); P.set(13, 4, T.dark); P.set(12, 5, T.dark); P.rect(7, 10, 2, 3, T.dark); P.rect(5, 13, 6, 2, '#9a6a3a'); },
+    trophy: function (P, base) { const T = tones(base || '#ffcd4d'); P.rect(4, 2, 8, 6, T.base); P.ell(8, 7, 4, 3, T.base); P.rect(4, 2, 2, 6, T.light); P.set(2, 3, T.dark); P.set(2, 4, T.dark); P.set(3, 5, T.dark); P.set(13, 3, T.dark); P.set(13, 4, T.dark); P.set(12, 5, T.dark); P.rect(7, 10, 2, 3, T.dark); P.rect(5, 13, 6, 2, '#9a6a3a'); },
     shardc: function (P) { P.tri(8, 1, 13, 7, 8, 15, '#b17cff'); P.tri(8, 1, 3, 7, 8, 15, '#d6b8ff'); P.line(8, 2, 8, 14, '#ffffff'); },
     gift2: function (P) { P.rect(2, 6, 12, 9, '#ef4f6b'); P.rect(1, 4, 14, 3, '#ff6b8a'); P.rect(7, 4, 2, 11, '#ffd36b'); P.tri(4, 1, 8, 4, 4, 4, '#ffd36b'); P.tri(12, 1, 8, 4, 12, 4, '#ffd36b'); },
     lock: function (P) { P.ell(8, 5, 3.5, 3.5, '#9aa3b2'); P.ell(8, 5, 2, 2, null); P.rect(3, 7, 10, 7, '#ffcd4d'); P.rect(3, 7, 10, 1, '#fff0b0'); P.rect(7, 9, 2, 3, '#7a5a20'); },
     leader: function (P) { P.rect(2, 8, 4, 7, '#c9d2e3'); P.rect(6, 4, 4, 11, '#ffcd4d'); P.rect(10, 10, 4, 5, '#e8a06b'); P.set(8, 2, '#ffffff'); }
   };
   function miscCanvas(k) { const P = new Painter(16, 16); MISC_ICON[k](P); P.outline(); return P.canvas(); }
+  // Trophy tiers: bronze, silver, gold, spectral.
+  const TROPHY_HEX = ['#d0874a', '#c9d4e6', '#ffcd4d', '#b48cff'];
+  function trophyCanvas(tier) {
+    const P = new Painter(16, 16);
+    MISC_ICON.trophy(P, TROPHY_HEX[tier]);
+    if (tier === 3) { P.set(7, 4, '#ffffff'); P.set(10, 3, '#9ff3ff'); P.set(5, 6, '#ffb3f0'); }
+    if (tier >= 2) P.set(6, 3, '#ffffff');
+    P.outline();
+    return P.canvas();
+  }
 
   // ---------------------------------------------------------------------------
   // Rendering & cache
@@ -725,6 +735,7 @@
     else if ((m = /^machine(\d)$/.exec(name))) c = machineCanvas(Number(m[1]));
     else if ((m = /^gen(\d+)$/.exec(name))) c = genCanvas(Number(m[1]));
     else if ((m = /^relic_(\w+)_(\d)$/.exec(name))) c = relicCanvas(m[1], Number(m[2]));
+    else if ((m = /^trophy(\d)$/.exec(name))) c = trophyCanvas(Number(m[1]));
     else if ((m = /^icon_(\w+)$/.exec(name))) c = miscCanvas(m[1]);
     else {
       const rows = ART[name];

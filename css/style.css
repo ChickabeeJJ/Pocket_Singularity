@@ -4,8 +4,8 @@
 /* "Cozy": Pixelify Sans for letters, Silkscreen for digits (Pixelify's 2 and 5 read as Z and S). */
 @font-face { font-family: 'Cozy'; src: url(../fonts/pixelify-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Cozy'; src: url(../fonts/pixelify-sans-latin-700-normal.woff2) format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'Cozy'; src: url(../fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; unicode-range: U+0030-0039, U+0043; }
-@font-face { font-family: 'Cozy'; src: url(../fonts/silkscreen-latin-700-normal.woff2) format('woff2'); font-weight: 700; font-display: swap; unicode-range: U+0030-0039, U+0043; }
+@font-face { font-family: 'Cozy'; src: url(../fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; unicode-range: U+0030-0033, U+0035-0039, U+0043; }
+@font-face { font-family: 'Cozy'; src: url(../fonts/silkscreen-latin-700-normal.woff2) format('woff2'); font-weight: 700; font-display: swap; unicode-range: U+0030-0033, U+0035-0039, U+0043; }
 
 :root {
   --gut: 12px;
@@ -276,6 +276,36 @@ kbd { font: inherit; }
 .collapse-card .cs { font-size: 12px; color: var(--mist); }
 .collapse-card .cs b { color: var(--cream); }
 .collapse-card .btn { height: 28px; font-size: 13px; }
+.collapse-card.ready { background: #3a2468; animation: collapseGlow 1.4s ease-in-out infinite; }
+.collapse-card.ready .ct { color: #e2d4ff; }
+.collapse-card.ready .btn { animation: collapseBtn 1.4s ease-in-out infinite; }
+@keyframes collapseGlow { 50% { box-shadow: var(--edge), inset 0 0 0 2px var(--lav), 0 0 18px 2px rgba(168, 132, 243, .65); } }
+@keyframes collapseBtn { 50% { filter: brightness(1.25); transform: translateY(-1px); } }
+
+/* Hold-to-read tips. */
+.tip { position: fixed; z-index: 40; max-width: 230px; padding: 7px 9px; display: flex; flex-direction: column; gap: 3px; pointer-events: none;
+  background: var(--ink); color: var(--mist); font-size: 12px; line-height: 1.3; box-shadow: 0 0 0 2px var(--butter), 0 4px 0 0 #000; }
+.tip[hidden] { display: none; }
+.tip b { color: var(--butter); font-size: 13px; }
+.tip span { color: var(--cream); }
+.tip em { font-style: normal; color: var(--slate); }
+.tip em.ok { color: var(--lime); }
+
+/* Pet info card. */
+.crit { cursor: pointer; }
+.crit:hover:not(.locked) { filter: brightness(1.15); }
+.pet-card { display: flex; gap: 16px; align-items: center; }
+.pet-art { flex: 0 0 auto; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.pet-art img { width: 96px; height: 96px; }
+.pet-card.ra1 .pet-art { box-shadow: 0 0 0 2px var(--blue); } .pet-card.ra2 .pet-art { box-shadow: 0 0 0 2px var(--lav); }
+.pet-card.ra3 .pet-art { box-shadow: 0 0 0 2px var(--gold); } .pet-card.ra4 .pet-art { box-shadow: 0 0 0 2px var(--mythic); }
+.pet-card.locked .pet-art img { filter: brightness(0) invert(.2); }
+.pet-info { flex: 1; min-width: 0; }
+.pet-info .rarity { font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+.pet-info .stars { color: var(--gold); font-size: 18px; letter-spacing: 1px; }
+.pet-info .stars .dim { color: var(--dusk); }
+.pet-bonus { color: var(--lime) !important; font-size: 16px; font-weight: 700; margin: 6px 0 8px !important; }
+@media (max-width: 480px) { .pet-card { flex-direction: column; text-align: center; } }
 .sd { color: var(--lav); font-weight: 700; }
 .mini-bar { height: 6px; background: var(--ink); box-shadow: 0 0 0 1px var(--dusk); }
 .mini-bar i { display: block; height: 100%; background: var(--lav); width: 0; }
@@ -402,6 +432,15 @@ kbd { font: inherit; }
 .tro img { width: 28px; height: 28px; filter: brightness(0) invert(.2); }
 .tro.got img { filter: none; }
 .tro.got { background: #2c2a18; box-shadow: 0 0 0 2px #7a6430; }
+.tro.got.t0 { background: #2e1f14; box-shadow: 0 0 0 2px #8a5530; }
+.tro.got.t1 { background: #1f2533; box-shadow: 0 0 0 2px #7d8aa3; }
+.tro.got.t2 { background: #2c2a18; box-shadow: 0 0 0 2px #b08a30; }
+.tro.got.t3 { background: #251a3d; box-shadow: 0 0 0 2px var(--lav); animation: spectral 2.4s linear infinite; }
+.tro.got.t3 img, .tro.ready.t3 img { animation: spectralHue 2.4s linear infinite; }
+.tro.t3:not(.got):not(.ready) { box-shadow: 0 0 0 2px #3a2f5a; }
+@keyframes spectral { 0% { box-shadow: 0 0 0 2px var(--lav), 0 0 8px rgba(180, 140, 255, .5); } 33% { box-shadow: 0 0 0 2px var(--cyan), 0 0 10px rgba(115, 239, 247, .5); } 66% { box-shadow: 0 0 0 2px var(--mythic), 0 0 10px rgba(255, 111, 208, .5); } 100% { box-shadow: 0 0 0 2px var(--lav), 0 0 8px rgba(180, 140, 255, .5); } }
+@keyframes spectralHue { from { filter: hue-rotate(0deg) brightness(1.15); } to { filter: hue-rotate(360deg) brightness(1.15); } }
+.tt0 { color: #e0975a !important; } .tt1 { color: #d6deec !important; } .tt2 { color: var(--gold) !important; } .tt3 { color: var(--lav) !important; animation: spectralHue 2.4s linear infinite; }
 .tro.ready { background: #4a3a10; box-shadow: 0 0 0 2px var(--gold); animation: giftBounce 700ms steps(2) infinite; }
 .tro.ready img { filter: none; }
 .tro.sel { box-shadow: 0 0 0 2px var(--cream); }
@@ -566,10 +605,10 @@ kbd { font: inherit; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tap-pill.hot, .badge, .rays, .bar-reel.full i, .gift-chip.ready, .lcell.today, .tro.ready, .crit.ra4, .combo.full .combo-bar i { animation: none; }
+  .tap-pill.hot, .badge, .rays, .bar-reel.full i, .gift-chip.ready, .lcell.today, .tro.ready, .crit.ra4, .combo.full .combo-bar i, .tro.got.t3, .tro.t3 img, .tt3, .collapse-card.ready, .collapse-card.ready .btn { animation: none; }
 }
 body.reduced .tap-pill.hot, body.reduced .gift-chip.ready, body.reduced .lcell.today, body.reduced .badge, body.reduced .rays,
-body.reduced .bar-reel.full i, body.reduced .reel.jackpot, body.reduced .tro.ready, body.reduced .crit.ra4, body.reduced .combo.full .combo-bar i { animation: none; }
+body.reduced .bar-reel.full i, body.reduced .reel.jackpot, body.reduced .tro.ready, body.reduced .crit.ra4, body.reduced .combo.full .combo-bar i, body.reduced .tro.got.t3, body.reduced .tro.t3 img, body.reduced .tt3 { animation: none; }
 
 /* Store-art mode (index.html?cover=1): only the universe and the title. */
 body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, body.cover .hud-bl, body.cover .hud-bottom, body.cover .toasts { display: none !important; }
