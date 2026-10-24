@@ -37,6 +37,11 @@ New and existing players start with 3.
 - A horizontal strip of skins from that crate spins past a marker and eases to a stop on the prize, with a tick for each skin that passes. Skip jumps to the result.
 - The filler skins are random draws from the crate's own odds. There is no staged near miss.
 
+**Gacha screens:**
+- Hatching (×1 and ×10) and crates share one strip animation on a darkened, spotlit screen. A header shows the source and its odds, and the result card has rarity light rays.
+- A ×10 hatch stops on the best pet, then lists all ten.
+- Every scroll area uses a pixel-styled scrollbar in the game's colours (thin and lavender in Firefox).
+
 **Pets:** players choose up to six pets to orbit (tap a pet, then *Orbit*). With none chosen, the best six orbit.
 
 The tab bar now has seven tabs, the top-left counters are a 2×2 grid (tickets, shards, keys, Stardust) so numbers never clip, and trophies are listed bronze to spectral within each group. Eight new trophies cover crates opened and skins owned.

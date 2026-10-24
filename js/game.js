@@ -621,81 +621,98 @@
     save();
   }
 
-  function hatchOne(r) {
+  // Hatching: the capsule strip spins past a marker and stops on your pet. A ten-pull stops on the
+  // best pet of the ten, then shows all ten below.
+  function petItem(id) { const c = PS.CRIT[id]; return { sprite: 'pet_' + id, name: c.name, rarity: c.rarity }; }
+  function petFiller() {
+    const G = C.gacha;
+    const total = G.rarities.reduce(function (a, r) { return a + r.w; }, 0);
+    let roll = Math.random() * total, r = 0;
+    while (r < G.rarities.length - 1 && roll >= G.rarities[r].w) { roll -= G.rarities[r].w; r++; }
+    const xs = C.critters.filter(function (c) { return c.rarity === r; });
+    return petItem(xs[Math.floor(Math.random() * xs.length)].id);
+  }
+  function petCard(r) {
     const c = PS.CRIT[r.id];
-    const body = '<div class="hatch"><div class="stage"><div class="rays"></div><div class="cap">' + SPR.img('capsule0', 4) + '</div></div><div class="reveal-text"></div></div>';
-    openModal('hatch', 'Hatching…', body, []);
-    const stage = el.modalBody.querySelector('.stage');
-    const cap = el.modalBody.querySelector('.cap');
-    const rays = el.modalBody.querySelector('.rays');
-    const text = el.modalBody.querySelector('.reveal-text');
-    const timers = [];
-    const later = (ms, fn) => timers.push(setTimeout(fn, ms));
-    let done = false;
+    return '<div class="won-card"><div class="won-art ra' + r.rarity + '"><div class="rays on r' + r.rarity + '"></div>' + SPR.img('pet_' + r.id, 4) + '</div><div>' +
+      '<div class="rarity" style="color:' + RARITY_COL[r.rarity] + '">' + RARITY_NAMES[r.rarity] + ' pet</div><div class="cname">' + c.name + '</div>' +
+      '<div class="cbonus">' + PS.critterText(c, r.stars) + '</div>' + resultTag(r) + '</div></div>';
+  }
+  function hatchHeader(n) {
+    return '<div class="g-src">' + SPR.img('machine0', 1) + '<div><b>Cosmo Capsules' + (n > 1 ? ' ×' + n : '') + '</b><span>' +
+      C.gacha.rarities.map(function (x, i) { return '<i class="r' + i + '">' + x.name + ' ' + x.w + '%</i>'; }).join(' · ') + '</span></div></div>';
+  }
+  function hatchOne(r) { hatchMany([r]); }
+  function hatchMany(list) {
+    const best = list.reduce(function (a, c) { return c.rarity > a.rarity ? c : a; }, list[0]);
+    spinStrip({
+      kind: 'hatch', title: list.length > 1 ? 'Hatching ×' + list.length + '…' : 'Hatching…', header: hatchHeader(list.length),
+      filler: petFiller, win: petItem(best.id),
+      reveal: function () {
+        el.modalTitle.textContent = list.length > 1 ? 'Hatched ×' + list.length + '!' : best.isNew ? 'New pet!' : 'Hatched!';
+        let html = petCard(best);
+        if (list.length > 1) {
+          html += '<div class="multi">' + list.map(function (r) {
+            return '<div class="cell ra' + r.rarity + '">' + SPR.img('pet_' + r.id, 2) + '<span>' + PS.CRIT[r.id].name + '</span>' + resultTag(r) + '</div>';
+          }).join('') + '</div>';
+        }
+        Sound.reveal(best.rarity);
+        if (best.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
+        finishHatch();
+        const acts = [];
+        const cost = list.length > 1 ? C.gacha.cost10 : C.gacha.cost;
+        if (state.tickets >= cost) acts.push({ label: 'Hatch again', cls: 'pink', fn: function () { closeModal(); doPull(list.length > 1 ? 10 : 1); } });
+        acts.push({ label: 'Yay!', cls: 'primary', fn: closeModal });
+        return { html: html, actions: acts };
+      }
+    });
+  }
+
+  // Shared gacha strip: tiles race past a marker and ease to a stop on the prize.
+  // Filler tiles are random draws from the source's own odds; nothing is staged.
+  const STRIP_TILE = 76, STRIP_LEN = 46, STRIP_WIN = 39;
+  function spinStrip(o) {
+    const tiles = [];
+    for (let i = 0; i < STRIP_LEN; i++) tiles.push(i === STRIP_WIN ? o.win : o.filler());
+    const body = '<div class="gacha-box">' + o.header +
+      '<div class="strip-win"><div class="strip">' + tiles.map(function (t, i) {
+        return '<div class="st-tile ra' + t.rarity + '" data-i="' + i + '">' + SPR.img(t.sprite, 1.5) + '<span class="r' + t.rarity + '">' + t.name + '</span></div>';
+      }).join('') + '</div><i class="strip-mark"></i></div>' +
+      '<div class="reveal-text"><p class="small spin-note">Spinning…</p></div></div>';
+    openModal(o.kind, o.title, body, []);
+    const win = el.modalBody.querySelector('.strip-win'), strip = el.modalBody.querySelector('.strip'), text = el.modalBody.querySelector('.reveal-text');
+    const W = win.clientWidth;
+    const target = -(STRIP_WIN * STRIP_TILE + STRIP_TILE / 2 - W / 2) + Math.round((Math.random() - 0.5) * (STRIP_TILE - 16));
+    const dur = reduced ? 1200 : 4600;
+    let done = false, raf = 0, lastTile = -1;
+    function tick() {
+      const m = new DOMMatrix(getComputedStyle(strip).transform);
+      const idx = Math.floor((W / 2 - m.m41) / STRIP_TILE);
+      if (idx !== lastTile) { lastTile = idx; Sound.reelTick(); }
+      if (!done) raf = requestAnimationFrame(tick);
+    }
     function reveal() {
       if (done) return;
       done = true;
-      timers.forEach(clearTimeout);
-      cap.remove();
-      rays.className = 'rays on r' + r.rarity;
-      stage.insertAdjacentHTML('beforeend', '<div class="crit-big">' + SPR.img('pet_' + r.id, 6) + '</div>');
-      text.innerHTML = '<div class="rarity" style="color:' + RARITY_COL[r.rarity] + '">' + RARITY_NAMES[r.rarity] + '</div>' +
-        '<div class="cname">' + c.name + '</div><div class="cbonus">' + PS.critterText(c, r.stars) + '</div>' + resultTag(r);
-      el.modalTitle.textContent = r.isNew ? 'New pet!' : 'Hatched!';
-      Sound.reveal(r.rarity);
-      if (r.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
-      setActions([{ label: 'Yay!', cls: 'primary', fn: closeModal }]);
-      finishHatch();
+      cancelAnimationFrame(raf);
+      strip.style.transition = 'none';
+      strip.style.transform = 'translateX(' + target + 'px)';
+      strip.querySelector('[data-i="' + STRIP_WIN + '"]').classList.add('win');
+      win.classList.add('done', 'r' + o.win.rarity);
+      const out = o.reveal();
+      text.innerHTML = out.html;
+      setActions(out.actions);
     }
-    // The capsule colour teases the rarity: it climbs through lower colours before settling.
-    later(380, function () { Sound.drop(); cap.classList.add('wobble'); });
-    for (let i = 0; i < 6; i++) {
-      later(520 + i * 150, function () {
-        Sound.wobble();
-        cap.innerHTML = SPR.img('capsule' + Math.min(r.rarity, Math.floor((i / 5) * (r.rarity + 1))), 4);
-      });
-    }
-    later(520 + 6 * 150 + (r.rarity >= 3 ? 400 : 120), function () {
-      cap.innerHTML = SPR.img('capsuleOpen' + r.rarity, 4);
-      later(160, reveal);
+    Sound.crank();
+    requestAnimationFrame(function () {
+      strip.style.transition = 'transform ' + dur + 'ms cubic-bezier(.08,.6,.12,1)';
+      strip.style.transform = 'translateX(' + target + 'px)';
+      raf = requestAnimationFrame(tick);
     });
+    strip.addEventListener('transitionend', reveal);
+    setTimeout(reveal, dur + 300);
     setActions([{ label: 'Skip', fn: reveal }]);
     hatchCleanup = reveal;
-  }
-
-  function hatchMany(list) {
-    const body = '<div class="hatch"><div class="multi">' + list.map(function (r, i) {
-      return '<div class="cell" data-i="' + i + '"><span class="mc">' + SPR.img('capsule0', 2) + '</span></div>';
-    }).join('') + '</div><p class="small">Best: <b class="best">…</b></p></div>';
-    openModal('hatch', 'Hatching ×' + list.length + '…', body, []);
-    const cells = el.modalBody.querySelectorAll('.cell');
-    let i = 0, done = false;
-    const best = list.reduce(function (a, c) { return c.rarity > a.rarity ? c : a; }, list[0]);
-    function open(k) {
-      const r = list[k], cell = cells[k];
-      cell.className = 'cell ra' + r.rarity;
-      cell.innerHTML = SPR.img('pet_' + r.id, 2) + '<span>' + PS.CRIT[r.id].name + '</span>' + resultTag(r);
-    }
-    const iv = setInterval(function () {
-      if (i >= list.length) { finish(); return; }
-      open(i);
-      if (list[i].rarity >= 2) Sound.reveal(Math.min(2, list[i].rarity - 1)); else Sound.wobble();
-      i++;
-    }, 230);
-    function finish() {
-      if (done) return;
-      done = true;
-      clearInterval(iv);
-      for (; i < list.length; i++) open(i);
-      el.modalBody.querySelector('.best').textContent = PS.CRIT[best.id].name + ' (' + RARITY_NAMES[best.rarity] + ')';
-      el.modalTitle.textContent = 'Hatched ×' + list.length + '!';
-      Sound.reveal(best.rarity);
-      if (best.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
-      setActions([{ label: 'Yay!', cls: 'primary', fn: closeModal }]);
-      finishHatch();
-    }
-    setActions([{ label: 'Skip', fn: finish }]);
-    hatchCleanup = finish;
   }
 
   // ---------------------------------------------------------------------------
@@ -871,9 +888,9 @@
     openModal('crate-info', c.name, body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
 
-  // Opening a crate: a horizontal strip of skins spins past a marker and slows to a stop on the prize.
-  const STRIP_TILE = 76, STRIP_LEN = 46, STRIP_WIN = 39;
-  function stripFiller(id) {
+  // Opening a crate uses the same strip as hatching, with that crate's own skins.
+  function skinItem(k) { return { sprite: 'skin_' + k.id, name: k.name, rarity: k.rarity }; }
+  function crateFiller(id) {
     const c = PS.CRATE[id];
     const pool = CT.SKINS.filter(function (k) { return k.crate === id; });
     const w = c.weights.map(function (x, r) { return pool.some(function (k) { return k.rarity === r; }) ? x : 0; });
@@ -881,68 +898,40 @@
     let roll = Math.random() * total, r = 0;
     while (r < w.length - 1 && roll >= w[r]) { roll -= w[r]; r++; }
     const xs = pool.filter(function (k) { return k.rarity === r; });
-    return xs[Math.floor(Math.random() * xs.length)];
+    return skinItem(xs[Math.floor(Math.random() * xs.length)]);
   }
   function openCrateFlow(id) {
     if (opening) return;
     Sound.unlock();
+    const c = PS.CRATE[id];
     const res = PS.openCrate(state, id, Math.random);
     if (!res) { Sound.deny(); return; }
     opening = true;
     PS.checkProgress(state, ev);
     refreshStats(); markDirty(); skinKey = ''; save();
     const k = res.skin;
-    const tiles = [];
-    for (let i = 0; i < STRIP_LEN; i++) tiles.push(i === STRIP_WIN ? k : stripFiller(id));
-    const body = '<div class="crate-open">' +
-      '<div class="strip-win"><div class="strip">' + tiles.map(function (t, i) {
-        return '<div class="st-tile ra' + t.rarity + '" data-i="' + i + '">' + SPR.img('skin_' + t.id, 1.5) + '<span class="r' + t.rarity + '">' + t.name + '</span></div>';
-      }).join('') + '</div><i class="strip-mark"></i></div>' +
-      '<div class="reveal-text"></div></div>';
-    openModal('crate', 'Opening ' + PS.CRATE[id].name + '…', body, []);
-    const win = el.modalBody.querySelector('.strip-win'), strip = el.modalBody.querySelector('.strip'), text = el.modalBody.querySelector('.reveal-text');
-    const W = win.clientWidth;
-    const target = -(STRIP_WIN * STRIP_TILE + STRIP_TILE / 2 - W / 2) + Math.round((Math.random() - 0.5) * (STRIP_TILE - 16));
-    const dur = reduced ? 1200 : 4600;
-    let done = false, raf = 0, lastTile = -1;
-    function tick() {
-      const m = new DOMMatrix(getComputedStyle(strip).transform);
-      const idx = Math.floor((W / 2 - m.m41) / STRIP_TILE);
-      if (idx !== lastTile) { lastTile = idx; Sound.reelTick(); }
-      if (!done) raf = requestAnimationFrame(tick);
-    }
-    function reveal() {
-      if (done) return;
-      done = true;
-      cancelAnimationFrame(raf);
-      strip.style.transition = 'none';
-      strip.style.transform = 'translateX(' + target + 'px)';
-      const tile = strip.querySelector('[data-i="' + STRIP_WIN + '"]');
-      tile.classList.add('win');
-      win.classList.add('done', 'r' + k.rarity);
-      text.innerHTML = '<div class="won-card"><div class="won-art ra' + k.rarity + '">' + SPR.img('skin_' + k.id, 3) + '</div><div>' +
-        '<div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
-        (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div></div>';
-      el.modalTitle.textContent = res.isNew ? 'New skin!' : 'Skin found';
-      Sound.reveal(k.rarity);
-      if (k.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
-      const acts = [];
-      if (state.skins.on !== k.id) acts.push({ label: 'Equip', cls: 'gold', fn: function () { PS.equipSkin(state, k.id); refreshStats(); markDirty(); skinKey = ''; save(); closeModal(); toast('<b>' + k.name + '</b> equipped', 'green'); } });
-      if (state.skins.keys >= PS.CRATE[id].cost) acts.push({ label: 'Open another', cls: 'pink', fn: function () { closeModal(); openCrateFlow(id); } });
-      acts.push({ label: 'Nice!', cls: 'primary', fn: closeModal });
-      setActions(acts);
-      opening = false;
-    }
-    Sound.crank();
-    requestAnimationFrame(function () {
-      strip.style.transition = 'transform ' + dur + 'ms cubic-bezier(.08,.6,.12,1)';
-      strip.style.transform = 'translateX(' + target + 'px)';
-      raf = requestAnimationFrame(tick);
+    const header = '<div class="g-src">' + SPR.img('crate_' + id, 1.5) + '<div><b>' + c.name + '</b><span>' +
+      c.weights.map(function (w, r) { return w ? '<i class="r' + r + '">' + RARITY_NAMES[r] + ' ' + w + '%</i>' : ''; }).filter(Boolean).join(' · ') + '</span></div></div>';
+    spinStrip({
+      kind: 'crate', title: 'Opening ' + c.name + '…', header: header,
+      filler: function () { return crateFiller(id); }, win: skinItem(k),
+      reveal: function () {
+        el.modalTitle.textContent = res.isNew ? 'New skin!' : 'Skin found';
+        Sound.reveal(k.rarity);
+        if (k.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
+        opening = false;
+        const acts = [];
+        if (state.skins.on !== k.id) acts.push({ label: 'Equip', cls: 'gold', fn: function () { PS.equipSkin(state, k.id); refreshStats(); markDirty(); skinKey = ''; save(); closeModal(); toast('<b>' + k.name + '</b> equipped', 'green'); } });
+        if (state.skins.keys >= c.cost) acts.push({ label: 'Open another', cls: 'pink', fn: function () { closeModal(); openCrateFlow(id); } });
+        acts.push({ label: 'Nice!', cls: 'primary', fn: closeModal });
+        return {
+          html: '<div class="won-card"><div class="won-art ra' + k.rarity + '"><div class="rays on r' + k.rarity + '"></div>' + SPR.img('skin_' + k.id, 3) + '</div><div>' +
+            '<div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
+            (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div></div>',
+          actions: acts
+        };
+      }
     });
-    strip.addEventListener('transitionend', reveal);
-    setTimeout(reveal, dur + 300);
-    setActions([{ label: 'Skip', fn: reveal }]);
-    hatchCleanup = reveal;
   }
 
   // ---------------------------------------------------------------------------
@@ -1452,6 +1441,7 @@
     el.modalTitle.textContent = title;
     el.modalBody.innerHTML = body;
     setActions(actions);
+    el.modal.className = 'modal' + (kind === 'hatch' || kind === 'crate' ? ' gacha' : '');
     el.modal.hidden = false;
     Platform.gameplayStop();
   }

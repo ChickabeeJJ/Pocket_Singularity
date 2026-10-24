@@ -207,7 +207,7 @@ kbd { font: inherit; }
 .badge[hidden] { display: none; }
 @keyframes badge { 50% { background: var(--peach); } }
 .panel-body { flex: 1 1 auto; min-height: 0; position: relative; }
-.tab-body { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 14px; scrollbar-width: thin; scrollbar-color: var(--slate) transparent; }
+.tab-body { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 14px; }
 .tab-body[hidden] { display: none; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; }
 .sec-head h2 { margin: 0; font-size: 16px; color: var(--butter); text-shadow: 2px 2px 0 var(--ink); }
@@ -692,3 +692,38 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
 .won-card .cbonus { color: var(--lime); font-size: 13px; margin: 2px 0 6px; }
 .won-card .tag { font-size: 12px; padding: 1px 6px; background: var(--berry); color: var(--cream); }
 .won-card .tag.up { background: var(--green); }
+
+/* Gacha screens (hatching and crates): a dark stage with a spotlight. */
+.modal.gacha { background: rgba(3, 3, 8, .94); }
+.modal.gacha .modal-box {
+  width: min(600px, 100%); background: radial-gradient(ellipse at 50% 38%, #2a1f52 0%, #141530 55%, #0b0b16 100%);
+  box-shadow: 0 -3px 0 0 var(--ink), 0 3px 0 0 var(--ink), -3px 0 0 0 var(--ink), 3px 0 0 0 var(--ink), inset 0 3px 0 0 #3a3170, 0 0 0 6px #2a2050, 0 0 40px 6px rgba(120, 90, 220, .35);
+}
+.modal.gacha h2 { text-align: center; margin-right: 0; font-size: 24px; }
+.gacha-box { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.g-src { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.g-src img { width: 44px; height: auto; }
+.g-src b { display: block; color: var(--cream); font-size: 15px; }
+.g-src span { font-size: 11px; }
+.g-src i { font-style: normal; }
+.gacha-box .strip-win { height: 112px; background: linear-gradient(180deg, #07070f, #120f24 50%, #07070f); box-shadow: 0 0 0 2px #3a3170, inset 0 0 24px rgba(0, 0, 0, .8); }
+.gacha-box .strip { top: 12px; }
+.spin-note { text-align: center; animation: noteBlink 900ms steps(2) infinite; min-height: 120px; margin: 10px 0 0; }
+@keyframes noteBlink { 50% { opacity: .35; } }
+.gacha-box .won-card { justify-content: center; }
+.won-art { position: relative; overflow: visible; }
+.won-art img { position: relative; z-index: 1; }
+.won-art .rays { width: 200px; height: 200px; margin: -100px 0 0 -100px; z-index: 0; }
+.gacha-box .multi { margin-top: 12px; }
+.modal.gacha .modal-actions { justify-content: center; }
+
+/* Pixel scrollbars everywhere. */
+/* Chromium ignores ::-webkit-scrollbar when the standard properties are set, so those are for Firefox only. */
+@supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: var(--lav) var(--ink); } }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--ink); box-shadow: inset 2px 0 0 0 #1d1f3a; }
+::-webkit-scrollbar-thumb { background: var(--lav); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 0 #c9b3ff, inset -2px -2px 0 0 #6a4fb8; }
+::-webkit-scrollbar-thumb:hover { background: #bfa2ff; }
+::-webkit-scrollbar-thumb:active { background: var(--butter); box-shadow: inset 2px 2px 0 0 #fff0c8, inset -2px -2px 0 0 var(--peach); }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+::-webkit-scrollbar-corner { background: var(--ink); }

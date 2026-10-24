@@ -340,8 +340,8 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(/Common/.test(odds) && /Legendary/.test(odds) && /Mythic/.test(odds), 'odds shown');
     const before = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls }));
     await p.click('#pull1');
-    await p.waitForSelector('#modal:not([hidden]) .hatch');
-    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    await p.waitForSelector('#modal:not([hidden]) .gacha-box');
+    await p.waitForSelector('.won-card', { timeout: 8000 });
     await shot(p, '907-hatch');
     const after = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls, owned: Object.keys(__ps.state.critters).length }));
     // Costs 10; discoveries and trophies can hand a few straight back.
@@ -356,7 +356,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await S(p, () => { __ps.state.tickets = 200; });
     const n0 = await S(p, () => __ps.state.gacha.pulls);
     await p.click('#pull10');
-    await p.waitForSelector('#modal:not([hidden]) .multi');
+    await p.waitForSelector('#modal:not([hidden]) .gacha-box');
     await p.click('#modal-actions .btn');   // Skip
     await p.waitForSelector('#modal-actions .btn.primary');
     assert((await p.locator('.multi .cell img').count()) === 10, 'ten reveals');
@@ -393,7 +393,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.waitForSelector('[data-claim="free"]');
     const n0 = await S(p, () => __ps.state.gacha.pulls);
     await p.click('[data-claim="free"]');
-    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    await p.waitForSelector('.won-card', { timeout: 8000 });
     assert((await S(p, () => __ps.state.gacha.pulls)) === n0 + 1, 'hatched');
     await p.click('#modal-actions .btn.primary');
     await S(p, () => __ps.setTab('rewards'));
@@ -482,9 +482,9 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await S(p, () => { __ps.state.skins.keys = 10; __ps.setTab('skins'); });
     await p.waitForSelector('[data-crate="stardust"]');
     await p.click('[data-crate="stardust"]');
-    await p.waitForSelector('#modal:not([hidden]) .crate-open');
+    await p.waitForSelector('#modal:not([hidden]) .gacha-box');
     await p.click('#modal-actions .btn');   // Skip
-    await p.waitForSelector('.crate-open .won-card');
+    await p.waitForSelector('.gacha-box .won-card');
     await shot(p, '907-crate');
     const st = await S(p, () => ({ keys: __ps.state.skins.keys, own: Object.keys(__ps.state.skins.own) }));
     assert(st.keys === 9 && st.own.length >= 2, JSON.stringify(st));
@@ -608,7 +608,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.tap('.tab[data-tab="pets"]');
     await p.waitForSelector('#tab-pets:not([hidden])');
     await p.tap('#pull1');
-    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    await p.waitForSelector('.won-card', { timeout: 8000 });
     await shot(p, '390-hatch');
     await p.tap('#modal-actions .btn.primary');
     assert(await p.isHidden('#modal'));
