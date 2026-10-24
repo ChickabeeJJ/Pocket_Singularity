@@ -2,6 +2,33 @@
 
 What was built, why, and what is still unproven.
 
+## Version 4: idle tycoon depth, new layout, relics, leaderboard
+
+The owner found version 3 not fun ("no elements of a good tycoon idle game"), and disliked the background, capsules, pets and machine. They asked for dynamic animation, a huge number of upgrades, achievements, a relic tab with rarities and more inventive gambling, many more pets, a much better mobile UI, Muscle Titans' screen arrangement (layout only, not its style), and a CrazyGames leaderboard.
+
+### Layout
+- **Scene fills the screen; a dark tabbed panel sits on the right** (Muscle Titans' arrangement). Top left: big Matter number, `+X per pulse`, `+X /sec`, a total income multiplier chip, the combo bar, and tickets, shards and Stardust. Top centre: a *TAP OR HOLD SINGU [SPACE]* pill that turns into the comet alert. Bottom centre: the **form progression bar**, plus next-sector and Star Reel meters. Bottom left: a gold **Leaderboard** pill, round settings, sound and Atlas buttons, and the gift timer.
+- **Six tabs:** Harvest, Upgrades, Pets, Relics, Rewards, Trophies. Each has an icon and a badge for what is ready (affordable harvesters, upgrade count, tickets for a hatch, shards for a forge, claimable rewards and trophies).
+- **Phones (portrait):** the scene sits on top, the panel scrolls beneath, and the tabs become a fixed bottom icon bar. **Phones (landscape):** a narrower panel with icon-only tabs. The pulse button is gone: you tap or **hold** the universe (hold pulses every time the cooldown allows).
+
+### Tycoon systems
+| System | Rule |
+|---|---|
+| **Harvesters** | 15 tiers, from Stardust Sweeper to Big Bang Loom. Cost ×1.15 each, buy ×1, ×10, ×100 or Max. Every owned milestone (25, 50, 100, 150 … 1000) **doubles** that tier. The next tier appears once you own the previous one; one locked "???" row always teases what is next. A *Next goals* strip shows the nearest milestone, the next upgrade and the next form. |
+| **Upgrades** | **260** one-time upgrades. Each tier has 10 ×2 upgrades at owned counts; there are 15 Gravity Gloves (pulse ×2 plus 1% of /sec per pulse), 30 Cosmic Catalysts (+25% all Matter), and lines for ice, crystals, blasts, comets, luck, tickets, combo, Star Reel, pet synergy and trophy synergy. They unlock from play stats and are shown cheapest first, with *Buy all affordable* and a "Next unlock: X · Own 25 Comet Nets" line. The 5 old levelled upgrades remain as *Singu powers*. |
+| **Combo** | Fast manual pulses fill a combo bar that multiplies everything a pulse earns (up to ×2, more with upgrades, pets and relics). It decays when you stop. A full combo fires flames around Singu. |
+| **Forms** | 12 forms by lifetime Matter (Speck → Omniverse Maw). Each gives ×1.15 Matter, grows Singu and its disk, and is celebrated with a banner. Forms 5 and 8 add relic slots. |
+| **Trophies** | **163** achievements in 9 categories. Each unlocked trophy gives +1.5% Matter forever, plus 3 tickets and a shard when claimed. *Claim all* is included. |
+| **Pets** | **48** pets in **5 rarities** (Mythic added at 0.5%, with a 250-hatch pity and a soft pity from 180), drawn by a new painter across 25 species, with hue-shifted shading, selective outlines, blush and crowns for Legendary+. The six best orbit Singu. |
+| **Relic Forge** | The new push-your-luck. 10 shards forge a relic (Common 55%, Rare 28%, Epic 12.5%, Legendary 4%, Mythic 0.5%). Then **Push** (55% / 40% / 25% / 12% to climb a rarity, or it shatters and refunds 3 shards) or **Keep**. Relics roll 1–4 affixes from 11 stats; equip 3–6, salvage for shards, or fuse three of a rarity into the next one. Shards come from comets, sectors, big reel wins, collapses, trophies, quests and the login calendar, **never from money or ads**. |
+| **Leaderboard** | Singu level, submitted through the CrazyGames SDK (see the README for the key). |
+
+The scene was redrawn as well: a smooth sector-tinted sky, soft drifting nebulae, a distant spiral galaxy, three layers of parallax stars, shooting stars, drifting asteroids, a huge lit planet horizon under Singu, and a vignette. Owned harvesters orbit Singu and drip matter into it, and payouts stream particles to the Matter counter. Taps squash Singu. The art buffer is finer than before (about 230+ art pixels tall).
+
+**Pacing** (`npm run sim -- 45 smart`): first Sweeper at 0:14, first capsule at 0:35, sector 2 at 3:30, a new harvester tier every few minutes (Comet Net 4:27, Drone 6:59 … Dyson 30:49, Engine 42:04), and Collapse available at about 7:54.
+
+**Saves:** version 3. v1 and v2 saves migrate: old drones become Orbital Drone harvesters, old critters map to the new pets, and everyone starts with 10 shards.
+
 ## Version 2: cozy pixel art + gacha
 
 Version 1 followed the bible's minimalist vector style and its ban on loot boxes. The owner asked for a full restyle to cozy retro pixel art, plus addictive gacha and luck elements, proper scaling and a stronger hook, so version 2 deliberately overrides those parts of the bible. Everything else from the bible still holds: instant start, one clear action, always-visible next goal, safe saves, capped away income, no punishments for leaving.
@@ -80,7 +107,8 @@ Times are from `npm run sim` with an active player. In 20 minutes it gets about 
 Versioned validated saves (v1 saves load and migrate), a backup slot, corrupt-save recovery, away income capped at 2 h at 50% (paid once, a clock moved backwards pays nothing), mute, reduced motion (no shake, fewer particles, no blinking UI), keyboard and touch input, layouts for 907×510, fullscreen and phone, store art rendered from the game, and the guarded SDK adapter.
 
 ## Verification done
-- `npm test`: 32 rule tests. The newest cover login once per day with no reset on missed days and week scaling, deterministic quests that pay once, play gifts in order, the free-capsule timer and clock-back guard, goal tiers, reward granting, and badge counts. Earlier ones cover costs, max levels, save sanitising (including forged Singu levels, tickets and critters), v1 migration, Collapse exactly once, the away cap, mutation determinism and no repeats, first pulse always catches, cooldown buffering, payout maths, pacing targets, first hatch Rare, Epic and Legendary pity across 40 seeds × 400 hatches, ten-pulls always Rare+, odds summing to 1, star scaling, reel result mapping, the reel paying out, and Overcharge resolving once.
+- **Version 4:** `npm test` runs 38 rule tests, adding harvesters (bulk cost, max buy, milestones, locked tiers), the upgrade catalog, combo, the relic forge (push, shatter, keep, fuse, salvage), forms, trophies, 5-rarity odds and v2 migration. `npm run qa` and `npm run qa:dist` run 40 browser checks, all passing, including catalog buys, the forge, trophy claims, hold-to-pulse, the leaderboard dialog, the phone bottom tab bar, and the same save, away, collapse and reward checks as before. Screenshots were reviewed at 907×510, 1920×1080, 390×844 and 844×390. **The leaderboard submission has not been tested against the live SDK.**
+- Earlier versions: `npm test` had 32 rule tests. The newest cover login once per day with no reset on missed days and week scaling, deterministic quests that pay once, play gifts in order, the free-capsule timer and clock-back guard, goal tiers, reward granting, and badge counts. Earlier ones cover costs, max levels, save sanitising (including forged Singu levels, tickets and critters), v1 migration, Collapse exactly once, the away cap, mutation determinism and no repeats, first pulse always catches, cooldown buffering, payout maths, pacing targets, first hatch Rare, Epic and Legendary pity across 40 seeds × 400 hatches, ten-pulls always Rare+, odds summing to 1, star scaling, reel result mapping, the reel paying out, and Overcharge resolving once.
 - `npm run qa` and `npm run qa:dist`: 35 browser checks (now including login, free capsule, play gift, quest and goal claims, the badge and gift chip, and Rewards by touch on a phone) in headless Chromium, all passing on both the source and the build. New ones cover hatch ×1 and ×10 (skip), the daily gift across reload, Star Reel spin and payout, Overcharge, critters orbiting, and capsules by touch on a phone.
 - The production build works without `zip` installed, as on Vercel.
 - Several real-time Chromium sessions with human-like clicking and buying (up to 3 minutes), plus screenshot review at every sector, modal and viewport.
@@ -89,6 +117,7 @@ Versioned validated saves (v1 saves load and migrate), a backup slot, corrupt-sa
 - **Platform policy.** The gacha and Overcharge are designed to stay inside PEGI 12 and CrazyGames' rules, but I could not read the official pages. Confirm before submitting, and be ready to turn Overcharge off (`CONFIG.overcharge.minChain = Infinity`) if QA objects.
 - **No human playtests.** The `?debug` timings in Settings help with the bible's five-tester plan.
 - **Sound was not listened to.** Check volume balance and repetition fatigue by ear.
-- **The CrazyGames SDK is untested** against the live service.
+- **The CrazyGames SDK is untested** against the live service, including the leaderboard encryption. The key in `js/platform.js` is empty until the owner pastes theirs.
+- **The relic forge's Push is a gamble on earned currency.** It is fantasy-framed with odds always shown, and shards can never be bought. If platform QA objects, remove the Push button in `forgeHTML` in `js/game.js` so relics become plain random drops.
 - **Real devices.** Touch was tested only in Chromium's mobile emulation. Check iOS Safari and a mid-range Android phone, especially frame rate during sector dissolves and big reel wins.
 - **Late-game balance** past about 30 minutes, or many Collapses, has only been simulated.

@@ -10,6 +10,6 @@
     "sim": "node tools/sim.js",
     "build": "node tools/build.js",
     "covers": "node tools/covers.js",
-    "check": "node --check js/core.js && node --check js/sprites.js && node --check js/audio.js && node --check js/platform.js && node --check js/game.js"
+    "check": "node --check js/content.js && node --check js/render.js && node --check js/core.js && node --check js/sprites.js && node --check js/audio.js && node --check js/platform.js && node --check js/game.js"
   }
 }

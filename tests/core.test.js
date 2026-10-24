@@ -45,10 +45,10 @@ test('sanitize survives garbage and clamps hostile values', () => {
   assert.equal(PS.parseSave('{not json', 0).broken, true);
   assert.equal(PS.parseSave('', 0), null);
   const good = PS.createState(5);
-  good.matter = 10; good.lifetime = 50; good.runTotal = 50; good.levels.drones = 4;
+  good.matter = 10; good.lifetime = 50; good.runTotal = 50; good.gens.drone = 4;
   const back = PS.parseSave(PS.serialize(good), 0);
   assert.equal(back.ok, true);
-  assert.equal(back.state.levels.drones, 4);
+  assert.equal(back.state.gens.drone, 4);
   assert.equal(back.state.matter, 10);
 });
 
@@ -86,7 +86,7 @@ test('collapse is unavailable before the required sector', () => {
 
 test('away income is capped at two hours, reduced, and zero for negative time', () => {
   const s = PS.createState(0);
-  s.levels.drones = 10;
+  s.gens.sweeper = 10;
   const st = PS.derive(s, {});
   const two = PS.awayGain(s, st, 2 * 3600e3).gain;
   assert.equal(PS.awayGain(s, st, 50 * 3600e3).gain, two);
@@ -124,7 +124,7 @@ test('first pulse on a fresh world always catches something', () => {
     const w = PS.createWorld(PS.mulberry32(seed), s, st);
     const ev = [];
     PS.pulse(w, s, st, ev, false);
-    assert.ok(ev[0].count >= 1, `seed ${seed} caught nothing`);
+    assert.ok(ev.find((e) => e.t === 'pulse').count >= 1, `seed ${seed} caught nothing`);
   }
 });
 
@@ -159,7 +159,8 @@ test('chain payout equals base × value × chain multiplier', () => {
   assert.equal(pay.chain, 6);
   const expected = 6 * st.valueMult * PS.chainMult(st, 6);
   assert.ok(Math.abs(pay.total - expected) < 1e-9);
-  assert.ok(Math.abs(s.matter - expected) < 1e-9);
+  // Matter also includes the flat pulse value (first pulse, so no combo yet).
+  assert.ok(Math.abs(s.matter - expected - st.tapValue) < 1e-9);
 });
 
 test('long simulated sessions stay finite and bounded', () => {
@@ -173,7 +174,7 @@ test('pacing hits the bible targets for an active player', () => {
   const r = run({ minutes: 13, policy: 'smart', seed: 1 });
   const at = (k) => (r.log.find((l) => l.key === k) || {}).t;
   assert.ok(at('first upgrade') <= 60, 'first upgrade within a minute');
-  assert.ok(at('first drones') >= 60 && at('first drones') <= 180, 'first automation in 1–3 min');
+  assert.ok(at('first sweeper') <= 60, 'first automation within a minute');
   const s1 = (r.log.find((l) => l.key.startsWith('sector 1')) || {}).t;
   assert.ok(s1 >= 180 && s1 <= 360, 'first sector in 3–6 min, got ' + s1);
   assert.ok(at('collapse available') > 360, 'first collapse is not immediate');
@@ -199,7 +200,7 @@ test('gacha pity guarantees Epic within 25 and Legendary within 70', () => {
       s.tickets = 100;
       const [r] = PS.pull(s, 1, rng);
       sinceEpic = r.rarity >= 2 ? 0 : sinceEpic + 1;
-      sinceLegend = r.rarity === 3 ? 0 : sinceLegend + 1;
+      sinceLegend = r.rarity >= 3 ? 0 : sinceLegend + 1;
       assert.ok(sinceEpic < PS.CONFIG.gacha.pityEpic, 'epic pity broken at seed ' + seed);
       assert.ok(sinceLegend < PS.CONFIG.gacha.pityLegend, 'legend pity broken at seed ' + seed);
     }
@@ -226,24 +227,24 @@ test('ten-pull always contains a Rare or better and duplicates star up', () => {
 
 test('displayed odds sum to 1 and reflect pity', () => {
   const s = PS.createState(0);
-  assert.deepEqual(PS.gachaOdds(s), [0, 1, 0, 0]);
+  assert.deepEqual(PS.gachaOdds(s), [0, 1, 0, 0, 0]);
   s.gacha.pulls = 3;
   const o = PS.gachaOdds(s);
   assert.ok(Math.abs(o.reduce((a, b) => a + b, 0) - 1) < 1e-9);
   s.gacha.sinceLegend = PS.CONFIG.gacha.pityLegend - 1;
-  assert.deepEqual(PS.gachaOdds(s), [0, 0, 0, 1]);
+  assert.equal(PS.gachaOdds(s)[3] + PS.gachaOdds(s)[4], 1, 'legendary pity: Legendary or Mythic guaranteed');
 });
 
 test('critter bonuses scale with stars and feed derived stats', () => {
   const s = PS.createState(0);
   const base = PS.derive(s, {}).valueMult;
-  s.critters.mouse = { stars: 1, copies: 0 };
+  s.critters.mouse_mote = { stars: 1, copies: 0 };
   const one = PS.derive(s, {}).valueMult;
-  s.critters.mouse.stars = 5;
+  s.critters.mouse_mote.stars = 5;
   const five = PS.derive(s, {}).valueMult;
   assert.ok(Math.abs(one / base - 1.08) < 1e-9);
   assert.ok(Math.abs(five / base - 1.24) < 1e-9);
-  assert.match(PS.critterText(PS.CRIT.mouse, 5), /24/);
+  assert.match(PS.critterText(PS.CRIT.mouse_mote, 5), /24/);
 });
 
 test('star reel results map correctly', () => {
@@ -349,14 +350,106 @@ test('free capsule every 4 hours, and a clock moved back cannot skip the wait', 
   assert.ok(back.freeCapAt <= now + PS.CONFIG.rewards.freeCapsuleMs);
 });
 
-test('goals pay each tier once, in order', () => {
+test('achievements unlock from progress and pay once when claimed', () => {
   const s = PS.createState(0);
-  assert.equal(PS.claimGoal(s, 'pulses'), null);
-  s.stats.pulses = 300;
-  assert.ok(PS.claimGoal(s, 'pulses'));
-  assert.ok(PS.claimGoal(s, 'pulses'));
-  assert.equal(PS.claimGoal(s, 'pulses'), null, 'third tier needs 1000');
-  assert.equal(s.goals.pulses, 2);
+  s.stats.pulses = 150;
+  PS.checkAchievements(s, null);
+  assert.equal(s.ach.p_0, 1, 'Tapper unlocked');
+  const t0 = s.tickets;
+  assert.ok(PS.claimAchievement(s, 'p_0'));
+  assert.equal(PS.claimAchievement(s, 'p_0'), null);
+  assert.equal(s.ach.p_0, 2);
+  assert.ok(PS.derive(s, {}).achMult > 1, 'achievements boost income');
+  assert.ok(PS.CT.ACHIEVEMENTS.length >= 150, 'a big achievement list');
+});
+
+test('harvesters: bulk cost formula, max-affordable buy, milestones double output', () => {
+  const s = PS.createState(0);
+  const c10 = PS.genCost('sweeper', 0, 10);
+  let sum = 0;
+  for (let i = 0; i < 10; i++) sum += PS.genCost('sweeper', i, 1);
+  assert.ok(Math.abs(c10 - sum) < 1e-6);
+  s.matter = 1e4;
+  const n = PS.buyGen(s, 'sweeper', 0);
+  assert.ok(n > 20 && s.matter >= 0 && s.matter < PS.genCost('sweeper', n, 1), 'bought as many as affordable');
+  const st24 = PS.derive(Object.assign(PS.createState(0), { gens: { sweeper: 24 } }), {}).genPerSec;
+  const st25 = PS.derive(Object.assign(PS.createState(0), { gens: { sweeper: 25 } }), {}).genPerSec;
+  assert.ok(st25 / st24 > 2, 'the 25th unit doubles output');
+  assert.equal(PS.buyGen(PS.createState(0), 'bang', 1), 0, 'locked tiers cannot be bought');
+});
+
+test('upgrade catalog: hundreds of upgrades, unlock by progress, buy once', () => {
+  assert.ok(PS.CT.UPGRADES.length >= 200);
+  const s = PS.createState(0);
+  assert.equal(PS.availableUpgrades(s).length, 0);
+  s.gens.sweeper = 1;
+  const up = PS.availableUpgrades(s).find((u) => u.id === 'g_sweeper_0');
+  assert.ok(up);
+  s.matter = up.cost;
+  const before = PS.derive(s, {}).genPerSec;
+  assert.ok(PS.buyUpgrade(s, up.id));
+  assert.equal(PS.buyUpgrade(s, up.id), false);
+  assert.ok(Math.abs(PS.derive(s, {}).genPerSec / before - 2) < 1e-9);
+});
+
+test('combo builds with fast pulses, multiplies income and decays', () => {
+  const s = PS.createState(0);
+  const st = PS.derive(s, {});
+  const w = PS.createWorld(PS.mulberry32(4), s, st);
+  const ev = [];
+  for (let i = 0; i < 30; i++) { PS.pulse(w, s, st, ev, false); PS.step(w, s, st, 0.4, ev); }
+  assert.ok(w.combo > 0.9, 'combo ' + w.combo);
+  assert.ok(ev.some((e) => e.t === 'comboFull'));
+  for (let i = 0; i < 40; i++) PS.step(w, s, st, 0.1, []);
+  assert.ok(w.combo < 0.5, 'decays when you stop');
+});
+
+test('relic forge: push succeeds or shatters with refund, keep, salvage, fuse', () => {
+  const s = PS.createState(0);
+  s.shards = 1000;
+  let pushedOk = false, shattered = false;
+  for (let seed = 1; seed < 60; seed++) {
+    const rng = PS.mulberry32(seed);
+    PS.forgeStart(s, rng);
+    const r0 = s.forge.r;
+    const res = PS.forgePush(s, rng);
+    if (res === null) { PS.forgeKeep(s); continue; }
+    if (res.ok) { pushedOk = true; assert.equal(s.forge.r, r0 + 1); PS.forgeKeep(s); }
+    else { shattered = true; assert.equal(s.forge, null); }
+  }
+  assert.ok(pushedOk && shattered, 'both outcomes happen');
+  assert.ok(s.relics.length > 0);
+  assert.ok(s.equipped.length <= PS.relicSlots(s));
+  const commons = s.relics.filter((r) => r.r === 0 && s.equipped.indexOf(r.uid) < 0).slice(0, 3);
+  if (commons.length === 3) {
+    const made = PS.fuseRelics(s, commons.map((r) => r.uid), PS.mulberry32(2));
+    assert.equal(made.r, 1);
+  }
+  const sh = s.shards, victim = s.relics[s.relics.length - 1];
+  assert.ok(PS.salvageRelic(s, victim.uid) > 0);
+  assert.ok(s.shards > sh);
+  const eqBefore = PS.derive(s, {});
+  assert.ok(eqBefore.relics.global >= 0);
+});
+
+test('forms evolve with lifetime Matter and multiply income', () => {
+  const s = PS.createState(0);
+  s.lifetime = s.runTotal = 2e7;
+  const ev = [];
+  PS.checkProgress(s, ev);
+  assert.equal(s.form, PS.formFor(2e7));
+  assert.ok(s.form >= 3);
+  assert.ok(ev.some((e) => e.t === 'form'));
+  assert.ok(PS.derive(s, {}).formMult > 1);
+});
+
+test('v2 saves migrate drone levels into Orbital Drones and keep pets', () => {
+  const r = PS.sanitize({ v: 2, matter: 10, runTotal: 10, lifetime: 10, levels: { drones: 7, radius: 3 }, critters: { dragon: { stars: 2, copies: 0 } } }, 0);
+  assert.equal(r.ok, true);
+  assert.equal(r.state.gens.drone, 7);
+  assert.equal(r.state.levels.radius, 3);
+  assert.equal(r.state.critters.dragon_sun.stars, 2);
+  assert.equal(r.state.shards, PS.CONFIG.shards.start);
 });
 
 test('grantReward applies tickets, matter, surge and free hatches', () => {
@@ -389,7 +482,7 @@ test('Singu level follows lifetime Matter and cannot be forged in a save', () =>
   const { state } = PS.sanitize({ v: 2, matter: 0, runTotal: 0, lifetime: 30, singuLevel: 500, tickets: -4, critters: { mouse: { stars: 99 }, fake: { stars: 1 } } }, 0);
   assert.equal(state.singuLevel, PS.singuLevelFor(30));
   assert.equal(state.tickets, 0);
-  assert.equal(state.critters.mouse.stars, 5);
+  assert.equal(state.critters.mouse_mote.stars, 5, 'v2 pet ids migrate');
   assert.equal(state.critters.fake, undefined);
 });
 

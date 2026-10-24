@@ -4,12 +4,15 @@
  */
 (function (root) {
   'use strict';
+  const CT = (typeof module !== 'undefined' && module.exports) ? require('./content.js') : root.PS_CONTENT;
 
   // ---------------------------------------------------------------------------
   // Balance data. Every tuning value lives here.
   // ---------------------------------------------------------------------------
   const CONFIG = {
-    saveVersion: 2,
+    saveVersion: 3,
+    tapBase: 1,               // Matter per pulse before upgrades
+    combo: { step: 0.06, window: 0.8, decay: 0.6, base: 1 },   // fast pulses build combo; full combo = ×(1 + max)
     pulseCooldown: 0.36,      // seconds between pulses
     pulseBuffer: 0.16,        // a click this close to the end of cooldown is queued, not dropped
     ringSpeed: 2.6,           // field units per second
@@ -32,7 +35,6 @@
     upgrades: [
       { id: 'radius',    name: 'Event Horizon', desc: 'Pulse reaches further',        base: 20,  growth: 1.55, max: 12 },
       { id: 'density',   name: 'Matter Density', desc: 'More fragments drift in',     base: 22,  growth: 1.48, max: 25 },
-      { id: 'drones',    name: 'Orbital Drones', desc: 'Collect Matter on their own; ×2 every 25 levels', base: 45, growth: 1.16, max: 1000 },
       { id: 'resonance', name: 'Resonance',      desc: 'Bigger chain bonus',          base: 60,  growth: 1.62, max: 25 },
       { id: 'focus',     name: 'Pulse Focus',    desc: 'Everything is worth more',    base: 120, growth: 1.9,  max: 200 },
       { id: 'luck',      name: 'Lucky Charm',    desc: 'More Lucky Pulses; the Star Reel fills faster', base: 150, growth: 1.75, max: 20 }
@@ -54,7 +56,7 @@
     research: [
       { id: 'echo',   at: 3,  name: 'Echo Pulse',     desc: 'Singu pulses by itself every 5 s' },
       { id: 'lure',   at: 10, name: 'Comet Lure',     desc: 'Comets appear 40% more often; Surges last longer' },
-      { id: 'memory', at: 25, name: 'Deep Memory',    desc: 'Away income 50% > 80%; each run starts with 3 drones' },
+      { id: 'memory', at: 25, name: 'Deep Memory',    desc: 'Away income 50% > 80%; each run starts with 10 Sweepers' },
       { id: 'anchor', at: 60, name: 'Horizon Anchor', desc: 'Event Horizon and Density levels survive Collapse' }
     ],
 
@@ -63,7 +65,7 @@
     atlasStep: 0.03,
 
     // Singu grows a level each time lifetime Matter doubles past `base`.
-    singu: { base: 25, growth: 2, perLevel: 0.03 },
+    singu: { base: 25, growth: 2, perLevel: 0.01 },
 
     // Lucky Pulses: a random pulse multiplies its whole chain.
     lucky: { chance: 0.05, perLevel: 0.01, power: 3 },
@@ -93,40 +95,33 @@
 
     tickets: {
       chainMin: 4, chainBase: 0.18, chainPer: 0.015, chainMax: 0.35, chainCooldown: 12,
-      comet: 5, sector: 10, level: 3, discovery: 2
+      comet: 5, sector: 10, level: 3, discovery: 2, ach: 3
     },
+
+    // Relic shards (Relic Forge currency). Earned only by playing.
+    shards: { start: 10, comet: 1, sector: 3, reelBig: 2, jackpot: 10, collapse: 5, ach: 1, questBonus: 5, login7: 15 },
+    achStep: 0.015,           // +1.5% Matter per unlocked achievement
 
     gacha: {
       cost: 10, cost10: 90,
       rarities: [
-        { name: 'Common',    w: 62, refund: 1 },
-        { name: 'Rare',      w: 27, refund: 2 },
-        { name: 'Epic',      w: 9,  refund: 4 },
-        { name: 'Legendary', w: 2,  refund: 8 }
+        { name: 'Common',    w: 60,  refund: 1 },
+        { name: 'Rare',      w: 27,  refund: 2 },
+        { name: 'Epic',      w: 9.5, refund: 4 },
+        { name: 'Legendary', w: 3,   refund: 8 },
+        { name: 'Mythic',    w: 0.5, refund: 16 }
       ],
       pityEpic: 25,          // an Epic or better at least every 25 pulls
       pityLegend: 70,        // a Legendary at least every 70 pulls
       softLegend: 50,        // after 50 dry pulls Legendary odds climb each pull
+      pityMythic: 250,       // a Mythic at least every 250 pulls
+      softMythic: 180,
       starNeed: [0, 1, 2, 3, 4],   // extra copies needed to go from N to N+1 stars
       maxStars: 5,
       starScale: 0.5         // bonus × (1 + 0.5 × (stars − 1))  → ★5 = ×3
     },
 
-    critters: [
-      { id: 'mouse',   name: 'Mote Mouse',   rarity: 0, bonus: { matter: 0.08 },  text: '+{matter}% Matter' },
-      { id: 'pup',     name: 'Pebble Pup',   rarity: 0, bonus: { drones: 0.12 },  text: '+{drones}% drone income' },
-      { id: 'bun',     name: 'Dusty Bun',    rarity: 0, bonus: { chain: 0.05 },   text: '+{chain}% chain bonus' },
-      { id: 'snail',   name: 'Glow Snail',   rarity: 0, bonus: { offline: 0.05 }, text: '+{offline}% away income' },
-      { id: 'cat',     name: 'Comet Cat',    rarity: 1, bonus: { comet: 0.15 },   text: 'Comets {comet}% more often' },
-      { id: 'penguin', name: 'Ice Penguin',  rarity: 1, bonus: { ice: 0.3 },      text: 'Ice worth +{ice}%' },
-      { id: 'frog',    name: 'Lucky Frog',   rarity: 1, bonus: { luck: 0.02 },    text: '+{luck}% Lucky Pulse chance' },
-      { id: 'owl',     name: 'Orbit Owl',    rarity: 1, bonus: { reel: 0.15 },    text: 'Star Reel fills {reel}% faster' },
-      { id: 'jelly',   name: 'Nebula Jelly', rarity: 2, bonus: { matter: 0.3 },   text: '+{matter}% Matter' },
-      { id: 'fox',     name: 'Quasar Fox',   rarity: 2, bonus: { luckPow: 0.5 },  text: 'Lucky Pulses +{luckPow}× stronger' },
-      { id: 'crab',    name: 'Shard Crab',   rarity: 2, bonus: { blast: 0.2 },    text: 'Shard blasts {blast}% bigger' },
-      { id: 'dragon',  name: 'Sun Dragon',   rarity: 3, bonus: { mult: 0.5 },     text: 'All Matter ×{mult}' },
-      { id: 'whale',   name: 'Cosmo Whale',  rarity: 3, bonus: { drones: 1, tickets: 1 }, text: 'Drones +{drones}%, +{tickets} ticket per comet & reel' }
-    ],
+    critters: CT.PETS,
 
     // Reasons to come back. Rewards: tickets, mins (minutes of current income), surge (seconds),
     // capsule (list of minimum rarities for free hatches: 0 any, 1 Rare+, 2 Epic+).
@@ -138,7 +133,7 @@
         { tickets: 20, capsule: [1] },
         { tickets: 40, mins: 20 },
         { tickets: 50, surge: 60 },
-        { tickets: 60, capsule: [2] }
+        { tickets: 60, shards: 15, capsule: [2] }
       ],
       loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
       questsPerDay: 3,
@@ -154,36 +149,22 @@
         { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
         { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
       ],
-      questBonus: { tickets: 25, capsule: [1] },
+      questBonus: { tickets: 25, shards: 5, capsule: [1] },
       playChests: [
         { at: 120,  reward: { tickets: 5 } },
         { at: 300,  reward: { tickets: 8 } },
         { at: 600,  reward: { tickets: 10, mins: 5 } },
         { at: 1200, reward: { tickets: 15, surge: 30 } },
-        { at: 1800, reward: { tickets: 20, capsule: [1] } }
+        { at: 1800, reward: { tickets: 20, shards: 5, capsule: [1] } }
       ],
-      freeCapsuleMs: 4 * 60 * 60 * 1000,
-      goalTickets: [5, 10, 15, 25, 40, 60, 80],
-      goals: [
-        { id: 'pulses',      name: 'Pulse Master',    stat: 'pulses',      tiers: [50, 250, 1000, 5000, 20000, 100000], text: 'Pulse {n} times' },
-        { id: 'captures',    name: 'Big Eater',       stat: 'captures',    tiers: [200, 1000, 5000, 25000, 100000, 500000], text: 'Swallow {n} fragments' },
-        { id: 'bestChain',   name: 'Chain Artist',    stat: 'bestChain',   tiers: [6, 12, 20, 30, 45], text: 'Make a chain of {n}' },
-        { id: 'hatches',     name: 'Collector',       stat: 'hatches',     tiers: [5, 20, 50, 100, 250, 500], text: 'Hatch {n} capsules' },
-        { id: 'maxSector',   name: 'Explorer',        stat: 'maxSector',   tiers: [2, 3, 4, 5, 7, 10], text: 'Reach sector {n}' },
-        { id: 'singuLevel',  name: 'Growing Up',      stat: 'singuLevel',  tiers: [5, 10, 20, 30, 40, 50, 60], text: 'Singu level {n}' },
-        { id: 'lucky',       name: 'Lucky Star',      stat: 'lucky',       tiers: [10, 50, 200, 1000, 5000], text: 'Land {n} Lucky Pulses' },
-        { id: 'spins',       name: 'Reel Regular',    stat: 'spins',       tiers: [5, 25, 100, 400, 1000], text: 'Spin the reel {n} times' },
-        { id: 'comets',      name: 'Comet Chaser',    stat: 'comets',      tiers: [1, 5, 20, 50, 150], text: 'Catch {n} comets' },
-        { id: 'collapses',   name: 'Universe Folder', stat: 'collapses',   tiers: [1, 3, 10, 25], text: 'Collapse {n} times' },
-        { id: 'discoveries', name: 'Atlas Keeper',    stat: 'discoveries', tiers: [5, 10, 15, 18], text: 'Make {n} discoveries' }
-      ]
+      freeCapsuleMs: 4 * 60 * 60 * 1000
     },
 
     mutations: [
       { id: 'frost',    name: 'Frost Tide',     desc: 'Ice fragments are worth 2×',           ice: 2 },
       { id: 'wide',     name: 'Wide Field',     desc: 'Pulses reach 15% further',             radius: 1.15 },
       { id: 'bloom',    name: 'Crystal Bloom',  desc: 'Star crystals are 3× more common',     crystalW: 3 },
-      { id: 'swarm',    name: 'Drone Swarm',    desc: 'Drones collect 50% more',              drones: 1.5 },
+      { id: 'swarm',    name: 'Harvest Moon',   desc: 'Harvesters collect 50% more',          drones: 1.5 },
       { id: 'season',   name: 'Comet Season',   desc: 'Comets arrive twice as often',         comets: 2 },
       { id: 'resonant', name: 'Resonant Day',   desc: 'Chain bonus is 50% stronger',          chain: 1.5 },
       { id: 'volatile', name: 'Volatile Skies', desc: 'More unstable shards, bigger blasts',  shardW: 2.5, blast: 1.35 },
@@ -208,7 +189,7 @@
       { id: 's2',        name: 'Frozen Moon',       desc: 'Reach the third sector.' },
       { id: 's3',        name: 'Nebula Engine',     desc: 'Reach the fourth sector.' },
       { id: 's4',        name: 'Star Nursery',      desc: 'Reach the fifth sector.' },
-      { id: 'drones25',  name: 'Drone Constellation', desc: 'Command 25 Orbital Drones.' },
+      { id: 'drones25',  name: 'Drone Constellation', desc: 'Own 25 Orbital Drones.' },
       { id: 'collapse',  name: 'First Collapse',    desc: 'Fold a universe into Stardust.' }
     ]
   };
@@ -217,6 +198,12 @@
   CONFIG.upgrades.forEach(function (u, i) { u.index = i; UPG[u.id] = u; });
   const CRIT = {};
   CONFIG.critters.forEach(function (c) { CRIT[c.id] = c; });
+  const GEN = {};
+  CT.GENERATORS.forEach(function (g, i) { g.index = i; GEN[g.id] = g; });
+  const UPGI = {};
+  CT.UPGRADES.forEach(function (u) { UPGI[u.id] = u; });
+  const ACH = {};
+  CT.ACHIEVEMENTS.forEach(function (a) { ACH[a.id] = a; });
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -297,13 +284,21 @@
       singuLevel: 0,
       reelCharge: 0,
       critters: {},            // id -> { stars, copies }
-      gacha: { pulls: 0, sinceEpic: 0, sinceLegend: 0 },
+      gacha: { pulls: 0, sinceEpic: 0, sinceLegend: 0, sinceMythic: 0 },
+      gens: {},                // harvester id -> owned
+      bought: {},              // one-time upgrade id -> 1
+      form: 0,
+      ach: {},                 // achievement id -> 1 unlocked, 2 claimed
+      shards: 10,
+      relics: [],              // { uid, r, a: [{ k, v }], name }
+      equipped: [],            // relic uids
+      relicSeq: 0,
+      forge: null,             // relic waiting for Push or Keep
       login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
       daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
       freeCapAt: 0,            // when the next free capsule is ready (ms)
-      goals: {},               // goal id -> tiers claimed
       discoveries: {},
-      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0 },
+      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
       settings: { muted: false, reducedMotion: null, buyMode: 1 },
       lastSeen: now || 0,
@@ -315,7 +310,7 @@
   function sanitize(raw, now) {
     const s = createState(now);
     if (!raw || typeof raw !== 'object') return { state: s, ok: false };
-    const ok = (raw.v === 1 || raw.v === CONFIG.saveVersion) &&
+    const ok = (raw.v >= 1 && raw.v <= CONFIG.saveVersion) &&
       ['matter', 'runTotal', 'lifetime'].every(function (k) { return typeof raw[k] === 'number' && isFinite(raw[k]) && raw[k] >= 0; });
     s.matter = nonNeg(raw.matter);
     s.runTotal = nonNeg(raw.runTotal);
@@ -323,6 +318,29 @@
     s.matter = Math.min(s.matter, s.lifetime);  // cannot hold more than was ever earned
     const lv = raw.levels && typeof raw.levels === 'object' ? raw.levels : {};
     CONFIG.upgrades.forEach(function (u) { s.levels[u.id] = int(lv[u.id], 0, u.max); });
+    const gn = raw.gens && typeof raw.gens === 'object' ? raw.gens : {};
+    CT.GENERATORS.forEach(function (g) { const n = int(gn[g.id], 0, 100000); if (n) s.gens[g.id] = n; });
+    if (raw.v < 3 && lv.drones) s.gens.drone = int(lv.drones, 0, 1000);   // v2 drone levels become Orbital Drones
+    if (raw.bought && typeof raw.bought === 'object') Object.keys(raw.bought).forEach(function (id) { if (UPGI[id]) s.bought[id] = 1; });
+    if (raw.ach && typeof raw.ach === 'object') Object.keys(raw.ach).forEach(function (id) { if (ACH[id]) s.ach[id] = raw.ach[id] === 2 ? 2 : 1; });
+    s.shards = raw.v < 3 ? CONFIG.shards.start : Math.min(nonNeg(raw.shards), 1e9);
+    s.relicSeq = Math.floor(nonNeg(raw.relicSeq));
+    const statKeys = {};
+    CT.RELICS.stats.forEach(function (x) { statKeys[x.k] = x; });
+    function cleanRelic(r) {
+      if (!r || typeof r !== 'object' || !Array.isArray(r.a)) return null;
+      const rar = int(r.r, 0, CT.RELICS.rarities.length - 1);
+      const scale = CT.RELICS.rarities[rar].scale;
+      const a = r.a.filter(function (x) { return x && statKeys[x.k]; }).slice(0, 4).map(function (x) {
+        return { k: x.k, v: clamp(nonNeg(x.v), 0, statKeys[x.k].max * scale) };
+      });
+      if (!a.length) return null;
+      return { uid: Math.floor(nonNeg(r.uid)), r: rar, a: a, name: typeof r.name === 'string' ? r.name.slice(0, 40) : 'Relic' };
+    }
+    if (Array.isArray(raw.relics)) s.relics = raw.relics.map(cleanRelic).filter(Boolean).slice(0, CT.RELICS.invCap);
+    s.relics.forEach(function (r) { if (r.uid >= s.relicSeq) s.relicSeq = r.uid + 1; });
+    if (Array.isArray(raw.equipped)) s.equipped = raw.equipped.filter(function (u) { return s.relics.some(function (r) { return r.uid === u; }); }).slice(0, 6);
+    s.forge = cleanRelic(raw.forge);
     s.stardust = Math.floor(nonNeg(raw.stardust));
     s.collapses = Math.floor(nonNeg(raw.collapses));
     s.tickets = Math.floor(Math.min(nonNeg(raw.tickets), 1e7));
@@ -330,10 +348,12 @@
     s.sector = sectorFor(s.runTotal);
     s.maxSector = Math.max(int(raw.maxSector, 0, 99), s.sector);
     s.singuLevel = Math.min(int(raw.singuLevel, 0, 999), singuLevelFor(s.lifetime));
+    s.form = formFor(s.lifetime);
     s.reelCharge = clamp(nonNeg(raw.reelCharge), 0, CONFIG.reel.need);
     if (raw.critters && typeof raw.critters === 'object') {
-      Object.keys(raw.critters).forEach(function (id) {
-        const c = raw.critters[id];
+      Object.keys(raw.critters).forEach(function (rawId) {
+        const c = raw.critters[rawId];
+        const id = CRIT[rawId] ? rawId : CT.PET_MIGRATE[rawId];
         if (!CRIT[id] || !c || typeof c !== 'object') return;
         const stars = int(c.stars, 1, CONFIG.gacha.maxStars);
         s.critters[id] = { stars: stars, copies: int(c.copies, 0, CONFIG.gacha.starNeed[Math.min(stars, CONFIG.gacha.maxStars - 1)] || 0) };
@@ -343,6 +363,7 @@
     s.gacha.pulls = Math.floor(nonNeg(g.pulls));
     s.gacha.sinceEpic = int(g.sinceEpic, 0, CONFIG.gacha.pityEpic);
     s.gacha.sinceLegend = int(g.sinceLegend, 0, CONFIG.gacha.pityLegend);
+    s.gacha.sinceMythic = int(g.sinceMythic, 0, CONFIG.gacha.pityMythic);
     const dayRe = /^\d{4}-\d{2}-\d{2}$/;
     const lg = raw.login && typeof raw.login === 'object' ? raw.login : {};
     s.login.day = int(lg.day, 0, CONFIG.rewards.login.length - 1);
@@ -365,8 +386,6 @@
     }
     s.freeCapAt = nonNeg(raw.freeCapAt);
     if (now && s.freeCapAt > now + CONFIG.rewards.freeCapsuleMs) s.freeCapAt = now + CONFIG.rewards.freeCapsuleMs;  // clock moved back
-    const gl = raw.goals && typeof raw.goals === 'object' ? raw.goals : {};
-    CONFIG.rewards.goals.forEach(function (g) { if (gl[g.id]) s.goals[g.id] = int(gl[g.id], 0, g.tiers.length); });
     const known = {};
     CONFIG.discoveries.forEach(function (d) { known[d.id] = true; });
     if (raw.discoveries && typeof raw.discoveries === 'object') {
@@ -382,7 +401,7 @@
     const set = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
     s.settings.muted = set.muted === true;
     s.settings.reducedMotion = typeof set.reducedMotion === 'boolean' ? set.reducedMotion : null;
-    s.settings.buyMode = [1, 10, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
+    s.settings.buyMode = [1, 10, 100, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
     s.lastSeen = nonNeg(raw.lastSeen) || (now || 0);
     s.created = nonNeg(raw.created) || (now || 0);
     return { state: s, ok: ok };
@@ -460,7 +479,7 @@
   function critterValue(c, stars) { return 1 + CONFIG.gacha.starScale * (stars - 1); }
 
   function critterBonus(state) {
-    const b = { matter: 0, drones: 0, chain: 0, offline: 0, comet: 0, ice: 0, luck: 0, luckPow: 0, reel: 0, blast: 0, mult: 1, tickets: 0 };
+    const b = { matter: 0, gen: 0, pulse: 0, combo: 0, shards: 0, chain: 0, offline: 0, comet: 0, ice: 0, luck: 0, luckPow: 0, reel: 0, blast: 0, mult: 1, tickets: 0 };
     Object.keys(state.critters).forEach(function (id) {
       const c = CRIT[id], own = state.critters[id];
       if (!c || !own) return;
@@ -477,22 +496,25 @@
   // Human-readable bonus for a critter at a star level.
   function critterText(c, stars) {
     const k = critterValue(c, stars || 1);
-    return c.text.replace(/\{(\w+)\}/g, function (_, key) {
+    return Object.keys(c.bonus).map(function (key) {
       const v = c.bonus[key] * k;
-      if (key === 'mult') return (1 + v).toFixed(2);
-      if (key === 'tickets') return String(Math.round(v));
-      if (key === 'luckPow') return v.toFixed(1);
-      return String(Math.round(v * 100));
-    });
+      return CT.BONUS_TEXT[key].replace('{v}', String(Math.round(v * 100))).replace('{m}', (1 + v).toFixed(2)).replace('{x}', v.toFixed(1)).replace('{n}', String(Math.round(v)));
+    }).join(', ');
   }
 
+  function rarityWeights(state) {
+    const g = state.gacha, G = CONFIG.gacha;
+    const w = G.rarities.map(function (r) { return r.w; });
+    if (g.sinceLegend + 1 > G.softLegend) w[3] += (g.sinceLegend + 1 - G.softLegend) * 1.5;
+    if (g.sinceMythic + 1 > G.softMythic) w[4] += (g.sinceMythic + 1 - G.softMythic) * 0.4;
+    return w;
+  }
   function rarityRoll(state, rng) {
     const g = state.gacha, G = CONFIG.gacha;
     if (g.pulls === 0) return 1;                                  // the very first pull is always Rare
-    if (g.sinceLegend + 1 >= G.pityLegend) return 3;
-    const w = G.rarities.map(function (r) { return r.w; });
-    if (g.sinceLegend + 1 > G.softLegend) w[3] += (g.sinceLegend + 1 - G.softLegend) * 1.5;
-    let r = weighted(rng, w.map(function (x, i) { return { w: x, i: i }; })).i;
+    if (g.sinceMythic + 1 >= G.pityMythic) return 4;
+    let r = weighted(rng, rarityWeights(state).map(function (x, i) { return { w: x, i: i }; })).i;
+    if (r < 3 && g.sinceLegend + 1 >= G.pityLegend) r = 3;
     if (r < 2 && g.sinceEpic + 1 >= G.pityEpic) r = 2;
     return r;
   }
@@ -522,11 +544,12 @@
     if (forceMin && rarity < forceMin) rarity = forceMin;
     g.pulls++;
     g.sinceEpic = rarity >= 2 ? 0 : g.sinceEpic + 1;
-    g.sinceLegend = rarity === 3 ? 0 : g.sinceLegend + 1;
+    g.sinceLegend = rarity >= 3 ? 0 : g.sinceLegend + 1;
+    g.sinceMythic = rarity === 4 ? 0 : g.sinceMythic + 1;
     const pool = CONFIG.critters.filter(function (c) { return c.rarity === rarity; });
     const c = pool[Math.floor(rng() * pool.length) % pool.length];
     const res = addCritter(state, c.id);
-    if (rarity === 3) discover(state, 'legend', null);
+    if (rarity >= 3) discover(state, 'legend', null);
     return Object.assign({ id: c.id, rarity: rarity }, res);
   }
 
@@ -550,16 +573,15 @@
   // Exact odds shown to the player for the next single pull.
   function gachaOdds(state) {
     const G = CONFIG.gacha, g = state.gacha;
-    if (g.pulls === 0) return [0, 1, 0, 0];
-    if (g.sinceLegend + 1 >= G.pityLegend) return [0, 0, 0, 1];
-    const w = G.rarities.map(function (r) { return r.w; });
-    if (g.sinceLegend + 1 > G.softLegend) w[3] += (g.sinceLegend + 1 - G.softLegend) * 1.5;
+    if (g.pulls === 0) return [0, 1, 0, 0, 0];
+    if (g.sinceMythic + 1 >= G.pityMythic) return [0, 0, 0, 0, 1];
+    const w = rarityWeights(state);
     const t = w.reduce(function (a, b) { return a + b; }, 0);
     let p = w.map(function (x) { return x / t; });
-    if (g.sinceEpic + 1 >= G.pityEpic) p = [0, 0, p[2] + p[0] + p[1], p[3]];
+    if (g.sinceLegend + 1 >= G.pityLegend) p = [0, 0, 0, p[0] + p[1] + p[2] + p[3], p[4]];
+    else if (g.sinceEpic + 1 >= G.pityEpic) p = [0, 0, p[0] + p[1] + p[2], p[3], p[4]];
     return p;
   }
-
 
   // ---------------------------------------------------------------------------
   // Retention: daily login calendar, daily quests, play-time gifts, free capsule, goals
@@ -574,7 +596,14 @@
       case 'collapses': return state.collapses;
       case 'discoveries': return discoveryCount(state);
       case 'chainToday': return state.daily.chainToday;
-      default: return state.stats[stat] || 0;
+      case 'lifetime': return state.lifetime;
+      case 'form': return state.form;
+      case 'upgrades': return Object.keys(state.bought).length;
+      case 'pets': return Object.keys(state.critters).length;
+      case 'mythicRelic': return state.relics.some(function (r) { return r.r === 4; }) ? 1 : 0;
+      default:
+        if (stat.indexOf('gen:') === 0) return state.gens[stat.slice(4)] || 0;
+        return state.stats[stat] || 0;
     }
   }
 
@@ -653,22 +682,6 @@
     return { capsule: [0] };
   }
 
-  function goalStatus(state, g) {
-    const claimed = state.goals[g.id] || 0;
-    const cur = statValue(state, g.stat);
-    if (claimed >= g.tiers.length) return { claimed: claimed, cur: cur, maxed: true, ready: false };
-    const target = g.tiers[claimed];
-    return { claimed: claimed, cur: cur, target: target, ready: cur >= target, maxed: false, tickets: RW.goalTickets[Math.min(claimed, RW.goalTickets.length - 1)], text: g.text.replace('{n}', target) };
-  }
-  function claimGoal(state, id) {
-    const g = RW.goals.find(function (x) { return x.id === id; });
-    if (!g) return null;
-    const st = goalStatus(state, g);
-    if (!st.ready) return null;
-    state.goals[id] = st.claimed + 1;
-    return { tickets: st.tickets };
-  }
-
   // How many rewards are waiting to be claimed right now (for badges).
   function claimables(state, key, now) {
     let n = 0;
@@ -678,16 +691,17 @@
     const c = chestStatus(state);
     if (c && c.ready) n++;
     if (freeCapsuleReady(state, now)) n++;
-    RW.goals.forEach(function (g) { if (goalStatus(state, g).ready) n++; });
+    for (const id in state.ach) if (state.ach[id] === 1) n++;
     return n;
   }
 
   // Applies a reward. Free capsules hatch immediately (they count toward pity like any hatch).
   function grantReward(state, stats, world, reward, rng) {
     rng = rng || Math.random;
-    const out = { tickets: 0, matter: 0, surge: 0, hatches: [] };
+    const out = { tickets: 0, shards: 0, matter: 0, surge: 0, hatches: [] };
     if (!reward) return out;
     if (reward.tickets) { state.tickets += reward.tickets; out.tickets = reward.tickets; }
+    if (reward.shards) { state.shards += reward.shards; out.shards = reward.shards; }
     if (reward.mins) out.matter = earn(state, stats.refIncome * 60 * reward.mins);
     if (reward.surge && world) { world.surge = Math.max(0, world.surge) + reward.surge; out.surge = reward.surge; }
     (reward.capsule || []).forEach(function (min) { out.hatches.push(pullOnce(state, rng, min)); });
@@ -728,6 +742,194 @@
     return q.n;
   }
 
+  // Harvesters -----------------------------------------------------------------
+  function genCost(id, owned, n) {
+    const g = GEN[id], k = CT.GEN_GROWTH;
+    return g.cost * Math.pow(k, owned) * (Math.pow(k, n) - 1) / (k - 1);
+  }
+  // Cost and count for buying `want` (0 = as many as affordable).
+  function genQuote(state, id, want) {
+    const owned = state.gens[id] || 0;
+    let n = want;
+    if (want === 0) {
+      const g = GEN[id], k = CT.GEN_GROWTH;
+      n = Math.floor(Math.log(1 + state.matter * (k - 1) / (g.cost * Math.pow(k, owned))) / Math.log(k));
+      if (n < 1) n = 1;
+    }
+    return { n: n, cost: genCost(id, owned, n) };
+  }
+  function buyGen(state, id, want) {
+    if (!GEN[id] || !genVisible(state, id)) return 0;
+    const q = genQuote(state, id, want);
+    if (q.cost > state.matter) return 0;
+    state.matter -= q.cost;
+    state.gens[id] = (state.gens[id] || 0) + q.n;
+    state.stats.buys += q.n;
+    return q.n;
+  }
+  // A harvester shows up once you own one of the previous kind (or could almost afford it).
+  function genVisible(state, id) {
+    const g = GEN[id];
+    if (g.index === 0 || (state.gens[id] || 0) > 0) return true;
+    const prev = CT.GENERATORS[g.index - 1];
+    return (state.gens[prev.id] || 0) > 0 || state.lifetime >= g.cost * 0.6;
+  }
+  function genMilestones(n) { let k = 0; for (const m of CT.GEN_MILESTONES) if (n >= m) k++; return k; }
+  function nextGenMilestone(n) { for (const m of CT.GEN_MILESTONES) if (n < m) return m; return null; }
+
+  // One-time upgrades ------------------------------------------------------------
+  function upgradeUnlocked(state, u) { return statValue(state, u.need.stat) >= u.need.n; }
+  function availableUpgrades(state) {
+    return CT.UPGRADES.filter(function (u) { return !state.bought[u.id] && upgradeUnlocked(state, u); })
+      .sort(function (a, b) { return a.cost - b.cost; });
+  }
+  function buyUpgrade(state, id) {
+    const u = UPGI[id];
+    if (!u || state.bought[id] || !upgradeUnlocked(state, u) || state.matter < u.cost) return false;
+    state.matter -= u.cost;
+    state.bought[id] = 1;
+    state.stats.buys++;
+    return true;
+  }
+  function upgradeEffects(state) {
+    const fx = { gen: {}, tap: 1, tapCps: 0, global: 1, ice: 1, crystal: 1, blast: 0, comet: 0, luck: 0, tickets: 0, combo: 0, reel: 0, petSyn: 0, achSyn: 0 };
+    for (const id in state.bought) {
+      const u = UPGI[id];
+      if (!u) continue;
+      const f = u.fx;
+      if (f.gen) fx.gen[f.gen] = (fx.gen[f.gen] || 1) * f.x;
+      if (f.tap) fx.tap *= f.tap;
+      if (f.tapCps) fx.tapCps += f.tapCps;
+      if (f.global) fx.global *= f.global;
+      if (f.ice) fx.ice *= f.ice;
+      if (f.crystal) fx.crystal *= f.crystal;
+      ['blast', 'comet', 'luck', 'tickets', 'combo', 'reel', 'petSyn', 'achSyn'].forEach(function (k) { if (f[k]) fx[k] += f[k]; });
+    }
+    return fx;
+  }
+
+  // Forms & achievements -------------------------------------------------------------
+  function formFor(lifetime) { let i = 0; while (i < CT.FORMS.length - 1 && lifetime >= CT.FORMS[i + 1].at) i++; return i; }
+  function achievementCount(state) { let n = 0; for (const id in state.ach) if (state.ach[id]) n++; return n; }
+  function checkAchievements(state, ev) {
+    const cache = {};
+    const val = function (stat) { if (!(stat in cache)) cache[stat] = statValue(state, stat); return cache[stat]; };
+    for (const a of CT.ACHIEVEMENTS) {
+      if (state.ach[a.id]) continue;
+      if (val(a.stat) >= a.n) { state.ach[a.id] = 1; if (ev) ev.push({ t: 'ach', id: a.id }); }
+    }
+  }
+  function claimAchievement(state, id) {
+    if (state.ach[id] !== 1) return null;
+    state.ach[id] = 2;
+    return { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
+  }
+
+  // Relic Forge ----------------------------------------------------------------------
+  const RL = CT.RELICS;
+  function makeRelic(state, rng, rarity) {
+    const rar = RL.rarities[rarity];
+    const pool = RL.stats.slice();
+    const a = [];
+    for (let i = 0; i < rar.affixes && pool.length; i++) {
+      const st = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+      const v = (st.min + rng() * (st.max - st.min)) * rar.scale;
+      a.push({ k: st.k, v: Math.round(v * 1000) / 1000 });
+    }
+    const noun = RL.stats.find(function (x) { return x.k === a[0].k; }).noun;
+    return { uid: state.relicSeq++, r: rarity, a: a, name: RL.prefixes[rarity] + ' ' + noun };
+  }
+  function relicSlots(state) { return 3 + (state.form >= 4 ? 1 : 0) + (state.form >= 7 ? 1 : 0) + (state.collapses >= 3 ? 1 : 0); }
+  function relicBonus(state) {
+    const b = {};
+    RL.stats.forEach(function (x) { b[x.k] = 0; });
+    state.relics.forEach(function (r) { if (state.equipped.indexOf(r.uid) >= 0) r.a.forEach(function (x) { b[x.k] += x.v; }); });
+    return b;
+  }
+  function relicOdds() {
+    const t = RL.rarities.reduce(function (a, r) { return a + r.w; }, 0);
+    return RL.rarities.map(function (r) { return r.w / t; });
+  }
+  // Starts a forge: spends shards and reveals a relic you can Push (risk it for a rarer one) or Keep.
+  function forgeStart(state, rng) {
+    if (state.forge || state.shards < RL.cost) return null;
+    state.shards -= RL.cost;
+    const rarity = weighted(rng, RL.rarities.map(function (r, i) { return { w: r.w, i: i }; })).i;
+    state.forge = makeRelic(state, rng, rarity);
+    state.forge.pushes = 0;
+    state.stats.relicsMade++;
+    return state.forge;
+  }
+  function forgePush(state, rng) {
+    const f = state.forge;
+    if (!f || f.r >= RL.rarities.length - 1) return null;
+    const chance = RL.push[f.r];
+    if (rng() < chance) {
+      const pushes = (f.pushes || 0) + 1;
+      state.forge = makeRelic(state, rng, f.r + 1);
+      state.forge.pushes = pushes;
+      if (pushes > state.stats.bestPush) state.stats.bestPush = pushes;
+      return { ok: true, relic: state.forge, chance: chance };
+    }
+    state.forge = null;
+    state.shards += RL.shatterRefund;
+    return { ok: false, chance: chance, refund: RL.shatterRefund };
+  }
+  function forgeKeep(state) {
+    const f = state.forge;
+    if (!f || state.relics.length >= RL.invCap) return null;
+    delete f.pushes;
+    state.relics.push(f);
+    state.forge = null;
+    if (state.equipped.length < relicSlots(state)) state.equipped.push(f.uid);
+    return f;
+  }
+  function equipRelic(state, uid) {
+    if (state.equipped.indexOf(uid) >= 0 || !state.relics.some(function (r) { return r.uid === uid; })) return false;
+    if (state.equipped.length >= relicSlots(state)) return false;
+    state.equipped.push(uid);
+    return true;
+  }
+  function unequipRelic(state, uid) {
+    const i = state.equipped.indexOf(uid);
+    if (i < 0) return false;
+    state.equipped.splice(i, 1);
+    return true;
+  }
+  function salvageRelic(state, uid) {
+    const i = state.relics.findIndex(function (r) { return r.uid === uid; });
+    if (i < 0) return 0;
+    unequipRelic(state, uid);
+    const gain = RL.rarities[state.relics[i].r].salvage;
+    state.relics.splice(i, 1);
+    state.shards += gain;
+    return gain;
+  }
+  // Fuses three unequipped relics of one rarity into one of the next rarity.
+  function fuseRelics(state, uids, rng) {
+    if (!Array.isArray(uids) || uids.length !== RL.fuseNeed || new Set(uids).size !== RL.fuseNeed) return null;
+    const rs = uids.map(function (u) { return state.relics.find(function (r) { return r.uid === u; }); });
+    if (rs.some(function (r) { return !r || state.equipped.indexOf(r.uid) >= 0; })) return null;
+    const rar = rs[0].r;
+    if (rar >= RL.rarities.length - 1 || rs.some(function (r) { return r.r !== rar; })) return null;
+    state.relics = state.relics.filter(function (r) { return uids.indexOf(r.uid) < 0; });
+    const made = makeRelic(state, rng, rar + 1);
+    state.relics.push(made);
+    return made;
+  }
+  function relicText(x) {
+    const st = RL.stats.find(function (s) { return s.k === x.k; });
+    if (x.k === 'luckPow') return st.name + ' +' + x.v.toFixed(2) + '×';
+    return st.name + ' +' + (x.v * 100).toFixed(1).replace(/\.0$/, '') + '%';
+  }
+
+  function earnShards(state, stats, n, ev, why) {
+    const g = n * (stats ? stats.shardMult : 1);
+    if (!(g > 0)) return;
+    state.shards += g;
+    if (ev) ev.push({ t: 'shards', n: g, why: why });
+  }
+
   function derive(state, mut) {
     mut = mut || {};
     const L = state.levels;
@@ -738,8 +940,24 @@
     const singuMult = 1 + CONFIG.singu.perLevel * state.singuLevel;
     const critterMult = (1 + cb.matter) * cb.mult;
     const focusMult = Math.pow(1.32, L.focus);
-    const valueMult = focusMult * sec.value * sdMult * atlasMult * singuMult * critterMult;
-    const droneMilestone = Math.pow(2, Math.floor(L.drones / 25));
+    const uf = upgradeEffects(state);
+    const rb = relicBonus(state);
+    const petCount = Object.keys(state.critters).length;
+    const achMult = 1 + CONFIG.achStep * achievementCount(state) * (1 + uf.achSyn);
+    const formMult = Math.pow(CT.FORM_MULT, state.form);
+    const petMult = 1 + uf.petSyn * petCount;
+    const globalMult = sdMult * atlasMult * singuMult * critterMult * achMult * formMult * petMult * uf.global * (1 + rb.global);
+    const valueMult = focusMult * globalMult * sec.value;   // sector value only boosts fragments
+    const genRates = {};
+    let genPerSec = 0;
+    CT.GENERATORS.forEach(function (g) {
+      const n = state.gens[g.id] || 0;
+      if (!n) return;
+      const r = g.rate * n * Math.pow(2, genMilestones(n)) * (uf.gen[g.id] || 1) * globalMult * (1 + cb.gen + rb.gen) * (mut.drones || 1);
+      genRates[g.id] = r;
+      genPerSec += r;
+    });
+    const tapValue = CONFIG.tapBase * uf.tap * focusMult * globalMult * (1 + cb.pulse + rb.pulse) + uf.tapCps * genPerSec;
     const mix = Object.assign({}, sec.mix);
     if (mut.crystalW) mix.crystal *= mut.crystalW;
     // Volatile days also sprinkle a few shards into the first sector, so the bonus is never empty.
@@ -754,26 +972,38 @@
       singuMult: singuMult,
       critterMult: critterMult,
       critters: cb,
+      relics: rb,
+      upgrades: uf,
+      globalMult: globalMult,
+      achMult: achMult,
+      formMult: formMult,
+      petMult: petMult,
+      genRates: genRates,
+      genPerSec: genPerSec,
+      tapValue: tapValue,
+      comboMax: CONFIG.combo.base + uf.combo + cb.combo + rb.combo,
+      ticketMult: 1 + uf.tickets + rb.tickets,
+      shardMult: 1 + cb.shards + rb.shards,
       pulseRadius: Math.min(1.1, (0.46 + 0.045 * L.radius) * (mut.radius || 1)),
       spawnRate: 1.35 * Math.pow(1.12, L.density) * (mut.spawn || 1),
       cap: 14 + 2 * L.density,
       chainStep: (0.08 + 0.045 * L.resonance) * (mut.chain || 1) * (1 + cb.chain),
-      dronePerSec: L.drones * 0.5 * droneMilestone * valueMult * (mut.drones || 1) * (1 + cb.drones),
-      typeValue: { dust: 1, ice: CONFIG.fragments.ice.value * (mut.ice || 1) * (1 + cb.ice), crystal: CONFIG.fragments.crystal.value, shard: CONFIG.fragments.shard.value },
-      blast: CONFIG.fragments.shard.blast * (mut.blast || 1) * (1 + cb.blast),
+      dronePerSec: genPerSec,   // passive income (kept under its old name for away income and UI)
+      typeValue: { dust: 1, ice: CONFIG.fragments.ice.value * (mut.ice || 1) * (1 + cb.ice) * uf.ice, crystal: CONFIG.fragments.crystal.value * uf.crystal * (1 + rb.crystal), shard: CONFIG.fragments.shard.value },
+      blast: CONFIG.fragments.shard.blast * (mut.blast || 1) * (1 + cb.blast + uf.blast),
       mix: mix,
-      cometRate: (mut.comets || 1) * (research.lure ? 1.4 : 1) * (1 + cb.comet),
+      cometRate: (mut.comets || 1) * (research.lure ? 1.4 : 1) * (1 + cb.comet + uf.comet + rb.comet),
       surgeDur: CONFIG.comet.surge * (research.lure ? 1.5 : 1),
       echo: research.echo,
-      offlineRate: Math.min(1, (research.memory ? 0.8 : CONFIG.offlineRate) + cb.offline),
-      luckChance: Math.min(0.6, (CONFIG.lucky.chance + CONFIG.lucky.perLevel * L.luck + cb.luck) * (mut.luck || 1)),
-      luckPower: CONFIG.lucky.power + cb.luckPow,
-      reelNeed: CONFIG.reel.need / (1 + 0.06 * L.luck + cb.reel),
+      offlineRate: Math.min(1, (research.memory ? 0.8 : CONFIG.offlineRate) + cb.offline + rb.offline),
+      luckChance: Math.min(0.6, (CONFIG.lucky.chance + CONFIG.lucky.perLevel * L.luck + cb.luck + uf.luck + rb.luck) * (mut.luck || 1)),
+      luckPower: CONFIG.lucky.power + cb.luckPow + rb.luckPow,
+      reelNeed: CONFIG.reel.need / (1 + 0.06 * L.luck + cb.reel + uf.reel),
       bonusTickets: cb.tickets,
       research: research
     };
     // Rough "active income" used to size Star Reel prizes so they stay meaningful at any scale.
-    out.refIncome = out.dronePerSec + out.spawnRate * valueMult * 1.2 * chainMult(out, 6);
+    out.refIncome = genPerSec + out.spawnRate * valueMult * 1.2 * chainMult(out, 6) + tapValue * 2;
     return out;
   }
 
@@ -815,7 +1045,10 @@
     state.levels = freshLevels();
     const r = researchFlags(state);
     if (anchor) { state.levels.radius = keep.radius; state.levels.density = keep.density; }
-    if (r.memory) state.levels.drones = 3;
+    state.gens = {};
+    state.bought = {};
+    if (r.memory) state.gens.sweeper = 10;
+    state.shards += CONFIG.shards.collapse * gain;
     state.stats.runTime = 0;
     return gain;
   }
@@ -845,6 +1078,7 @@
       if (state.sector <= 4) discover(state, 's' + state.sector, ev);
       mark(state, 'sector' + state.sector);
       giveTickets(state, CONFIG.tickets.sector, 'sector', null);
+      state.shards += CONFIG.shards.sector;
       if (ev) ev.push({ t: 'sector', index: state.sector });
     }
     const lvl = singuLevelFor(state.lifetime);
@@ -853,7 +1087,10 @@
       giveTickets(state, CONFIG.tickets.level, 'level', null);
       if (ev) ev.push({ t: 'level', level: state.singuLevel });
     }
-    if (state.levels.drones >= 25) discover(state, 'drones25', ev);
+    if ((state.gens.drone || 0) >= 25) discover(state, 'drones25', ev);
+    const form = formFor(state.lifetime);
+    while (state.form < form) { state.form++; mark(state, 'form' + state.form); if (ev) ev.push({ t: 'form', form: state.form }); }
+    checkAchievements(state, ev);
     if (state.collapses > 0) discover(state, 'collapse', ev);
   }
 
@@ -883,6 +1120,9 @@
       overcharge: null,        // pending push-your-luck offer
       overchargeCd: 0,
       ticketCd: 0,
+      combo: 0,                // 0..1, built by fast manual pulses
+      comboFull: false,
+      lastPulse: -99,
       time: 0
     };
     if (state && stats) {
@@ -966,6 +1206,16 @@
     let lucky = 1;
     if (!auto && w.rng() < stats.luckChance) lucky = stats.luckPower;
     const g = newGroup(w, auto, lucky);
+    // Combo: quick manual pulses stack it; it multiplies everything this pulse earns.
+    if (!auto) {
+      if (w.time - w.lastPulse <= CONFIG.combo.window) w.combo = Math.min(1, w.combo + CONFIG.combo.step);
+      w.lastPulse = w.time;
+      if (w.combo >= 1 && !w.comboFull) { w.comboFull = true; state.stats.comboMaxed++; if (ev) ev.push({ t: 'comboFull' }); }
+    }
+    g.combo = auto ? 1 : 1 + w.combo * stats.comboMax;
+    const surgeNow = w.surge > 0 ? CONFIG.comet.surgeMult : 1;
+    const tap = earn(state, stats.tapValue * g.combo * surgeNow * (auto ? 0.5 : 1) * (lucky > 1 ? lucky : 1));
+    if (ev && tap > 0) ev.push({ t: 'tap', value: tap, auto: !!auto });
     for (const f of w.frags) {
       if (f.state !== ORBIT || f.alpha < 0.35) continue;
       const d = fragDist(f);
@@ -995,7 +1245,7 @@
     const g = f.group;
     const surgeMult = w.surge > 0 ? CONFIG.comet.surgeMult : 1;
     const base = stats.typeValue[f.type];
-    const value = base * stats.valueMult * surgeMult;
+    const value = base * stats.valueMult * surgeMult * (g.combo || 1);
     earn(state, value);
     g.base += base;
     g.landed++;
@@ -1029,7 +1279,7 @@
     g.done = true;
     const surgeMult = w.surge > 0 ? CONFIG.comet.surgeMult : 1;
     const mult = chainMult(stats, g.count) * g.lucky;
-    const total = g.base * stats.valueMult * surgeMult * mult;
+    const total = g.base * stats.valueMult * surgeMult * mult * (g.combo || 1);
     const bonus = Math.max(0, total - g.credited);
     earn(state, bonus);
     if (!g.auto && g.count > state.stats.bestChain) state.stats.bestChain = g.count;
@@ -1041,7 +1291,7 @@
     // Big chains sometimes drop a capsule ticket.
     const T = CONFIG.tickets;
     if (!g.auto && g.count >= T.chainMin && w.ticketCd <= 0) {
-      const p = Math.min(T.chainMax, T.chainBase + T.chainPer * (g.count - T.chainMin)) * (g.lucky > 1 ? 2 : 1);
+      const p = Math.min(T.chainMax, T.chainBase + T.chainPer * (g.count - T.chainMin)) * (g.lucky > 1 ? 2 : 1) * stats.ticketMult;
       if (w.rng() < p) { giveTickets(state, 1, 'chain', ev); w.ticketCd = T.chainCooldown; }
     }
     // Offer an Overcharge on big manual chains, now and then.
@@ -1109,7 +1359,8 @@
     const tickets = P.tickets > 0 ? P.tickets + stats.bonusTickets : 0;
     giveTickets(state, tickets, 'reel', null);
     if (P.surge) w.surge = Math.max(w.surge, 0) + stats.surgeDur;
-    if (r.result === 'singu3') { state.stats.jackpots++; discover(state, 'jackpot', ev); }
+    if (r.result === 'singu3') { state.stats.jackpots++; discover(state, 'jackpot', ev); earnShards(state, stats, CONFIG.shards.jackpot, ev, 'jackpot'); }
+    else if (/3$|triple/.test(r.result)) earnShards(state, stats, CONFIG.shards.reelBig, ev, 'reel');
     if (ev) ev.push({ t: 'reel', result: r.result, name: P.name, matter: matter, tickets: tickets, surge: !!P.surge, symbols: r.symbols });
   }
 
@@ -1141,6 +1392,10 @@
     if (w.surge > 0) w.surge = Math.max(0, w.surge - dt);
     const surgeMult = w.surge > 0 ? CONFIG.comet.surgeMult : 1;
 
+    if (w.time - w.lastPulse > CONFIG.combo.window && w.combo > 0) {
+      w.combo = Math.max(0, w.combo - CONFIG.combo.decay * dt);
+      if (w.combo < 0.85) w.comboFull = false;
+    }
     if (w.ticketCd > 0) w.ticketCd -= dt;
     if (w.overchargeCd > 0) w.overchargeCd -= dt;
     if (w.overcharge) { w.overcharge.t -= dt; if (w.overcharge.t <= 0) { w.overcharge = null; if (ev) ev.push({ t: 'overchargeExpired' }); } }
@@ -1225,6 +1480,7 @@
           state.stats.comets++;
           discover(state, 'comet', ev);
           giveTickets(state, CONFIG.tickets.comet + stats.bonusTickets, 'comet', ev);
+          earnShards(state, stats, CONFIG.shards.comet, ev, 'comet');
           if (ev) ev.push({ t: 'surge', dur: w.surge });
         }
       } else {
@@ -1249,16 +1505,12 @@
     checkProgress(state, ev);
   }
 
-  // Core visibly grows with all-time progress.
+  // Singu visibly grows with each form.
   function coreRadius(state) {
-    const g = Math.log10(1 + state.lifetime) / 12;
-    return CONFIG.coreRadius * (1 + Math.min(0.75, g * 0.75) + Math.min(0.25, state.stardust * 0.01));
+    return CONFIG.coreRadius * Math.min(2, 1 + state.form * 0.085 + Math.min(0.2, state.stardust * 0.01));
   }
 
-  function coreStage(state) {
-    const l = state.lifetime;
-    return l < 1e3 ? 0 : l < 1e5 ? 1 : l < 1e7 ? 2 : l < 1e10 ? 3 : 4;
-  }
+  function coreStage(state) { return Math.min(4, Math.floor((state.form + 1) / 2)); }
 
   const API = {
     CONFIG: CONFIG, UPG: UPG, CRIT: CRIT,
@@ -1269,7 +1521,12 @@
     critterBonus: critterBonus, critterText: critterText, pull: pull, gachaOdds: gachaOdds,
     statValue: statValue, ensureDaily: ensureDaily, questProgress: questProgress, claimQuest: claimQuest, questBonusReady: questBonusReady, claimQuestBonus: claimQuestBonus,
     loginReady: loginReady, loginReward: loginReward, claimLogin: claimLogin, playToday: playToday, chestStatus: chestStatus, claimChest: claimChest,
-    freeCapsuleReady: freeCapsuleReady, claimFreeCapsule: claimFreeCapsule, goalStatus: goalStatus, claimGoal: claimGoal, claimables: claimables, grantReward: grantReward,
+    freeCapsuleReady: freeCapsuleReady, claimFreeCapsule: claimFreeCapsule, claimables: claimables, grantReward: grantReward,
+    CT: CT, GEN: GEN, UPGI: UPGI, ACH: ACH, genCost: genCost, genQuote: genQuote, buyGen: buyGen, genVisible: genVisible, genMilestones: genMilestones, nextGenMilestone: nextGenMilestone,
+    upgradeUnlocked: upgradeUnlocked, availableUpgrades: availableUpgrades, buyUpgrade: buyUpgrade, upgradeEffects: upgradeEffects,
+    formFor: formFor, achievementCount: achievementCount, checkAchievements: checkAchievements, claimAchievement: claimAchievement,
+    relicSlots: relicSlots, relicBonus: relicBonus, relicOdds: relicOdds, forgeStart: forgeStart, forgePush: forgePush, forgeKeep: forgeKeep,
+    equipRelic: equipRelic, unequipRelic: unequipRelic, salvageRelic: salvageRelic, fuseRelics: fuseRelics, relicText: relicText, earnShards: earnShards,
     upgradeCost: upgradeCost, bulkQuote: bulkQuote, buy: buy, derive: derive, chainMult: chainMult, earn: earn,
     stardustFor: stardustFor, canCollapse: canCollapse, doCollapse: doCollapse, awayGain: awayGain,
     checkProgress: checkProgress, discover: discover, mark: mark,

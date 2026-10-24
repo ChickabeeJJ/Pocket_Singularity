@@ -1,6 +1,6 @@
 # Pocket Singularity
 
-A cozy pixel-art clicker / incremental game for CrazyGames. Feed **Singu**, a tiny hungry black hole: every pulse pulls cosmic bits into it, a Star Reel spins for prizes, capsule tickets hatch cute cosmic critters that orbit Singu, and a Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours, lifetime goals).
+A cozy pixel-art idle tycoon / clicker for CrazyGames. Feed **Singu**, a tiny hungry black hole: tap or hold to pulse cosmic bits into it and build a combo, buy 15 kinds of harvesters, unlock 260 upgrades, hatch 48 pets across 5 rarities, forge push-your-luck relics, collect 163 trophies, and grow through 12 forms from a Speck to an Omniverse Maw. A Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours), and Singu's level is submitted to the CrazyGames leaderboard.
 
 **Play locally:** open `index.html` in a browser, or serve the folder (`npx http-server .`) and open it there. There is no build step needed to play.
 
@@ -10,8 +10,8 @@ The original design brief is [`docs/POCKET_SINGULARITY_GAME_BIBLE.md`](docs/POCK
 
 | Input | Action |
 |---|---|
-| Click / tap the universe, the **Pulse** button, or `Space` | Gravity pulse |
-| `1`–`6` | Buy upgrade |
+| Click / tap the universe, hold it down, or `Space` | Gravity pulse (fast pulses build combo) |
+| `1`–`6` | Switch tab (Harvest, Upgrades, Pets, Relics, Rewards, Trophies) |
 | `M` | Mute |
 | `Esc` | Close dialog |
 
@@ -21,9 +21,11 @@ The original design brief is [`docs/POCKET_SINGULARITY_GAME_BIBLE.md`](docs/POCK
 index.html          page shell (loads the files below + the optional CrazyGames SDK)
 css/style.css       pixel UI (Sweetie 16 palette, notched panels, press buttons)
 fonts/              Pixelify Sans + Silkscreen (digits), both SIL OFL, licences included
-js/core.js          all rules and balance data: economy, gacha, Star Reel, saves, world simulation (no DOM; runs in Node)
-js/sprites.js       palette, hand-made sprites, the critter generator
-js/game.js          pixel renderer, UI, input, saving, away income
+js/content.js       content tables: 15 harvesters, 12 forms, 260 upgrades, 163 trophies, relics, 48 pets
+js/core.js          all rules and balance: economy, gacha, relic forge, Star Reel, saves, world simulation (no DOM; runs in Node)
+js/sprites.js       palette, hand-made sprites, the pet painter (25 species), capsules, machine, icons
+js/render.js        the scene: layered sky, planet horizon, parallax stars, Singu, orbiting harvesters and pets, effects
+js/game.js          UI (HUD, six panel tabs, modals), input, saving, away income
 js/audio.js         chiptune sound synthesized with Web Audio (no audio files)
 js/platform.js      CrazyGames SDK v3 adapter + storage; every call is safe without the SDK
 tools/sim.js        pacing simulator: plays the real rules with a scripted player
@@ -35,7 +37,7 @@ tests/browser.qa.js browser QA in Chromium via Playwright (desktop 907×510, 192
 vercel.json         Vercel deploy: runs the build and serves public/
 ```
 
-All tuning values live in `CONFIG` at the top of `js/core.js`.
+Tuning values live in `CONFIG` at the top of `js/core.js`; content lists live in `js/content.js`.
 
 ## Commands
 
@@ -67,6 +69,9 @@ Add `?debug` to the URL to see playtest timings (first pulse, first purchase, ea
 - calls `loadingStop`, `gameplayStart`/`gameplayStop` (stopped while dialogs are open or the tab is hidden), and `happytime` on sector reveals, comet Surges, jackpots, Legendary hatches and Collapse;
 - respects the platform's mute setting;
 - mirrors saves into the SDK data module, and adopts a synced save only when it is further along than the local one;
-- offers one rewarded ad, **double away income**, on the Welcome back screen. It appears only when the SDK reports the `crazygames` environment and ads are available, so it stays hidden during Basic Launch. Ads are never tied to capsules.
+- offers one rewarded ad, **double away income**, on the Welcome back screen. It appears only when the SDK reports the `crazygames` environment and ads are available, so it stays hidden during Basic Launch. Ads are never tied to capsules or relics;
+- submits the player's **Singu level** to the leaderboard (on load and on every level-up) with `SDK.user.submitScore({ encryptedScore, score })`.
+
+**Leaderboard setup:** create the leaderboard in the CrazyGames developer portal, copy its encryption key, and paste it into `leaderboardKey` in `js/platform.js`. The score is encrypted with AES-GCM (random 12-byte IV, sent as base64 of IV + ciphertext). Without a key, or outside CrazyGames, nothing is submitted and the in-game Leaderboard button just explains the score. Test it in the portal's preview before release.
 
 The SDK integration was written from the v3 API and has **not** been tested against the live SDK, which this build environment could not reach. Test it in the CrazyGames QA tool before submitting.

@@ -1,15 +1,20 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Sprite sheet</title>
-<style>body{background:#1a1c2c;color:#f4f4f4;font:14px monospace;margin:12px}.g{display:flex;flex-wrap:wrap;gap:14px}.c{display:flex;flex-direction:column;align-items:center;gap:4px}img{image-rendering:pixelated}</style>
-</head><body><div class="g" id="g"></div>
+<style>body{background:#241b3d;color:#f4f4f4;font:12px monospace;margin:12px}h3{margin:14px 0 6px}.g{display:flex;flex-wrap:wrap;gap:10px}.c{display:flex;flex-direction:column;align-items:center;gap:3px;width:110px}img{image-rendering:pixelated}</style>
+</head><body>
+<script src="../js/content.js"></script>
 <script src="../js/sprites.js"></script>
 <script>
-// Dev aid: every sprite at 6× for review. Open tools/spritesheet.html in a browser.
-const S = PSSprites, g = document.getElementById('g');
-const names = Object.keys(S.ART).concat(Object.keys(S.LOOKS).map((k) => 'critter_' + k));
-for (const n of names) {
-  const d = document.createElement('div'); d.className = 'c';
-  d.innerHTML = S.img(n, 6) + '<span>' + n + '</span>';
-  g.appendChild(d);
+// Dev aid: every sprite enlarged for review. Open tools/spritesheet.html in a browser.
+const S = PSSprites, C = PS_CONTENT;
+S.setPets(C.PETS);
+function section(title, names, scale, labels) {
+  document.body.insertAdjacentHTML('beforeend', '<h3>' + title + '</h3><div class="g">' + names.map((n, i) => '<div class="c">' + S.img(n, scale) + '<span>' + (labels ? labels[i] : n) + '</span></div>').join('') + '</div>');
 }
+section('Pets', C.PETS.map((p) => 'pet_' + p.id), 4, C.PETS.map((p) => p.name + ' r' + p.rarity));
+section('Capsules', [0, 1, 2, 3, 4].map((r) => 'capsule' + r).concat([0, 1, 2, 3, 4].map((r) => 'capsuleOpen' + r)), 4);
+section('Machine', ['machine0', 'machine1', 'machine2', 'machine3'], 3);
+section('Harvesters', C.GENERATORS.map((g, i) => 'gen' + i), 4, C.GENERATORS.map((g) => g.name));
+section('Relics', C.RELICS.stats.map((s, i) => 'relic_' + s.noun + '_' + (i % 5)), 4, C.RELICS.stats.map((s, i) => s.noun + ' r' + (i % 5)));
+section('Icons', ['glove', 'catalyst', 'combo', 'reel', 'treat', 'trophy', 'shardc', 'gift2', 'lock', 'leader'].map((k) => 'icon_' + k), 4);
 </script></body></html>

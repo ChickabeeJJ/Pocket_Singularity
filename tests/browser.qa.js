@@ -62,11 +62,12 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   await p.goto(URL);
   await p.waitForTimeout(400);
 
-  await check('starts directly in the universe with the pulse control visible', async () => {
+  await check('starts directly in the universe with the tap hint and panel visible', async () => {
     assert(await p.isVisible('#cv'), 'canvas');
-    assert(await p.isVisible('#btn-pulse'), 'pulse button');
-    const box = await p.locator('#btn-pulse').boundingBox();
-    assert(box.y + box.height <= 510, 'pulse button below the fold');
+    assert(await p.isVisible('#hint'), 'tap hint');
+    assert(await p.isVisible('#tab-harvest'), 'harvest tab');
+    const box = await p.locator('#tabs').boundingBox();
+    assert(box.y >= 0 && box.y + box.height <= 510, 'tabs off-screen');
     await shot(p, '907-first');
   });
 
@@ -88,57 +89,76 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(st.t - t0 >= 20, 'day 1 pays 20 tickets, got ' + (st.t - t0));
     assert(st.login.day === 1 && st.login.last === st.today, JSON.stringify(st.login));
     assert((await p.locator('[data-claim="login"]').count()) === 0, 'claim button gone');
-    await p.click('.tab[data-tab="upgrades"]');
+    await p.click('.tab[data-tab="harvest"]');
   });
 
-  await check('Space and the button both pulse', async () => {
+  await check('Space and a tap both pulse', async () => {
     await p.waitForTimeout(400);
     const n0 = await S(p, () => __ps.state.stats.pulses);
     await p.keyboard.press('Space');
     await p.waitForTimeout(400);
-    await p.click('#btn-pulse');
+    await p.mouse.click(250, 220);
     await p.waitForTimeout(100);
     const n1 = await S(p, () => __ps.state.stats.pulses);
     assert(n1 - n0 === 2, 'expected 2 pulses, got ' + (n1 - n0));
   });
 
-  await check('buying an upgrade spends Matter, raises level and does not pulse', async () => {
+  await check('buying a harvester spends Matter, adds one and does not pulse', async () => {
     await p.waitForTimeout(400);
     await S(p, () => { __ps.state.matter = 1000; __ps.state.lifetime += 1000; });
-    const before = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime, p: __ps.state.stats.pulses, cost: __ps.PS.upgradeCost('radius', __ps.state.levels.radius) }));
-    await p.click('.card >> nth=0');
-    const after = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime, p: __ps.state.stats.pulses, l: __ps.state.levels.radius }));
-    assert(after.l === 1, 'level');
+    await p.waitForTimeout(200);
+    const before = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime, p: __ps.state.stats.pulses, cost: __ps.PS.genCost('sweeper', __ps.state.gens.sweeper || 0, 1) }));
+    await p.click('#gens .gen >> nth=0');
+    const after = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime, p: __ps.state.stats.pulses, l: __ps.state.gens.sweeper }));
+    assert(after.l === 1, 'owned ' + after.l);
     const spent = before.m + (after.life - before.life) - after.m;  // income may land during the click
     assert(Math.abs(spent - before.cost) < 1e-6, 'spent ' + spent + ' cost ' + before.cost);
     assert(after.p === before.p, 'buying must not pulse');
   });
 
-  await check('keyboard 1–5 buys and unaffordable buys are refused', async () => {
+  await check('keys 1–6 switch tabs and unaffordable buys are refused', async () => {
+    await p.keyboard.press('3');
+    assert(await p.isVisible('#tab-pets'), 'key 3 opens Pets');
+    await p.keyboard.press('1');
+    assert(await p.isVisible('#tab-harvest'), 'key 1 opens Harvest');
     await S(p, () => { __ps.state.matter = 0; });
-    await p.keyboard.press('5');
-    assert((await S(p, () => __ps.state.levels.focus)) === 0, 'bought without matter');
-    await S(p, () => { __ps.state.matter = 500; });
-    await p.keyboard.press('5');
-    assert((await S(p, () => __ps.state.levels.focus)) === 1, 'key 5 should buy focus');
+    const n = await S(p, () => __ps.state.gens.sweeper);
+    await p.click('#gens .gen >> nth=0', { force: true });
+    assert((await S(p, () => __ps.state.gens.sweeper)) === n, 'bought without matter');
+  });
+
+  await check('upgrades: catalog unlocks, buys once and boosts income', async () => {
+    await S(p, () => { __ps.state.matter = 1e4; __ps.state.lifetime += 1e4; __ps.setTab('upgrades'); });
+    await p.waitForSelector('#catalog .up');
+    const id = await p.getAttribute('#catalog .up >> nth=0', 'data-up');
+    const r0 = await S(p, () => __ps.stats.genPerSec);
+    await p.click('#catalog .up >> nth=0');
+    assert(await S(p, (id) => __ps.state.bought[id] === 1, id), 'bought ' + id);
+    assert((await S(p, () => __ps.stats.genPerSec)) >= r0, 'income dropped');
+    await p.waitForTimeout(200);
+    assert((await p.locator('#catalog [data-up="' + id + '"]').count()) === 0, 'bought upgrade still listed');
+    await shot(p, '907-upgrades');
   });
 
   await check('max level shows MAX and cannot be bought', async () => {
-    await S(p, () => { __ps.state.levels.radius = 12; __ps.state.matter = 1e12; __ps.state.lifetime = 1e12; __ps.refresh(); });
+    await S(p, () => { __ps.state.levels.radius = 12; __ps.state.matter = 1e12; __ps.state.lifetime = 1e12; __ps.refresh(); __ps.setTab('upgrades'); });
     await p.waitForTimeout(250);
-    const txt = await p.textContent('.card >> nth=0');
+    const txt = await p.textContent('#shop .pow >> nth=0');
     assert(/MAX/.test(txt), 'MAX label');
     assert(/12\/12/.test(txt), 'level label');
     const m = await S(p, () => __ps.state.matter);
-    await p.click('.card >> nth=0', { force: true });
-    assert((await S(p, () => __ps.state.matter)) === m, 'spent matter on a maxed upgrade');
+    await p.click('#shop .pow >> nth=0', { force: true });
+    // Harvesters keep earning during the click, so Matter may only go up.
+    assert((await S(p, () => __ps.state.matter)) >= m, 'spent matter on a maxed upgrade');
+    assert((await S(p, () => __ps.state.levels.radius)) === 12, 'level went past max');
   });
 
   await check('buy-mode Max buys many levels at once', async () => {
-    await S(p, () => { __ps.state.levels.drones = 0; __ps.state.matter = 1e6; __ps.refresh(); });
+    await S(p, () => { __ps.state.gens.sweeper = 0; __ps.state.matter = 1e6; __ps.refresh(); __ps.setTab('harvest'); });
     await p.click('.buy-mode button[data-mode="0"]');
-    await p.click('.card >> nth=2');
-    const l = await S(p, () => __ps.state.levels.drones);
+    await p.waitForTimeout(200);
+    await p.click('#gens .gen >> nth=0');
+    const l = await S(p, () => __ps.state.gens.sweeper);
     assert(l > 20, 'bought ' + l);
     await p.click('.buy-mode button[data-mode="1"]');
   });
@@ -160,12 +180,15 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await shot(p, '907-surge');
   });
 
-  await check('first-upgrade goal is remembered after reload', async () => {
+  await check('form bar and goals show what is next after reload', async () => {
     await S(p, () => __ps.save());
     await p.reload();
     await p.waitForTimeout(300);
-    assert(/Next sector/.test(await p.textContent('#ms-text')), await p.textContent('#ms-text'));
-    assert(await S(p, () => document.getElementById('hint').classList.contains('hide')), 'stale first-run hint visible');
+    const f = await S(p, () => __ps.PS.CT.FORMS[__ps.state.form].name);
+    assert((await p.textContent('#form-name')) === f, 'form name');
+    assert(/Sector/.test(await p.textContent('#ms-text')), await p.textContent('#ms-text'));
+    assert(!/feed it/.test(await p.textContent('#hint')), 'stale first-run hint visible');
+    assert((await p.locator('#goals .goal').count()) >= 1, 'next goals');
   });
 
   await check('progress survives a refresh', async () => {
@@ -192,6 +215,8 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.waitForTimeout(300);
     const expected = await S(p, () => __ps.state.stardust + __ps.PS.stardustFor(__ps.state));
     const atlas = await S(p, () => Object.keys(__ps.state.discoveries).length);
+    await S(p, () => __ps.setTab('upgrades'));
+    await p.waitForSelector('#collapse-card [data-act="collapse"]');
     await p.click('#collapse-card [data-act="collapse"]');
     await p.waitForSelector('#modal:not([hidden])');
     await shot(p, '907-collapse-modal');
@@ -209,7 +234,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   });
 
   await check('away income: capped at 2 h, paid once, survives refresh without repeating', async () => {
-    await S(p, () => { __ps.state.levels.drones = 10; __ps.refresh(); __ps.save(); });
+    await S(p, () => { __ps.state.gens.drone = 10; __ps.refresh(); __ps.save(); });
     const rate = await S(p, () => __ps.stats.dronePerSec * __ps.stats.offlineRate);
     await S(p, () => {
       __ps.freeze();
@@ -247,8 +272,9 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.reload();
     await p.waitForTimeout(300);
     assert(await p.isHidden('#modal'), 'no modal');
-    const m1 = await S(p, () => __ps.state.matter);
-    assert(m1 - m0 < 1e-6 * m0 + 100, 'gained ' + (m1 - m0));
+    const st = await S(p, () => ({ m: __ps.state.matter, rate: __ps.stats.genPerSec }));
+    // Only the live income of the second since loading, never hours of away income.
+    assert(st.m - m0 < st.rate * 3 + 100, 'gained ' + (st.m - m0));
   });
 
   await check('corrupted save fails safely and restores the backup', async () => {
@@ -263,7 +289,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.reload();
     await p.waitForTimeout(400);
     assert((await S(p, () => __ps.state.lifetime)) >= 0, 'fresh start');
-    assert(await p.isVisible('#btn-pulse'));
+    assert(await p.isVisible('#cv'));
   });
 
   await check('mute and reduced motion persist', async () => {
@@ -288,26 +314,27 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(await p.isHidden('#modal'));
   });
 
-  await check('capsules: hatch ×1 spends tickets, reveals a critter, adds it to the collection', async () => {
+  await check('pets: hatch ×1 spends tickets, reveals a pet, adds it to the collection', async () => {
     await S(p, () => { __ps.state.tickets = 200; });
-    await p.click('.tab[data-tab="capsules"]');
-    await p.waitForSelector('#tab-capsules:not([hidden])');
-    assert(/Common/.test(await p.textContent('#odds')) && /Legendary/.test(await p.textContent('#odds')), 'odds shown');
+    await p.click('.tab[data-tab="pets"]');
+    await p.waitForSelector('#tab-pets:not([hidden])');
+    const odds = await p.textContent('#odds');
+    assert(/Common/.test(odds) && /Legendary/.test(odds) && /Mythic/.test(odds), 'odds shown');
     const before = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls }));
     await p.click('#pull1');
     await p.waitForSelector('#modal:not([hidden]) .hatch');
     await p.waitForSelector('.crit-big', { timeout: 4000 });
     await shot(p, '907-hatch');
     const after = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls, owned: Object.keys(__ps.state.critters).length }));
-    // Costs 10; a Legendary discovery can hand 2 straight back.
-    assert(before.t - after.t <= 10 && before.t - after.t >= 8, 'ticket cost ' + (before.t - after.t));
+    // Costs 10; discoveries and trophies can hand a few straight back.
+    assert(before.t - after.t <= 10 && before.t - after.t >= 2, 'ticket cost ' + (before.t - after.t));
     assert(after.n === before.n + 1 && after.owned >= 1, JSON.stringify(after));
     await p.click('#modal-actions .btn.primary');
     assert(await p.isHidden('#modal'));
-    assert((await p.locator('.crit:not(.locked)').count()) >= 1, 'collection shows the critter');
+    assert((await p.locator('.crit:not(.locked)').count()) >= 1, 'collection shows the pet');
   });
 
-  await check('capsules: hatch ×10 can be skipped and gives ten results with a Rare+', async () => {
+  await check('pets: hatch ×10 can be skipped and gives ten results with a Rare+', async () => {
     await S(p, () => { __ps.state.tickets = 200; });
     const n0 = await S(p, () => __ps.state.gacha.pulls);
     await p.click('#pull10');
@@ -315,7 +342,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('#modal-actions .btn');   // Skip
     await p.waitForSelector('#modal-actions .btn.primary');
     assert((await p.locator('.multi .cell img').count()) === 10, 'ten reveals');
-    assert((await p.locator('.multi .cell.ra1, .multi .cell.ra2, .multi .cell.ra3').count()) >= 1, 'a Rare or better');
+    assert((await p.locator('.multi .cell.ra1, .multi .cell.ra2, .multi .cell.ra3, .multi .cell.ra4').count()) >= 1, 'a Rare or better');
     assert((await S(p, () => __ps.state.gacha.pulls)) === n0 + 10);
     await shot(p, '907-hatch10');
     await p.keyboard.press('Escape');
@@ -356,7 +383,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(/\d:\d\d/.test(await p.textContent('[data-cd="free"]')), 'countdown shown');
   });
 
-  await check('rewards: play gift, quest and goal claims each pay once', async () => {
+  await check('rewards: play gift and quest claims each pay once', async () => {
     await S(p, () => { __ps.state.stats.playTime = __ps.state.daily.play0 + 130; });
     await p.waitForSelector('[data-claim="chest"]');
     await shot(p, '907-rewards');
@@ -378,26 +405,78 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.waitForTimeout(100);
     assert((await S(p, () => __ps.state.tickets)) > t0, 'quest paid');
     assert((await p.locator('[data-claim="quest:0"]').count()) === 0, 'quest claim gone');
-    await S(p, () => { __ps.state.stats.pulses = Math.max(__ps.state.stats.pulses, 60); });
-    await p.waitForSelector('[data-claim="goal:pulses"]');
-    await p.click('[data-claim="goal:pulses"]');
-    await p.waitForTimeout(100);
-    assert((await S(p, () => __ps.state.goals.pulses)) >= 1, 'goal tier claimed');
-    await S(p, () => __ps.setTab('upgrades'));
+    await S(p, () => __ps.setTab('harvest'));
+  });
+
+  await check('relics: forge, push or keep, equip and salvage', async () => {
+    await S(p, () => { __ps.state.shards = 100; __ps.setTab('relics'); });
+    await p.click('[data-rel="forge"]');
+    assert(await S(p, () => !!__ps.state.forge), 'forging');
+    assert((await S(p, () => __ps.state.shards)) === 90, 'forge costs 10');
+    await shot(p, '907-forge');
+    const pushed = await p.$('[data-rel="push"]');
+    if (pushed) { await pushed.click(); await p.waitForTimeout(100); }
+    if (await S(p, () => !!__ps.state.forge)) await p.click('[data-rel="keep"]');
+    else { await p.click('[data-rel="forge"]'); await p.click('[data-rel="keep"]'); }
+    await p.waitForTimeout(150);
+    const st = await S(p, () => ({ n: __ps.state.relics.length, eq: __ps.state.equipped.length, f: __ps.state.forge }));
+    assert(st.n >= 1 && st.eq >= 1 && !st.f, JSON.stringify(st));
+    for (let i = 0; i < 4; i++) { await p.click('[data-rel="forge"]'); await p.click('[data-rel="keep"]'); }
+    await p.waitForSelector('#inventory .relic');
+    const sh = await S(p, () => __ps.state.shards);
+    await p.click('#inventory [data-rel^="salvage"] >> nth=0');
+    assert((await S(p, () => __ps.state.shards)) > sh, 'salvage pays shards');
+    await shot(p, '907-relics');
+  });
+
+  await check('trophies: unlocked ones claim once for tickets and shards', async () => {
+    await S(p, () => __ps.setTab('trophies'));
+    await p.waitForSelector('.tro.ready');
+    const n0 = await S(p, () => ({ t: __ps.state.tickets, s: __ps.state.shards }));
+    await p.click('.tro.ready >> nth=0');
+    await p.waitForTimeout(150);
+    const n1 = await S(p, () => ({ t: __ps.state.tickets, s: __ps.state.shards }));
+    assert(n1.t - n0.t >= 3 && n1.s - n0.s >= 1, JSON.stringify([n0, n1]));
+    await shot(p, '907-trophies');
+    if (await p.isVisible('#claim-all')) {
+      await p.click('#claim-all');
+      assert((await S(p, () => Object.values(__ps.state.ach).filter((v) => v === 1).length)) === 0, 'claim all');
+    }
+    await S(p, () => __ps.setTab('harvest'));
+  });
+
+  await check('holding on the universe keeps pulsing and builds combo', async () => {
+    const n0 = await S(p, () => __ps.state.stats.pulses);
+    await p.mouse.move(250, 230);
+    await p.mouse.down();
+    await p.waitForTimeout(1600);
+    await p.mouse.up();
+    const st = await S(p, () => ({ n: __ps.state.stats.pulses, c: __ps.world.combo }));
+    assert(st.n - n0 >= 3, 'pulses ' + (st.n - n0));
+    assert(st.c > 0, 'combo');
+  });
+
+  await check('leaderboard button explains the score without the SDK', async () => {
+    await p.click('#btn-leader');
+    await p.waitForSelector('#modal:not([hidden])');
+    assert(/Leaderboard/.test(await p.textContent('#modal-title')), 'title');
+    assert(/Singu level/.test(await p.textContent('#modal-body')), 'score explained');
+    await p.keyboard.press('Escape');
   });
 
   await check('rewards: badge and gift chip reflect what is waiting', async () => {
     await S(p, () => { __ps.state.freeCapAt = 0; });
     await p.waitForTimeout(400);
-    assert(await p.isVisible('#rw-badge'), 'badge visible');
-    assert(Number(await p.textContent('#rw-badge')) >= 1);
+    const badge = '.tab[data-tab="rewards"] .badge';
+    assert(await p.isVisible(badge), 'badge visible');
+    assert(Number(await p.textContent(badge)) >= 1);
     assert((await p.textContent('#gift-text')).length > 3, 'gift chip text');
     await p.click('#gift-chip');
     assert(await p.isVisible('#tab-rewards'), 'gift chip opens rewards');
-    await S(p, () => __ps.setTab('upgrades'));
+    await S(p, () => __ps.setTab('harvest'));
   });
 
-  await check('owned critters orbit Singu', async () => {
+  await check('owned pets orbit Singu', async () => {
     const n = await S(p, () => Object.keys(__ps.state.critters).length);
     assert(n >= 1, 'no critters');
     await shot(p, '907-pets');
@@ -436,30 +515,31 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   p = await page({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
   await p.goto(URL);
   await p.waitForTimeout(400);
-  await check('phone portrait: tap pulses, playfield before shop, no horizontal scroll', async () => {
-    await p.touchscreen.tap(195, 260);
+  await check('phone portrait: tap pulses, playfield above panel, tab bar at the bottom, no horizontal scroll', async () => {
+    await p.touchscreen.tap(195, 200);
     await p.waitForFunction(() => __ps.state.stats.pulses === 1, null, { timeout: 2000 });
     const o = await S(p, () => {
       const u = document.getElementById('universe').getBoundingClientRect();
-      const s = document.getElementById('shop').getBoundingClientRect();
-      const b = document.getElementById('btn-pulse').getBoundingClientRect();
-      return { sw: document.documentElement.scrollWidth, w: innerWidth, h: innerHeight, u: u.top, s: s.top, bb: b.bottom, uh: u.height };
+      const s = document.getElementById('panel').getBoundingClientRect();
+      const b = document.getElementById('tabs').getBoundingClientRect();
+      return { sw: document.documentElement.scrollWidth, w: innerWidth, h: innerHeight, u: u.top, s: s.top, bb: b.bottom, bt: b.top, uh: u.height };
     });
     assert(o.sw <= o.w, 'horizontal overflow');
-    assert(o.u < o.s, 'playfield must come before the shop');
-    assert(o.bb <= o.h, 'pulse button off-screen');
+    assert(o.u < o.s, 'playfield must come before the panel');
+    assert(o.bb <= o.h && o.bt > o.h - 90, 'tab bar not at the bottom: ' + JSON.stringify(o));
     assert(o.uh >= 280, 'playfield too small: ' + o.uh);
     await p.waitForTimeout(500);
     await shot(p, '390-portrait');
   });
-  await check('phone portrait: pulse button tap and shop tap both work', async () => {
+  await check('phone portrait: second tap and harvester tap both work', async () => {
     await p.waitForTimeout(400);
-    await p.tap('#btn-pulse');
+    await p.touchscreen.tap(195, 220);
     await p.waitForTimeout(100);
     assert((await S(p, () => __ps.state.stats.pulses)) === 2);
     await S(p, () => { __ps.state.matter = 100; });
-    await p.tap('.card >> nth=0');
-    assert((await S(p, () => __ps.state.levels.radius)) === 1);
+    await p.waitForTimeout(200);
+    await p.tap('#gens .gen >> nth=0');
+    assert((await S(p, () => __ps.state.gens.sweeper)) === 1);
   });
   await check('phone portrait: rewards tab works by touch', async () => {
     await p.tap('.tab[data-tab="rewards"]');
@@ -469,16 +549,16 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert((await S(p, () => __ps.state.login.day)) === 1, 'login claimed by touch');
     await shot(p, '390-rewards');
   });
-  await check('phone portrait: capsules tab works by touch', async () => {
+  await check('phone portrait: pets tab works by touch', async () => {
     await S(p, () => { __ps.state.tickets = 50; });
-    await p.tap('.tab[data-tab="capsules"]');
-    await p.waitForSelector('#tab-capsules:not([hidden])');
+    await p.tap('.tab[data-tab="pets"]');
+    await p.waitForSelector('#tab-pets:not([hidden])');
     await p.tap('#pull1');
     await p.waitForSelector('.crit-big', { timeout: 4000 });
     await shot(p, '390-hatch');
     await p.tap('#modal-actions .btn.primary');
     assert(await p.isHidden('#modal'));
-    await shot(p, '390-capsules');
+    await shot(p, '390-pets');
   });
   await p.context().close();
 
@@ -486,7 +566,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
   await p.goto(URL);
   await p.waitForTimeout(400);
   await check('phone landscape: everything reachable', async () => {
-    const o = await S(p, () => ({ sw: document.documentElement.scrollWidth, w: innerWidth, b: document.getElementById('btn-pulse').getBoundingClientRect().bottom, h: innerHeight }));
+    const o = await S(p, () => ({ sw: document.documentElement.scrollWidth, w: innerWidth, b: document.getElementById('tabs').getBoundingClientRect().bottom, h: innerHeight }));
     assert(o.sw <= o.w && o.b <= o.h, JSON.stringify(o));
     await shot(p, '844-landscape');
   });

@@ -34,6 +34,7 @@ function run(opts) {
     ev.length = 0;
     PS.step(world, state, stats, dt, ev);
     t += dt;
+    for (const e of ev) if (e.t === 'form') note('form ' + e.form + ' ' + PS.CT.FORMS[e.form].name, PS.fmt(state.lifetime));
     for (const e of ev) if (e.t === 'level') { stats = PS.derive(state, mut); if (e.level % 5 === 0) note('Singu Lv ' + e.level); }
     for (const e of ev) if (e.t === 'reel' && e.result !== 'none' && e.result !== 'pair') note('reel ' + e.result);
     for (const e of ev) if (e.t === 'sector') { note('sector ' + e.index + ' ' + PS.sectorInfo(e.index).name, PS.fmt(state.runTotal)); stats = PS.derive(state, mut); }
@@ -48,23 +49,27 @@ function run(opts) {
     } else if (policy === 'idle') {
       if (t - lastPulse > 6 && inRange > 0) { PS.pulse(world, state, stats, ev, false); lastPulse = t; }
     }
-    // Shop policy: every 2 s, buy the cheapest affordable upgrade repeatedly.
+    // Shop policy: every 2 s, buy the cheapest affordable thing (level, harvester or catalog upgrade).
     if (t - lastShop > 2) {
       lastShop = t;
-      for (let guard = 0; guard < 50; guard++) {
-        let best = null, bestCost = Infinity;
-        for (const u of PS.CONFIG.upgrades) {
-          if (state.levels[u.id] >= u.max) continue;
-          const c = PS.upgradeCost(u.id, state.levels[u.id]);
-          if (c < bestCost) { bestCost = c; best = u; }
-        }
-        if (!best || bestCost > state.matter) break;
-        PS.buy(state, best.id, 1);
-        if (!firstBuy[best.id]) { firstBuy[best.id] = true; note('first ' + best.id, PS.fmt(bestCost)); }
+      for (let guard = 0; guard < 80; guard++) {
+        const options = [];
+        for (const u of PS.CONFIG.upgrades) if (state.levels[u.id] < u.max) options.push({ kind: 'lvl', id: u.id, cost: PS.upgradeCost(u.id, state.levels[u.id]) });
+        for (const g of PS.CT.GENERATORS) if (PS.genVisible(state, g.id)) options.push({ kind: 'gen', id: g.id, cost: PS.genCost(g.id, state.gens[g.id] || 0, 1) });
+        for (const u of PS.availableUpgrades(state).slice(0, 5)) options.push({ kind: 'one', id: u.id, cost: u.cost });
+        options.sort((a, b) => a.cost - b.cost);
+        const best = options[0];
+        if (!best || best.cost > state.matter) break;
+        if (best.kind === 'lvl') PS.buy(state, best.id, 1);
+        else if (best.kind === 'gen') PS.buyGen(state, best.id, 1);
+        else PS.buyUpgrade(state, best.id);
+        const key = best.kind === 'one' ? 'upgrade' : best.id;
+        if (!firstBuy[key]) { firstBuy[key] = true; note('first ' + key, PS.fmt(best.cost)); }
         if (!seen['first upgrade']) note('first upgrade');
         stats = PS.derive(state, mut);
       }
     }
+    if (state.shards >= PS.CT.RELICS.cost && !state.forge) { PS.forgeStart(state, rng); PS.forgeKeep(state); stats = PS.derive(state, mut); }
     // Capsules: pull whenever affordable; take every Overcharge offer.
     if (state.tickets >= PS.CONFIG.gacha.cost) {
       const res = PS.pull(state, 1, rng);
@@ -105,6 +110,7 @@ if (require.main === module) {
   console.log('---');
   console.log('levels', JSON.stringify(s.levels), 'matter', PS.fmt(s.matter), 'run', PS.fmt(s.runTotal), 'SD avail', PS.stardustFor(s), 'SD', s.stardust);
   console.log('drone/s', PS.fmt(r.stats.dronePerSec), 'discoveries', PS.discoveryCount(s) + '/' + PS.CONFIG.discoveries.length, 'bestChain', s.stats.bestChain);
+  console.log('gens', JSON.stringify(s.gens), 'upgrades', Object.keys(s.bought).length, 'ach', PS.achievementCount(s), 'relics', s.relics.length, 'gen/s', PS.fmt(r.stats.genPerSec), 'tap', PS.fmt(r.stats.tapValue));
   console.log('Singu Lv', s.singuLevel, 'pulls', r.pulls, 'tickets left', s.tickets, 'spins', s.stats.spins, 'lucky', s.stats.lucky, 'critters', Object.keys(s.critters).map((k) => k + '★' + s.critters[k].stars).join(' '));
 }
 

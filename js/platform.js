@@ -81,6 +81,34 @@
       } catch (e) { end(false); }
     },
 
+    // Leaderboard. Paste the base64 encryption key from the CrazyGames developer portal
+    // (your game > Leaderboard settings). Without a key, scores are simply not submitted.
+    leaderboardKey: '',
+    bestSubmitted: -1,
+    canLeaderboard: function () {
+      return this.ready && this.env === 'crazygames' && !!this.leaderboardKey &&
+        !!(this.sdk.user && this.sdk.user.submitScore) && !!(root.crypto && root.crypto.subtle);
+    },
+    // Encrypts the score with AES-GCM (random 12-byte IV, sent as base64(IV + ciphertext)) and submits it.
+    submitScore: function (score) {
+      score = Math.floor(score);
+      if (!this.canLeaderboard() || !(score > this.bestSubmitted)) return;
+      this.bestSubmitted = score;
+      const self = this;
+      const raw = Uint8Array.from(atob(this.leaderboardKey), function (c) { return c.charCodeAt(0); });
+      const iv = root.crypto.getRandomValues(new Uint8Array(12));
+      root.crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt'])
+        .then(function (key) { return root.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(String(score))); })
+        .then(function (ct) {
+          const out = new Uint8Array(12 + ct.byteLength);
+          out.set(iv, 0); out.set(new Uint8Array(ct), 12);
+          let bin = '';
+          for (let i = 0; i < out.length; i++) bin += String.fromCharCode(out[i]);
+          return self.sdk.user.submitScore({ encryptedScore: btoa(bin), score: score });
+        })
+        .catch(function () { self.bestSubmitted = -1; });
+    },
+
     // Storage: localStorage first; mirrored into the SDK data module when available.
     get: function (key) {
       try { return root.localStorage.getItem(key); } catch (e) { return null; }

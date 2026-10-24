@@ -1,5 +1,5 @@
-/* Pocket Singularity — browser shell: pixel rendering, UI, input, saves.
- * Game rules live in core.js; this file only reads the authoritative `state` and draws it.
+/* Pocket Singularity — browser shell: UI, input, saves. The scene is drawn by render.js.
+ * Game rules live in core.js; this file only reads the authoritative `state` and shows it.
  */
 (function () {
   'use strict';
@@ -8,25 +8,19 @@
   const SPR = window.PSSprites;
   const Sound = window.PSAudio;
   const Platform = window.PSPlatform;
+  const Scene = window.PSScene;
   const C = PS.CONFIG;
-  const P = SPR.PAL;
+  const CT = PS.CT;
   const fmt = PS.fmt;
+  SPR.setPets(CT.PETS);
 
   const SAVE_KEY = 'pocket-singularity:save';
   const BAK_KEY = 'pocket-singularity:backup';
   const BAD_KEY = 'pocket-singularity:corrupt';
   const QS = new URLSearchParams(location.search);
   const COVER = QS.has('cover');
-  const RARITY_COL = ['#94b0c2', '#41a6f6', '#a884f3', '#ffcd75'];
-
-  // Sector looks: dithered sky gradient stops and an ambient scene (all palette keys).
-  const SKIES = [
-    { stops: ['k', '0', '8'], neb: ['8', 'f'], ambient: 'planet' },
-    { stops: ['k', '0', 'f'], neb: ['f', '8'], ambient: 'belt' },
-    { stops: ['k', '0', '7'], neb: ['8', '7'], ambient: 'moon' },
-    { stops: ['k', '0', '1'], neb: ['1', 'f'], ambient: 'nebula' },
-    { stops: ['k', '0', '1'], neb: ['2', '1'], ambient: 'nursery' }
-  ];
+  const RARITY_COL = SPR.RARITY_HEX;
+  const RARITY_NAMES = C.gacha.rarities.map(function (r) { return r.name; });
   const SECTOR_NEWS = [
     '',
     'Unstable shards appear: they burst and drag neighbours in',
@@ -84,25 +78,29 @@
   }
 
   // ---------------------------------------------------------------------------
-  // DOM
+  // DOM helpers
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
   const el = {
-    universe: $('universe'), cv: $('cv'), matter: $('matter'), rate: $('rate'), singuLv: $('singu-lv'), xp: $('xp-fill'),
-    sectorNum: $('sector-num'), sectorName: $('sector-name'), mut: $('mutation-chip'),
-    surge: $('surge'), banner: $('banner'), toasts: $('toasts'), hint: $('hint'),
-    reel: $('reel'), reelResult: $('reel-result'), reelFill: $('reel-fill'), reelVal: $('reel-val'),
-    oc: $('overcharge'), ocTimer: $('oc-timer'),
-    pulse: $('btn-pulse'), pulseCd: $('pulse-cd'), msText: $('ms-text'), msVal: $('ms-val'), msFill: $('ms-fill'),
-    shop: $('shop'), collapse: $('collapse-card'), atlasBtn: $('btn-atlas'), atlasCount: $('atlas-count'),
-    tickets: $('btn-tickets'), ticketCount: $('ticket-count'),
-    sound: $('btn-sound'), settings: $('btn-settings'),
-    capBadge: $('cap-badge'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'),
-    rwBadge: $('rw-badge'), rewards: $('tab-rewards'), giftChip: $('gift-chip'), giftText: $('gift-text'),
-    odds: $('odds'), collection: $('collection'), colCount: $('col-count'), machine: $('machine-art'),
+    scene: $('universe'), cv: $('cv'), matter: $('matter'), perPulse: $('per-pulse'), perSec: $('per-sec'), multChip: $('mult-chip'),
+    combo: document.querySelector('.combo'), comboFill: $('combo-fill'), comboVal: $('combo-val'),
+    tickets: $('btn-tickets'), ticketCount: $('ticket-count'), shards: $('btn-shards'), shardCount: $('shard-count'), sdBtn: $('btn-stardust'), sdCount: $('sd-count'),
+    hint: $('hint'), hintText: $('hint-text'), sectorNum: $('sector-num'), sectorName: $('sector-name'), mut: $('mutation-chip'),
+    leader: $('btn-leader'), settings: $('btn-settings'), sound: $('btn-sound'), atlasBtn: $('btn-atlas'), giftChip: $('gift-chip'), giftText: $('gift-text'),
+    formNum: $('form-num'), formName: $('form-name'), formNext: $('form-next'), formFill: $('form-fill'),
+    msText: $('ms-text'), msFill: $('ms-fill'), reelVal: $('reel-val'), reelFill: $('reel-fill'),
+    reel: $('reel'), reelResult: $('reel-result'), surge: $('surge'), banner: $('banner'), toasts: $('toasts'), oc: $('overcharge'), ocTimer: $('oc-timer'),
+    tabs: $('tabs'),
+    gens: $('gens'), goals: $('goals'),
+    upCount: $('up-count'), buyAll: $('buy-all'), catalog: $('catalog'), upNext: $('up-next'), shop: $('shop'), collapse: $('collapse-card'),
+    machine: $('machine'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'), odds: $('odds'), collection: $('collection'), colCount: $('col-count'), petBonus: $('pet-bonus'),
+    forge: $('forge'), equipped: $('equipped'), slotCount: $('slot-count'), relicSum: $('relic-sum'), invCount: $('inv-count'), fuseRow: $('fuse-row'), inventory: $('inventory'),
+    rewards: $('tab-rewards'),
+    achCount: $('ach-count'), achBonus: $('ach-bonus'), claimAll: $('claim-all'), trophies: $('trophies'),
     modal: $('modal'), modalTitle: $('modal-title'), modalBody: $('modal-body'), modalActions: $('modal-actions'), modalX: $('modal-x')
   };
-  const ctx = el.cv.getContext('2d', { alpha: false });
+  const badges = {};
+  el.tabs.querySelectorAll('.tab').forEach(function (b) { badges[b.dataset.tab] = b.querySelector('.badge'); });
 
   // Sets text only when it changed, so per-frame UI updates never thrash the DOM.
   const textCache = new WeakMap();
@@ -112,36 +110,237 @@
     const w = (Math.max(0, Math.min(1, frac || 0)) * 100).toFixed(1) + '%';
     if (node.style.width !== w) node.style.width = w;
   }
+  function setClass(node, cls) { if (node.className !== cls) node.className = cls; }
+  function flash(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+  function fmtMult(m) { return m < 10 ? m.toFixed(2) : fmt(m); }
+
+  // Sprite name for an upgrade-catalog icon key.
+  function iconSprite(key) {
+    if (/^gen\d+$/.test(key)) return key;
+    if (key === 'clover') return 'up_luck';
+    if (key === 'ticket' || key === 'ice' || key === 'crystal' || key === 'shard' || key === 'comet') return key;
+    return 'icon_' + key;
+  }
+  function relicSprite(r) {
+    const noun = CT.RELICS.stats.find(function (s) { return s.k === r.a[0].k; }).noun;
+    return 'relic_' + noun + '_' + r.r;
+  }
 
   function staticArt() {
-    $('brand-icon').src = SPR.url('singu', 2);
     $('ticket-icon').innerHTML = SPR.img('ticket', 1.5);
-    $('atlas-icon').innerHTML = SPR.img('star', 2);
+    $('shard-icon').innerHTML = SPR.img('icon_shardc', 1);
+    $('sd-icon').innerHTML = SPR.img('stardust', 1.5);
+    $('leader-icon').innerHTML = SPR.img('icon_leader', 1.25);
+    $('atlas-icon').innerHTML = SPR.img('star', 1.5);
+    $('gift-icon').innerHTML = SPR.img('icon_gift2', 1.25);
     $('m-ticket-icon').innerHTML = SPR.img('ticket', 1.5);
-    $('gift-icon').innerHTML = SPR.img('gift', 2);
-    el.machine.innerHTML = SPR.img('machine', 3);
+    el.tabs.querySelectorAll('.ti').forEach(function (n) { n.innerHTML = SPR.img(n.dataset.icon, 1.5); });
     el.reel.querySelectorAll('.slot img').forEach(function (img) { img.src = SPR.url('singu', 1); });
   }
 
-  // Shop cards are built once; updates only touch text and classes.
-  const cards = {};
-  function buildShop() {
-    el.shop.innerHTML = '';
-    C.upgrades.forEach(function (u, i) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'card';
-      btn.title = u.name + ': ' + u.desc + ' (key ' + (i + 1) + ')';
-      btn.innerHTML = '<span class="ic">' + SPR.img('up_' + u.id, 2) + '</span>' +
-        '<span class="nm">' + u.name + '<span class="lv num"></span></span>' +
-        '<span class="cost num"></span><span class="fx"></span><span class="key">' + (i + 1) + '</span>';
-      btn.addEventListener('click', function (e) { e.stopPropagation(); tryBuy(u.id, btn); });
-      el.shop.appendChild(btn);
-      cards[u.id] = { b: btn, lv: btn.querySelector('.lv'), cost: btn.querySelector('.cost'), fx: btn.querySelector('.fx'), cls: '' };
+  // ---------------------------------------------------------------------------
+  // Tabs
+  // ---------------------------------------------------------------------------
+  let tab = 'harvest';
+  const TAB_NAMES = ['harvest', 'upgrades', 'pets', 'relics', 'rewards', 'trophies'];
+  function setTab(name) {
+    tab = name;
+    el.tabs.querySelectorAll('.tab').forEach(function (btn) { btn.classList.toggle('on', btn.dataset.tab === name); btn.setAttribute('aria-selected', btn.dataset.tab === name); });
+    TAB_NAMES.forEach(function (n) { $('tab-' + n).hidden = n !== name; });
+    dirty.all = true;
+    updatePanel(true);
+  }
+  el.tabs.addEventListener('click', function (e) { const b = e.target.closest('.tab'); if (b) { Sound.unlock(); setTab(b.dataset.tab); } });
+
+  const dirty = { all: true };
+  function markDirty() { dirty.all = true; }
+
+  // ---------------------------------------------------------------------------
+  // Harvest tab: generators and next goals
+  // ---------------------------------------------------------------------------
+  const genRows = {};
+  function buildGens() {
+    el.gens.innerHTML = '';
+    CT.GENERATORS.forEach(function (g, i) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'card gen';
+      b.innerHTML = '<span class="gi">' + SPR.img('gen' + i, 2) + '<span class="go num"></span></span><span class="gn"></span><span class="gr num"></span><span class="gm"><i></i></span><span class="gc num"></span>';
+      b.addEventListener('click', function () { tryBuyGen(g.id, b); });
+      el.gens.appendChild(b);
+      genRows[g.id] = { b: b, n: b.querySelector('.gn'), o: b.querySelector('.go'), r: b.querySelector('.gr'), m: b.querySelector('.gm i'), c: b.querySelector('.gc'), g: g, i: i };
     });
   }
 
-  function fmtMult(m) { return m < 10 ? m.toFixed(2) : fmt(m); }
+  function updateGens() {
+    const mode = state.settings.buyMode;
+    let shownLocked = false;
+    CT.GENERATORS.forEach(function (g) {
+      const row = genRows[g.id];
+      const vis = PS.genVisible(state, g.id);
+      if (!vis) {
+        row.b.hidden = shownLocked;
+        if (!shownLocked) {
+          shownLocked = true;
+          setClass(row.b, 'card gen locked');
+          setText(row.n, '???');
+          setText(row.o, '');
+          setText(row.r, 'Unlocks near ' + fmt(g.cost * 0.6) + ' Matter eaten');
+          setWidth(row.m, state.lifetime / (g.cost * 0.6));
+          setHTML(row.c, fmt(g.cost));
+        }
+        return;
+      }
+      row.b.hidden = false;
+      const owned = state.gens[g.id] || 0;
+      const q = PS.genQuote(state, g.id, mode);
+      const can = q.cost <= state.matter;
+      setText(row.n, g.name);
+      setText(row.o, owned ? String(owned) : '');
+      const rate = stats.genRates[g.id] || 0;
+      const each = g.rate * stats.globalMult * (1 + stats.critters.gen + stats.relics.gen);
+      setText(row.r, owned ? '+' + fmt(rate) + '/s · ' + Math.round(rate / Math.max(1e-9, stats.genPerSec) * 100) + '%' : '+' + fmt(each) + '/s each · ' + g.desc);
+      const nm = PS.nextGenMilestone(owned);
+      const prev = CT.GEN_MILESTONES[CT.GEN_MILESTONES.indexOf(nm) - 1] || 0;
+      setWidth(row.m, nm ? (owned - prev) / (nm - prev) : 1);
+      row.b.title = g.name + ': ' + g.desc + (nm ? ' · own ' + nm + ' for ×2 output' : '');
+      setHTML(row.c, fmt(q.cost) + '<small>Buy ×' + q.n + '</small>');
+      setClass(row.b, 'card gen ' + (can ? 'can' : 'cant'));
+    });
+  }
+
+  function tryBuyGen(id, node) {
+    Sound.unlock();
+    const before = state.gens[id] || 0;
+    const n = PS.buyGen(state, id, state.settings.buyMode);
+    if (!n) { Sound.deny(); return; }
+    PS.mark(state, 'firstBuy');
+    PS.checkProgress(state, ev);
+    refreshStats();
+    Scene.sync();
+    markDirty();
+    if (node) flash(node, 'bought');
+    Sound.buy();
+    if (PS.genMilestones(before + n) > PS.genMilestones(before)) toast('<b>' + PS.GEN[id].name + ' ×2!</b> ' + (before + n) + ' owned: output doubled', 'green');
+    save();
+  }
+
+  function formProgress() {
+    const cur = CT.FORMS[state.form], nxt = CT.FORMS[state.form + 1];
+    if (!nxt) return 1;
+    const lo = Math.log10(Math.max(1, cur.at)), hi = Math.log10(nxt.at), v = Math.log10(Math.max(1, state.lifetime));
+    return Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+  }
+
+  function goalsHTML() {
+    const out = [];
+    // Closest harvester milestone.
+    let best = null;
+    CT.GENERATORS.forEach(function (g) {
+      const n = state.gens[g.id] || 0;
+      if (!n) return;
+      const nm = PS.nextGenMilestone(n);
+      if (!nm) return;
+      const cost = PS.genCost(g.id, n, nm - n);
+      if (!best || cost < best.cost) best = { g: g, nm: nm, n: n, cost: cost };
+    });
+    if (best) out.push('<div class="goal">' + SPR.img('gen' + best.g.index, 1) + '<span>Own <b>' + best.nm + '</b> ' + best.g.name + 's: <b>×2</b></span><span class="gbar"><i style="width:' + (best.n / best.nm * 100).toFixed(0) + '%"></i></span></div>');
+    const av = PS.availableUpgrades(state);
+    if (av.length) {
+      const u = av[0];
+      out.push('<div class="goal">' + SPR.img(iconSprite(u.icon), 1) + '<span>Upgrade: <b>' + u.name + '</b></span><span class="gbar"><i style="width:' + Math.min(100, state.matter / u.cost * 100).toFixed(0) + '%"></i></span></div>');
+    }
+    const f = CT.FORMS[state.form + 1];
+    if (f) out.push('<div class="goal">' + SPR.img('singu', 1) + '<span>Grow into <b>' + f.name + '</b>: ×' + CT.FORM_MULT + ' Matter</span><span class="gbar"><i style="width:' + (formProgress() * 100).toFixed(0) + '%"></i></span></div>');
+    return out.join('');
+  }
+
+  function setBuyMode(m) {
+    state.settings.buyMode = m;
+    document.querySelectorAll('.buy-mode button').forEach(function (btn) { btn.classList.toggle('on', Number(btn.dataset.mode) === m); });
+    markDirty();
+  }
+  document.querySelectorAll('.buy-mode button').forEach(function (btn) {
+    btn.addEventListener('click', function () { setBuyMode(Number(btn.dataset.mode)); save(); });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Upgrades tab: catalog, Singu powers, Collapse
+  // ---------------------------------------------------------------------------
+  const STAT_TEXT = {
+    pulses: 'Pulse {n} times', lifetime: 'Eat {n} Matter in total', captures: 'Swallow {n} fragments', comets: 'Catch {n} comets',
+    lucky: 'Land {n} Lucky Pulses', spins: 'Spin the Star Reel {n} times', hatches: 'Hatch {n} capsules', pets: 'Own {n} pets', ach: 'Unlock {n} trophies',
+    comboMaxed: 'Max your combo {n} times', bestChain: 'Make a chain of {n}', relicsMade: 'Forge {n} relics', upgrades: 'Buy {n} upgrades'
+  };
+  function needText(need) {
+    if (need.stat.indexOf('gen:') === 0) { const g = PS.GEN[need.stat.slice(4)]; return 'Own ' + fmt(need.n) + ' ' + (g ? g.name : need.stat.slice(4)) + (need.n > 1 ? 's' : ''); }
+    const t = STAT_TEXT[need.stat];
+    return t ? t.replace('{n}', fmt(need.n)) : need.stat + ' ' + fmt(need.n);
+  }
+
+  let catalogKey = '';
+  const upCells = [];
+  function updateCatalog() {
+    const av = PS.availableUpgrades(state).slice(0, 48);
+    const key = av.map(function (u) { return u.id; }).join(',');
+    if (key !== catalogKey) {
+      catalogKey = key;
+      upCells.length = 0;
+      el.catalog.innerHTML = av.length ? av.map(function (u) {
+        return '<button type="button" class="up" data-up="' + u.id + '" title="' + u.name + ': ' + u.desc + '"><span class="ui">' + SPR.img(iconSprite(u.icon), 2) + '</span><span class="uc num">' + fmt(u.cost) + '</span></button>';
+      }).join('') : '<div class="empty">No upgrades available right now. Keep growing to unlock more.</div>';
+      el.catalog.querySelectorAll('.up').forEach(function (b) { upCells.push({ b: b, u: PS.UPGI[b.dataset.up] }); });
+    }
+    let affordable = 0;
+    upCells.forEach(function (c) { const can = c.u.cost <= state.matter; if (can) affordable++; setClass(c.b, 'up' + (can ? ' can' : '')); });
+    el.buyAll.disabled = affordable === 0;
+    setText(el.buyAll, affordable ? 'Buy all affordable (' + affordable + ')' : 'Buy all affordable');
+    setText(el.upCount, Object.keys(state.bought).length + ' / ' + CT.UPGRADES.length);
+    // The next locked upgrade, so there is always something to aim for.
+    let next = null;
+    for (const u of CT.UPGRADES) if (!state.bought[u.id] && !PS.upgradeUnlocked(state, u) && (!next || u.cost < next.cost)) next = u;
+    setHTML(el.upNext, next ? 'Next unlock: <b>' + next.name + '</b> · ' + needText(next.need) : 'Every upgrade unlocked!');
+  }
+  el.catalog.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-up]');
+    if (!b) return;
+    const u = PS.UPGI[b.dataset.up];
+    if (!PS.buyUpgrade(state, u.id)) { Sound.deny(); toast('<b>' + u.name + '</b>: ' + u.desc + ' · ' + fmt(u.cost) + ' Matter'); return; }
+    afterUpgrade([u]);
+  });
+  el.buyAll.addEventListener('click', function () {
+    const got = [];
+    for (const u of PS.availableUpgrades(state)) { if (u.cost > state.matter) break; if (PS.buyUpgrade(state, u.id)) got.push(u); }
+    if (!got.length) { Sound.deny(); return; }
+    afterUpgrade(got);
+  });
+  function afterUpgrade(list) {
+    Sound.unlock();
+    PS.mark(state, 'firstBuy');
+    PS.checkProgress(state, ev);
+    refreshStats();
+    Scene.sync();
+    markDirty();
+    Sound.buy();
+    Scene.onEvent({ t: 'buy' });
+    toast(list.length === 1 ? '<b>' + list[0].name + '</b> · ' + list[0].desc : '<b>' + list.length + ' upgrades</b> bought', 'green');
+    save();
+  }
+
+  const powCards = {};
+  function buildPowers() {
+    el.shop.innerHTML = '';
+    C.upgrades.forEach(function (u) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'card pow';
+      btn.title = u.name + ': ' + u.desc;
+      btn.innerHTML = '<span class="ic">' + SPR.img('up_' + u.id, 2) + '</span><span class="nm">' + u.name + '<span class="lv num"></span></span><span class="cost num"></span><span class="fx"></span>';
+      btn.addEventListener('click', function () { tryBuyPower(u.id, btn); });
+      el.shop.appendChild(btn);
+      powCards[u.id] = { b: btn, lv: btn.querySelector('.lv'), cost: btn.querySelector('.cost'), fx: btn.querySelector('.fx') };
+    });
+  }
   const tmpState = { levels: {} };
   function withLevel(id, lvl) {
     // Shallow clone with one level changed, for previewing an upgrade's effect.
@@ -158,86 +357,92 @@
     switch (id) {
       case 'radius': return 'Reach ' + pair(Math.round(s0.pulseRadius * 100) + '%', Math.round(s1.pulseRadius * 100) + '%');
       case 'density': return 'Inflow ' + pair(s0.spawnRate.toFixed(1) + '/s', s1.spawnRate.toFixed(1) + '/s');
-      case 'drones': return 'Passive ' + pair('+' + fmt(s0.dronePerSec) + '/s', '+' + fmt(s1.dronePerSec) + '/s');
       case 'resonance': return 'Chain ' + pair('+' + Math.round(s0.chainStep * 100) + '%', '+' + Math.round(s1.chainStep * 100) + '%') + ' each';
       case 'focus': return 'Value ' + pair('×' + fmtMult(s0.focusMult), '×' + fmtMult(s1.focusMult));
-      case 'luck': return 'Lucky ' + pair(Math.round(s0.luckChance * 100) + '%', Math.round(s1.luckChance * 100) + '%') + ' · reel ' + Math.round(max ? s0.reelNeed : s1.reelNeed);
+      case 'luck': return 'Lucky ' + pair(Math.round(s0.luckChance * 100) + '%', Math.round(s1.luckChance * 100) + '%');
     }
     return '';
   }
-
-  let shopDirty = true;
-  let lastShopUpdate = 0;
-  function updateShop(force) {
-    const t = performance.now();
-    if (!force && !shopDirty && t - lastShopUpdate < 120) return;
-    lastShopUpdate = t;
+  let powKey = '';
+  function updatePowers() {
     const mode = state.settings.buyMode;
+    const k = JSON.stringify(state.levels) + mode + mutation.id + Object.keys(state.critters).length;
+    const fresh = k !== powKey;
+    powKey = k;
     C.upgrades.forEach(function (u) {
-      const c = cards[u.id];
+      const c = powCards[u.id];
       const lvl = state.levels[u.id];
       const q = PS.bulkQuote(state, u.id, mode);
       const maxed = lvl >= u.max;
       const can = !maxed && q.cost <= state.matter;
-      setHTML(c.lv, u.max >= 100 ? ' Lv ' + lvl : ' ' + lvl + '/' + u.max);
-      if (maxed) setHTML(c.cost, 'MAX');
-      else setHTML(c.cost, fmt(q.cost) + (q.n > 1 ? '<small>×' + q.n + '</small>' : ''));
-      if (shopDirty || force) setHTML(c.fx, effectText(u.id, lvl));
-      const firstTime = can && !state.milestones['buy_' + u.id];
-      const cls = 'card ' + (maxed ? 'max' : can ? 'can' : 'cant') + (firstTime ? ' new' : '');
-      if (c.cls !== cls) { c.cls = cls; c.b.className = cls; }
-      c.b.setAttribute('aria-disabled', can ? 'false' : 'true');
+      setHTML(c.lv, u.max >= 100 ? 'Lv ' + lvl : lvl + '/' + u.max);
+      setHTML(c.cost, maxed ? 'MAX' : fmt(q.cost) + (q.n > 1 ? ' ×' + q.n : ''));
+      if (fresh) setHTML(c.fx, effectText(u.id, lvl));
+      setClass(c.b, 'card pow ' + (maxed ? 'max' : can ? 'can' : 'cant'));
     });
-    shopDirty = false;
   }
-
-  function tryBuy(id, node) {
+  function tryBuyPower(id, node) {
     Sound.unlock();
     const n = PS.buy(state, id, state.settings.buyMode);
     if (!n) { Sound.deny(); return; }
-    PS.mark(state, 'buy_' + id);
     PS.mark(state, 'firstBuy');
     PS.checkProgress(state, ev);
     refreshStats();
-    shopDirty = true;
-    updateShop(true);
-    node = node || cards[id].b;
-    node.classList.remove('bought'); void node.offsetWidth; node.classList.add('bought');
+    markDirty();
+    flash(node, 'bought');
     Sound.buy();
-    if (id === 'drones') syncDrones();
     save();
   }
 
-  function setBuyMode(m) {
-    state.settings.buyMode = m;
-    document.querySelectorAll('.buy-mode button').forEach(function (btn) { btn.classList.toggle('on', Number(btn.dataset.mode) === m); });
-    shopDirty = true;
-    updateShop(true);
+  let collapseKey = '';
+  function updateCollapseCard() {
+    const gain = PS.stardustFor(state);
+    const can = PS.canCollapse(state);
+    const minName = PS.sectorInfo(C.collapse.minSector).name;
+    const next = C.research.find(function (r) { return state.stardust < r.at; });
+    const nextLine = next ? 'Next research: <b>' + next.name + '</b> at <span class="sd">' + next.at + '</span>' : 'All Stardust research unlocked';
+    let key, html;
+    if (!can) {
+      const p = Math.min(1, Math.log10(1 + state.runTotal) / Math.log10(1 + PS.sectorInfo(C.collapse.minSector).at));
+      key = 'L' + Math.floor(p * 100) + '_' + state.stardust;
+      html = '<div class="row"><span class="ct">Collapse</span><span class="cs">' + (state.stardust ? '<span class="sd">' + state.stardust + ' Stardust</span> ×' + stats.sdMult.toFixed(2) : 'Locked') + '</span></div>' +
+        '<div class="cs">Reach <b>' + minName + '</b> to fold this universe into permanent Stardust (+' + Math.round(C.collapse.step * 100) + '% Matter each).</div>' +
+        '<div class="mini-bar"><i style="width:' + (p * 100).toFixed(1) + '%"></i></div>' +
+        (state.stardust ? '<div class="cs">' + nextLine + '</div>' : '');
+    } else {
+      key = 'A' + gain + '_' + state.stardust;
+      html = '<div class="row"><span class="ct">Collapse ready!</span><span class="cs"><span class="sd">' + state.stardust + ' Stardust</span></span></div>' +
+        '<div class="row"><span class="cs">Gain <span class="sd">+' + gain + '</span> · Matter ×' + stats.sdMult.toFixed(2) + ' > ×' + (1 + C.collapse.step * (state.stardust + gain)).toFixed(2) + '</span>' +
+        '<button class="btn violet sm" type="button" data-act="collapse">Collapse</button></div>' +
+        '<div class="cs">' + nextLine + '</div>';
+    }
+    if (key !== collapseKey) { collapseKey = key; el.collapse.innerHTML = html; }
   }
+  el.collapse.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-act]');
+    if (btn && btn.dataset.act === 'collapse') openCollapse();
+    else openResearch();
+  });
 
-  // Tabs ------------------------------------------------------------------------
-  let tab = 'upgrades';
-  function setTab(name) {
-    tab = name;
-    document.querySelectorAll('.tab').forEach(function (btn) { btn.classList.toggle('on', btn.dataset.tab === name); });
-    $('tab-upgrades').hidden = name !== 'upgrades';
-    $('tab-capsules').hidden = name !== 'capsules';
-    $('tab-rewards').hidden = name !== 'rewards';
-    if (name === 'capsules') { collectionKey = ''; updateCapsules(true); }
-    if (name === 'rewards') { rewardsKey = ''; updateRewards(true); }
+  // ---------------------------------------------------------------------------
+  // Pets tab: capsule machine, odds, collection
+  // ---------------------------------------------------------------------------
+  const mctx = el.machine.getContext('2d');
+  let machineFrame = -1;
+  function drawMachine(f) {
+    if (f === machineFrame) return;
+    machineFrame = f;
+    mctx.clearRect(0, 0, 56, 72);
+    mctx.drawImage(SPR.get('machine' + f), 0, 0);
   }
-  document.querySelectorAll('.tab').forEach(function (btn) { btn.addEventListener('click', function () { setTab(btn.dataset.tab); }); });
+  let crankUntil = 0;
 
-  // Capsules ----------------------------------------------------------------------
   let collectionKey = '';
   let hatching = false;
   let hatchCleanup = null;
-  function updateCapsules(force) {
+  function updatePets() {
     const G = C.gacha;
-    setText(el.ticketCount, fmt(state.tickets));
     setText(el.mTickets, fmt(state.tickets));
-    el.capBadge.hidden = !(state.tickets >= G.cost && tab !== 'capsules');
-    if (tab !== 'capsules' && !force) return;
     setHTML(el.pull1.querySelector('small'), String(G.cost));
     setHTML(el.pull10.querySelector('small'), String(G.cost10));
     el.pull1.disabled = state.tickets < G.cost || hatching;
@@ -246,22 +451,28 @@
     const g = state.gacha;
     const pctTxt = (p) => p >= 0.995 ? '100%' : p < 0.0005 ? '0%' : (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%';
     setHTML(el.odds, 'Next hatch: ' + G.rarities.map(function (r, i) { return '<b class="r' + i + '">' + r.name + ' ' + pctTxt(odds[i]) + '</b>'; }).join(' · ') +
-      '<br>Epic+ guaranteed within <b>' + (G.pityEpic - g.sinceEpic) + '</b> · Legendary within <b>' + (G.pityLegend - g.sinceLegend) + '</b> · ×10 always has a Rare+');
+      '<br>Epic+ within <b>' + (G.pityEpic - g.sinceEpic) + '</b> · Legendary within <b>' + (G.pityLegend - g.sinceLegend) + '</b> · Mythic within <b>' + (G.pityMythic - g.sinceMythic) + '</b> · ×10 always has a Rare+');
     const key = JSON.stringify(state.critters);
     if (key !== collectionKey) {
       collectionKey = key;
       setText(el.colCount, Object.keys(state.critters).length + '/' + C.critters.length);
-      el.collection.innerHTML = C.critters.map(function (c) {
+      setText(el.petBonus, 'Pets: ×' + fmtMult(stats.critterMult * stats.petMult) + ' Matter');
+      // Owned pets first (rarest first), then the ones still to find (most likely first).
+      const sorted = C.critters.slice().sort(function (a, b) {
+        const oa = state.critters[a.id] ? 1 : 0, ob = state.critters[b.id] ? 1 : 0;
+        return ob - oa || (oa ? b.rarity - a.rarity : a.rarity - b.rarity);
+      });
+      el.collection.innerHTML = sorted.map(function (c) {
         const own = state.critters[c.id];
-        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + '" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : G.rarities[c.rarity].name + ' critter, not hatched yet') + '">' +
-          SPR.img('critter_' + c.id, 2) + '<span class="cn">' + (own ? c.name : '???') + '</span><span class="st">' + (own ? '★'.repeat(own.stars) : G.rarities[c.rarity].name) + '</span></div>';
+        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + '" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : RARITY_NAMES[c.rarity] + ' pet, not hatched yet') + '">' +
+          SPR.img('pet_' + c.id, 2) + '<span class="cn">' + (own ? c.name : '???') + '</span><span class="st r' + c.rarity + '">' + (own ? '★'.repeat(own.stars) : RARITY_NAMES[c.rarity]) + '</span></div>';
       }).join('');
-      syncPets();
+      Scene.sync();
     }
   }
-  el.tickets.addEventListener('click', function () { setTab('capsules'); });
   el.pull1.addEventListener('click', function () { doPull(1); });
   el.pull10.addEventListener('click', function () { doPull(10); });
+  el.tickets.addEventListener('click', function () { setTab('pets'); });
 
   function doPull(count) {
     if (hatching) return;
@@ -269,16 +480,16 @@
     const res = PS.pull(state, count, Math.random);
     if (!res) { Sound.deny(); return; }
     hatching = true;
+    PS.checkProgress(state, ev);
     save();
     refreshStats();
-    shopDirty = true;
-    updateCapsules(true);
-    el.machine.classList.remove('shake'); void el.machine.offsetWidth; el.machine.classList.add('shake');
+    markDirty();
+    updatePets();
+    flash(el.machine.parentNode, 'shake');
+    crankUntil = performance.now() + 700;
     Sound.crank();
     if (res.length === 1) hatchOne(res[0]); else hatchMany(res);
   }
-
-  function critterName(id) { return PS.CRIT[id].name; }
 
   function resultTag(r) {
     if (r.isNew) return '<span class="tag">NEW!</span>';
@@ -286,22 +497,22 @@
     if (r.refund) return '<span class="tag up">+' + r.refund + ' tickets</span>';
     return '<span class="tag up">+1 copy</span>';
   }
-
   function finishHatch() {
     hatching = false;
     hatchCleanup = null;
     collectionKey = '';
-    updateCapsules(true);
+    PS.checkProgress(state, ev);
+    refreshStats();
+    markDirty();
     save();
   }
 
   function hatchOne(r) {
     const c = PS.CRIT[r.id];
-    const body = '<div class="hatch"><div class="stage"><div class="rays"></div><div class="capsule" style="--cap:' + RARITY_COL[0] + '"></div></div>' +
-      '<div class="reveal-text"></div></div>';
+    const body = '<div class="hatch"><div class="stage"><div class="rays"></div><div class="cap">' + SPR.img('capsule0', 4) + '</div></div><div class="reveal-text"></div></div>';
     openModal('hatch', 'Hatching…', body, []);
     const stage = el.modalBody.querySelector('.stage');
-    const cap = el.modalBody.querySelector('.capsule');
+    const cap = el.modalBody.querySelector('.cap');
     const rays = el.modalBody.querySelector('.rays');
     const text = el.modalBody.querySelector('.reveal-text');
     const timers = [];
@@ -313,12 +524,12 @@
       timers.forEach(clearTimeout);
       cap.remove();
       rays.className = 'rays on r' + r.rarity;
-      stage.insertAdjacentHTML('beforeend', '<div class="crit-big">' + SPR.img('critter_' + r.id, 6) + '</div>');
-      text.innerHTML = '<div class="rarity" style="color:' + RARITY_COL[r.rarity] + '">' + C.gacha.rarities[r.rarity].name + '</div>' +
+      stage.insertAdjacentHTML('beforeend', '<div class="crit-big">' + SPR.img('pet_' + r.id, 6) + '</div>');
+      text.innerHTML = '<div class="rarity" style="color:' + RARITY_COL[r.rarity] + '">' + RARITY_NAMES[r.rarity] + '</div>' +
         '<div class="cname">' + c.name + '</div><div class="cbonus">' + PS.critterText(c, r.stars) + '</div>' + resultTag(r);
-      el.modalTitle.textContent = r.isNew ? 'New critter!' : 'Hatched!';
+      el.modalTitle.textContent = r.isNew ? 'New pet!' : 'Hatched!';
       Sound.reveal(r.rarity);
-      if (r.rarity === 3) { fx.flash = 2; Platform.happytime(); }
+      if (r.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
       setActions([{ label: 'Yay!', cls: 'primary', fn: closeModal }]);
       finishHatch();
     }
@@ -327,17 +538,20 @@
     for (let i = 0; i < 6; i++) {
       later(520 + i * 150, function () {
         Sound.wobble();
-        cap.style.setProperty('--cap', RARITY_COL[Math.min(r.rarity, Math.floor((i / 5) * (r.rarity + 1)))]);
+        cap.innerHTML = SPR.img('capsule' + Math.min(r.rarity, Math.floor((i / 5) * (r.rarity + 1))), 4);
       });
     }
-    later(520 + 6 * 150 + 120, reveal);
+    later(520 + 6 * 150 + (r.rarity >= 3 ? 400 : 120), function () {
+      cap.innerHTML = SPR.img('capsuleOpen' + r.rarity, 4);
+      later(160, reveal);
+    });
     setActions([{ label: 'Skip', fn: reveal }]);
     hatchCleanup = reveal;
   }
 
   function hatchMany(list) {
     const body = '<div class="hatch"><div class="multi">' + list.map(function (r, i) {
-      return '<div class="cell" data-i="' + i + '"><div class="mini-cap" style="--cap:' + RARITY_COL[0] + '"></div></div>';
+      return '<div class="cell" data-i="' + i + '"><span class="mc">' + SPR.img('capsule0', 2) + '</span></div>';
     }).join('') + '</div><p class="small">Best: <b class="best">…</b></p></div>';
     openModal('hatch', 'Hatching ×' + list.length + '…', body, []);
     const cells = el.modalBody.querySelectorAll('.cell');
@@ -346,12 +560,12 @@
     function open(k) {
       const r = list[k], cell = cells[k];
       cell.className = 'cell ra' + r.rarity;
-      cell.innerHTML = SPR.img('critter_' + r.id, 2) + '<span>' + critterName(r.id) + '</span>' + resultTag(r);
+      cell.innerHTML = SPR.img('pet_' + r.id, 2) + '<span>' + PS.CRIT[r.id].name + '</span>' + resultTag(r);
     }
     const iv = setInterval(function () {
       if (i >= list.length) { finish(); return; }
       open(i);
-      if (list[i].rarity >= 2) Sound.reveal(list[i].rarity === 3 ? 2 : 1); else Sound.wobble();
+      if (list[i].rarity >= 2) Sound.reveal(Math.min(2, list[i].rarity - 1)); else Sound.wobble();
       i++;
     }, 230);
     function finish() {
@@ -359,10 +573,10 @@
       done = true;
       clearInterval(iv);
       for (; i < list.length; i++) open(i);
-      el.modalBody.querySelector('.best').textContent = critterName(best.id) + ' (' + C.gacha.rarities[best.rarity].name + ')';
+      el.modalBody.querySelector('.best').textContent = PS.CRIT[best.id].name + ' (' + RARITY_NAMES[best.rarity] + ')';
       el.modalTitle.textContent = 'Hatched ×' + list.length + '!';
       Sound.reveal(best.rarity);
-      if (best.rarity === 3) { fx.flash = 2; Platform.happytime(); }
+      if (best.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
       setActions([{ label: 'Yay!', cls: 'primary', fn: closeModal }]);
       finishHatch();
     }
@@ -370,10 +584,112 @@
     hatchCleanup = finish;
   }
 
-  // Rewards: daily login, free capsule, play gifts, quests, goals --------------------
+  // ---------------------------------------------------------------------------
+  // Relics tab: the forge (push your luck), equipped slots, vault
+  // ---------------------------------------------------------------------------
+  const RL = CT.RELICS;
+  let relicKey = '';
+  let forgeAnim = '';
+  function relicCard(r, equipped) {
+    return '<div class="relic ra' + r.r + (equipped ? ' on' : '') + '" title="' + r.a.map(PS.relicText).join(', ') + '">' + SPR.img(relicSprite(r), 2) +
+      '<span class="rn r' + r.r + '">' + r.name + '</span><span class="ra">' + r.a.map(PS.relicText).join('<br>') + '</span>' +
+      '<span class="rb"><button type="button" class="' + (equipped ? '' : 'eq') + '" data-rel="' + (equipped ? 'unequip' : 'equip') + ':' + r.uid + '">' + (equipped ? 'Remove' : 'Equip') + '</button>' +
+      (equipped ? '' : '<button type="button" data-rel="salvage:' + r.uid + '" title="Salvage for shards">+' + RL.rarities[r.r].salvage + '</button>') + '</span></div>';
+  }
+  function forgeHTML() {
+    const f = state.forge;
+    const odds = PS.relicOdds();
+    const ladder = '<div class="ladder">' + RL.rarities.map(function (x, i) { return '<span class="r' + i + (f && f.r === i ? ' on' : '') + '">' + x.name + '</span>'; }).join('') + '</div>';
+    if (!f) {
+      return '<h3>Relic Forge</h3><div class="fdesc">Spend <b>' + RL.cost + '</b> shards to forge a relic, then <b>push your luck</b> to raise its rarity.</div>' +
+        '<div class="anvil">' + SPR.img('icon_shardc', 4) + '</div>' + ladder +
+        '<div class="fdesc">Forge odds: ' + RL.rarities.map(function (x, i) { return '<b class="r' + i + '">' + (odds[i] * 100).toFixed(odds[i] < 0.01 ? 1 : 0) + '%</b>'; }).join(' · ') + '</div>' +
+        '<div class="fbtns"><button class="btn gold" type="button" data-rel="forge"' + (state.shards < RL.cost ? ' disabled' : '') + '>Forge <small>' + RL.cost + ' shards</small></button></div>';
+    }
+    const top = f.r >= RL.rarities.length - 1;
+    const chance = top ? 0 : RL.push[f.r];
+    return '<h3>Relic Forge</h3>' +
+      '<div class="anvil r' + f.r + (forgeAnim ? ' ' + forgeAnim : '') + '">' + SPR.img(relicSprite(f), 4) + '</div>' + ladder +
+      '<div class="rname r' + f.r + '">' + f.name + '</div><div class="affix">' + f.a.map(PS.relicText).join(' · ') + '</div>' +
+      (top ? '<div class="fdesc">Mythic! It cannot go any higher.</div>' : '<div class="fdesc">Push: <b>' + Math.round(chance * 100) + '%</b> to become <b class="r' + (f.r + 1) + '">' + RL.rarities[f.r + 1].name + '</b>, otherwise it shatters (refund ' + RL.shatterRefund + ' shards).</div>') +
+      '<div class="fbtns">' + (top ? '' : '<button class="btn pink" type="button" data-rel="push">Push ' + Math.round(chance * 100) + '%</button>') +
+      '<button class="btn green" type="button" data-rel="keep"' + (state.relics.length >= RL.invCap ? ' disabled' : '') + '>Keep</button></div>' +
+      (state.relics.length >= RL.invCap ? '<div class="fdesc">Your vault is full: salvage or fuse relics first.</div>' : '');
+  }
+  function updateRelics() {
+    const key = JSON.stringify([state.forge, state.relics.length, state.relicSeq, state.equipped, Math.floor(state.shards), state.form, state.collapses, forgeAnim]);
+    if (key === relicKey) return;
+    relicKey = key;
+    el.forge.innerHTML = forgeHTML();
+    const slots = PS.relicSlots(state);
+    setText(el.slotCount, state.equipped.length + '/' + slots);
+    const eq = state.equipped.map(function (uid) { return state.relics.find(function (r) { return r.uid === uid; }); }).filter(Boolean);
+    let h = eq.map(function (r) { return relicCard(r, true); }).join('');
+    for (let i = eq.length; i < slots; i++) h += '<div class="slot-empty">Empty slot</div>';
+    if (slots < 6) h += '<div class="slot-empty">' + SPR.img('icon_lock', 1.5) + ' ' + (state.form < 4 ? 'Slot at ' + CT.FORMS[4].name : state.form < 7 ? 'Slot at ' + CT.FORMS[7].name : 'Slot after 3 Collapses') + '</div>';
+    el.equipped.innerHTML = h;
+    const rb = stats.relics;
+    const sum = Object.keys(rb).filter(function (k) { return rb[k] > 0; }).map(function (k) { return PS.relicText({ k: k, v: rb[k] }); });
+    setText(el.relicSum, sum.length ? sum.slice(0, 2).join(' · ') + (sum.length > 2 ? ' …' : '') : 'No bonuses yet');
+    el.relicSum.title = sum.join(' · ');
+    const inv = state.relics.filter(function (r) { return state.equipped.indexOf(r.uid) < 0; }).sort(function (a, b) { return b.r - a.r; });
+    setText(el.invCount, state.relics.length + '/' + RL.invCap);
+    el.inventory.innerHTML = inv.length ? inv.map(function (r) { return relicCard(r, false); }).join('') : '<div class="empty">Relics you keep land here. Equip them for permanent bonuses, salvage them for shards, or fuse three into a rarer one.</div>';
+    const fuse = [];
+    for (let r = 0; r < RL.rarities.length - 1; r++) {
+      const n = inv.filter(function (x) { return x.r === r; }).length;
+      if (n >= RL.fuseNeed) fuse.push('<button class="btn violet" type="button" data-rel="fuse:' + r + '">Fuse 3 ' + RL.rarities[r].name + ' → ' + RL.rarities[r + 1].name + '</button>');
+    }
+    el.fuseRow.innerHTML = fuse.join('');
+  }
+  function relicAction(act, arg) {
+    Sound.unlock();
+    let ok = false;
+    if (act === 'forge') {
+      ok = !!PS.forgeStart(state, Math.random);
+      if (ok) { Sound.forge(); forgeAnim = 'pop'; setTimeout(function () { Sound.reveal(Math.min(4, state.forge ? state.forge.r : 0)); }, 160); }
+    } else if (act === 'push') {
+      const res = PS.forgePush(state, Math.random);
+      ok = !!res;
+      if (res && res.ok) {
+        forgeAnim = forgeAnim === 'pop' ? 'pop ' : 'pop';   // a changed key re-renders and replays the pop
+        Sound.reveal(state.forge.r);
+        if (state.forge.r >= 3) { Scene.bigFlash(1.6); Platform.happytime(); }
+        toast('<b>Pushed!</b> Now <span class="r' + state.forge.r + '">' + RL.rarities[state.forge.r].name + '</span>', 'pink');
+      } else if (res) { forgeAnim = ''; Sound.shatter(); toast('<b>Shattered…</b> +' + res.refund + ' shards back', 'violet'); }
+    } else if (act === 'keep') {
+      const r = PS.forgeKeep(state);
+      ok = !!r;
+      if (r) { Sound.buy(); forgeAnim = ''; toast('<b>' + r.name + '</b> ' + (state.equipped.indexOf(r.uid) >= 0 ? 'equipped' : 'stored in your vault'), 'green'); }
+    } else if (act === 'equip') {
+      ok = PS.equipRelic(state, Number(arg));
+      if (!ok) toast('All relic slots are full. Remove one first.');
+    } else if (act === 'unequip') ok = PS.unequipRelic(state, Number(arg));
+    else if (act === 'salvage') { const g = PS.salvageRelic(state, Number(arg)); ok = g > 0; if (ok) toast('Salvaged for <b>+' + g + ' shards</b>', 'violet'); }
+    else if (act === 'fuse') {
+      const r = Number(arg);
+      const uids = state.relics.filter(function (x) { return x.r === r && state.equipped.indexOf(x.uid) < 0; }).slice(0, RL.fuseNeed).map(function (x) { return x.uid; });
+      const made = PS.fuseRelics(state, uids, Math.random);
+      ok = !!made;
+      if (made) { Sound.reveal(Math.min(4, made.r)); toast('Fused into <b>' + made.name + '</b>!', 'pink'); }
+    }
+    if (!ok) { Sound.deny(); return; }
+    PS.checkProgress(state, ev);
+    refreshStats();
+    markDirty();
+    relicKey = '';
+    save();
+  }
+  [el.forge, el.equipped, el.inventory, el.fuseRow].forEach(function (n) {
+    n.addEventListener('click', function (e) { const b = e.target.closest('[data-rel]'); if (!b || b.disabled) return; const p = b.dataset.rel.split(':'); relicAction(p[0], p[1]); });
+  });
+  el.shards.addEventListener('click', function () { setTab('relics'); });
+
+  // ---------------------------------------------------------------------------
+  // Rewards tab: daily login, free capsule, play gifts, quests
+  // ---------------------------------------------------------------------------
   const RW = C.rewards;
   let rewardsKey = '';
-  let rewardsClock = 0;
   let pendingLogin = false;
   let lastClaimables = -1;
 
@@ -390,9 +706,10 @@
   function rewardHTML(r) {
     const parts = [];
     if (r.tickets) parts.push(SPR.img('ticket', 1) + '<b>' + r.tickets + '</b>');
-    if (r.mins) parts.push(SPR.img('matter', 2) + '<b>' + r.mins + 'm</b>');
+    if (r.shards) parts.push(SPR.img('icon_shardc', 0.75) + '<b>' + r.shards + '</b>');
+    if (r.mins) parts.push(SPR.img('matter', 1.5) + '<b>' + r.mins + 'm</b>');
     if (r.surge) parts.push(SPR.img('comet', 1) + '<b>' + r.surge + 's</b>');
-    (r.capsule || []).forEach(function (min) { parts.push(SPR.img('capsule', 2) + '<b class="r' + min + '">' + (min ? C.gacha.rarities[min].name + '+' : 'Free') + '</b>'); });
+    (r.capsule || []).forEach(function (min) { parts.push(SPR.img('capsule' + min, 1) + '<b class="r' + min + '">' + (min ? RARITY_NAMES[min] + '+' : 'Free') + '</b>'); });
     return '<span class="rw">' + parts.join('') + '</span>';
   }
 
@@ -413,15 +730,12 @@
     const L = state.login;
     const loginReady = PS.loginReady(state, todayKey);
     let h = '';
-    // Daily login calendar.
     h += '<section class="rw-sec' + (loginReady ? ' hot' : '') + '"><div class="rw-head"><b>Daily login</b><span>Week ' + (L.week + 1) + ' · Day ' + (L.day + (loginReady ? 1 : 0) || 7) + '/7</span></div>' + loginRowHTML() +
       (loginReady ? '<button class="btn gold" type="button" data-claim="login">Claim Day ' + (L.day + 1) + '</button>'
         : '<div class="small">Next reward in <span class="cd" data-cd="midnight"></span>. Missing a day never resets your calendar.</div>') + '</section>';
-    // Free capsule.
     const freeReady = PS.freeCapsuleReady(state, t);
-    h += '<section class="rw-sec' + (freeReady ? ' hot' : '') + '"><div class="free-row">' + SPR.img('capsule', 3) + '<span class="ft">Free capsule<small>A free hatch every 4 hours</small></span>' +
+    h += '<section class="rw-sec' + (freeReady ? ' hot' : '') + '"><div class="free-row">' + SPR.img('capsule1', 2) + '<span class="ft">Free capsule<small>A free hatch every 4 hours</small></span>' +
       (freeReady ? '<button class="btn pink sm" type="button" data-claim="free">Hatch free</button>' : '<span class="cd" data-cd="free"></span>') + '</div></section>';
-    // Play gifts.
     const chest = PS.chestStatus(state);
     const played = PS.playToday(state);
     const last = RW.playChests[RW.playChests.length - 1].at;
@@ -431,7 +745,6 @@
       (chest ? '<div class="rw-row"><span class="rt">Gift ' + (chest.index + 1) + ': ' + rewardHTML(chest.reward) + '</span><span class="act">' +
         (chest.ready ? '<button class="btn gold sm" type="button" data-claim="chest">Open</button>' : '<span class="cd" data-cd="chest"></span>') + '</span></div>'
         : '<div class="small">All of today\'s play gifts opened. More tomorrow!</div>') + '</section>';
-    // Daily quests.
     h += '<section class="rw-sec"><div class="rw-head"><b>Daily quests</b><span>new in <span class="cd" data-cd="midnight"></span></span></div>';
     for (let i = 0; i < state.daily.quests.length; i++) {
       const p = PS.questProgress(state, i);
@@ -442,16 +755,6 @@
     }
     h += '<div class="rw-sep"></div><div class="rw-row"><span class="rt">Finish all three: ' + rewardHTML(RW.questBonus) + '</span><span class="act">' +
       (state.daily.bonus ? '<span class="done">Done ✓</span>' : PS.questBonusReady(state) ? '<button class="btn gold sm" type="button" data-claim="bonus">Claim</button>' : '') + '</span></div></section>';
-    // Goals.
-    const goals = RW.goals.map(function (g) { return { g: g, st: PS.goalStatus(state, g) }; })
-      .sort(function (a, c) { return (c.st.ready - a.st.ready) || (a.st.maxed - c.st.maxed) || ((c.st.cur / (c.st.target || 1)) - (a.st.cur / (a.st.target || 1))); });
-    h += '<section class="rw-sec"><div class="rw-head"><b>Goals</b><span>forever</span></div>' + goals.map(function (x) {
-      const g = x.g, st = x.st;
-      if (st.maxed) return '<div class="rw-row"><span class="rt">' + g.name + ' <small>all ' + g.tiers.length + ' tiers</small></span><span class="act"><span class="done">Complete ✓</span></span></div>';
-      return '<div class="rw-row"><span class="rt">' + g.name + ' <small>' + (st.claimed + 1) + '/' + g.tiers.length + ' · ' + st.text + '</small></span><span class="act">' +
-        (st.ready ? '<button class="btn gold sm" type="button" data-claim="goal:' + g.id + '">Claim</button>' : rewardHTML({ tickets: st.tickets })) + '</span>' +
-        '<div class="bar"><i style="width:' + Math.min(100, st.cur / st.target * 100).toFixed(1) + '%"></i></div></div>';
-    }).join('') + '</section>';
     return h;
   }
 
@@ -474,16 +777,7 @@
     el.giftChip.classList.toggle('ready', ready);
   }
 
-  function updateRewards(force) {
-    if (!force && performance.now() - rewardsClock < 250) return;
-    rewardsClock = performance.now();
-    const n = PS.claimables(state, todayKey, now());
-    setText(el.rwBadge, String(n));
-    el.rwBadge.hidden = n === 0;
-    if (lastClaimables >= 0 && n > lastClaimables && !modalOpen) { toast('<b>Reward ready!</b> Open the Rewards tab', 'pink'); Sound.ticket(); }
-    lastClaimables = n;
-    updateGiftChip();
-    if (tab !== 'rewards') return;
+  function updateRewards() {
     const html = rewardsHTML();
     if (html !== rewardsKey) { rewardsKey = html; el.rewards.innerHTML = html; }
     updateCountdowns(el.rewards);
@@ -497,27 +791,28 @@
     else if (kind === 'bonus') { reward = PS.claimQuestBonus(state); title = 'All quests done'; }
     else if (kind === 'chest') { reward = PS.claimChest(state); title = 'Play gift'; }
     else if (kind === 'free') { reward = PS.claimFreeCapsule(state, now()); title = 'Free capsule'; }
-    else if (kind === 'goal') { reward = PS.claimGoal(state, arg); title = 'Goal reward'; }
+    else if (kind === 'ach') { reward = PS.claimAchievement(state, arg); title = 'Trophy'; }
     if (!reward) { Sound.deny(); return false; }
     const out = PS.grantReward(state, stats, world, reward, Math.random);
     refreshStats();
-    shopDirty = true; rewardsKey = ''; collectionKey = '';
-    lastClaimables = PS.claimables(state, todayKey, now());
+    markDirty();
+    rewardsKey = ''; collectionKey = ''; trophyKey = '';
     save();
     const bits = [];
     if (out.tickets) bits.push('+' + out.tickets + ' tickets');
+    if (out.shards) bits.push('+' + out.shards + ' shards');
     if (out.matter) bits.push('+' + fmt(out.matter) + ' Matter');
     if (out.surge) bits.push('Surge +' + out.surge + 's');
-    Sound.reelWin(out.hatches.length > 0 || kind === 'login');
-    burst(CX, CY, 30, ['4', 'p', 'c']);
+    if (kind === 'ach') Sound.achieve(); else Sound.reelWin(out.hatches.length > 0 || kind === 'login');
+    Scene.onEvent({ t: 'buy' });
     if (bits.length) toast('<b>' + title + ':</b> ' + bits.join(' · '), 'pink');
-    if (out.surge) singuMood('star', out.surge);
+    if (out.surge) Scene.mood('star', out.surge);
     if (out.hatches.length) {
       if (modalOpen) { modalOpen = null; el.modal.hidden = true; }
       hatching = true;
       if (out.hatches.length === 1) hatchOne(out.hatches[0]); else hatchMany(out.hatches);
     }
-    updateRewards(true);
+    lastClaimables = -1;
     return true;
   }
 
@@ -531,11 +826,10 @@
     const parts = btn.dataset.claim.split(':');
     claim(parts[0], parts[1]);
   }
-  // Claim on pointerdown: the tab re-renders often (progress bars), which could swallow a slow click.
+  // Claim on pointerdown: the tab re-renders often (countdowns), which could swallow a slow click.
   el.rewards.addEventListener('pointerdown', onClaim);
   el.rewards.addEventListener('click', onClaim);
-  el.giftChip.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-  el.giftChip.addEventListener('click', function (e) { e.stopPropagation(); setTab('rewards'); });
+  el.giftChip.addEventListener('click', function () { setTab('rewards'); });
 
   function openLogin() {
     const ready = PS.loginReady(state, todayKey);
@@ -546,115 +840,236 @@
     openModal('login', ready ? 'Daily reward!' : 'Claimed!', body, actions);
   }
 
-  // Collapse card -------------------------------------------------------------
-  let collapseKey = '';
-  function updateCollapseCard() {
-    const gain = PS.stardustFor(state);
-    const can = PS.canCollapse(state);
-    const minName = PS.sectorInfo(C.collapse.minSector).name;
-    const next = C.research.find(function (r) { return state.stardust < r.at; });
-    const nextLine = next ? 'Next unlock: <b>' + next.name + '</b> at <span class="sd">' + next.at + '</span>' : 'All Stardust research unlocked';
-    let key, html;
-    if (!can) {
-      const pct = Math.min(1, Math.log10(1 + state.runTotal) / Math.log10(1 + PS.sectorInfo(C.collapse.minSector).at));
-      key = 'L' + Math.floor(pct * 100) + '_' + state.stardust;
-      html = '<div class="row"><span class="ct">Collapse</span><span class="cs">' + (state.stardust ? '<span class="sd">' + state.stardust + ' Stardust</span> ×' + stats.sdMult.toFixed(2) : 'Locked') + '</span></div>' +
-        '<div class="cs">Reach <b>' + minName + '</b> to fold this universe into permanent Stardust.</div>' +
-        '<div class="mini-bar"><i style="width:' + (pct * 100).toFixed(1) + '%"></i></div>' +
-        (state.stardust ? '<div class="cs">' + nextLine + '</div>' : '');
-    } else {
-      key = 'A' + gain + '_' + state.stardust;
-      html = '<div class="row"><span class="ct">Collapse ready!</span><span class="cs"><span class="sd">' + state.stardust + ' Stardust</span></span></div>' +
-        '<div class="row"><span class="cs">Gain <span class="sd">+' + gain + '</span> · Matter ×' + stats.sdMult.toFixed(2) + ' > ×' + (1 + C.collapse.step * (state.stardust + gain)).toFixed(2) + '</span>' +
-        '<button class="btn violet" type="button" data-act="collapse">Collapse</button></div>' +
-        '<div class="cs">' + nextLine + '</div>';
-    }
-    if (key !== collapseKey) { collapseKey = key; el.collapse.innerHTML = html; }
+  // ---------------------------------------------------------------------------
+  // Trophies tab
+  // ---------------------------------------------------------------------------
+  let trophyKey = '';
+  let trophySel = null;
+  function tInfo(a) {
+    const s = state.ach[a.id] || 0;
+    const cur = PS.statValue(state, a.stat);
+    return '<b>' + a.name + '</b> · ' + a.desc + '<br>' + (s === 2 ? 'Claimed ✓' : s === 1 ? '<b style="color:var(--gold)">Ready! Tap it to claim</b>' : 'Progress: ' + fmt(Math.min(cur, a.n)) + ' / ' + fmt(a.n));
   }
-  el.collapse.addEventListener('click', function (e) {
-    const btn = e.target.closest('[data-act]');
-    if (btn && btn.dataset.act === 'collapse') openCollapse();
-    else openResearch();
+  function updateTrophies() {
+    const key = JSON.stringify(state.ach) + trophySel;
+    if (key === trophyKey) return;
+    trophyKey = key;
+    const n = PS.achievementCount(state);
+    setText(el.achCount, n + '/' + CT.ACHIEVEMENTS.length);
+    setText(el.achBonus, '×' + stats.achMult.toFixed(2) + ' Matter');
+    const ready = CT.ACHIEVEMENTS.filter(function (a) { return state.ach[a.id] === 1; }).length;
+    el.claimAll.hidden = ready === 0;
+    setText(el.claimAll, 'Claim all (' + ready + ') · +' + ready * C.tickets.ach + ' tickets · +' + ready * C.shards.ach + ' shards');
+    const cats = {};
+    CT.ACHIEVEMENTS.forEach(function (a) { (cats[a.cat] = cats[a.cat] || []).push(a); });
+    let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for tickets and a shard.') + '</div>';
+    Object.keys(cats).forEach(function (c) {
+      const list = cats[c];
+      const got = list.filter(function (a) { return state.ach[a.id]; }).length;
+      h += '<div class="tcat"><h3><span>' + c + '</span><span class="num">' + got + '/' + list.length + '</span></h3><div class="tgrid">' + list.map(function (a) {
+        const s = state.ach[a.id] || 0;
+        return '<button type="button" class="tro' + (s === 2 ? ' got' : s === 1 ? ' ready' : '') + (trophySel === a.id ? ' sel' : '') + '" data-ach="' + a.id + '" title="' + a.name + ': ' + a.desc + '">' + SPR.img('icon_trophy', 1.75) + '</button>';
+      }).join('') + '</div></div>';
+    });
+    el.trophies.innerHTML = h;
+  }
+  el.trophies.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-ach]');
+    if (!b) return;
+    const id = b.dataset.ach;
+    if (state.ach[id] === 1) claim('ach', id);
+    trophySel = id;
+    trophyKey = '';
+    updateTrophies();
+  });
+  el.claimAll.addEventListener('click', function () {
+    let n = 0;
+    CT.ACHIEVEMENTS.forEach(function (a) { if (state.ach[a.id] === 1) { PS.grantReward(state, stats, world, PS.claimAchievement(state, a.id), Math.random); n++; } });
+    if (!n) return;
+    refreshStats(); markDirty(); trophyKey = ''; save();
+    Sound.achieve();
+    Scene.onEvent({ t: 'buy' });
+    toast('<b>' + n + ' trophies claimed</b> · +' + n * C.tickets.ach + ' tickets · +' + n * C.shards.ach + ' shards', 'pink');
   });
 
-  // Milestone and Star Reel meters: the next goal is always visible.
-  function updateMilestone() {
-    let text, val, pct;
-    if (!state.milestones.firstBuy && !state.collapses) {
-      const cost = PS.upgradeCost('radius', state.levels.radius);
-      text = '<b>First upgrade</b> · Event Horizon';
-      val = fmt(Math.min(state.matter, cost)) + ' / ' + fmt(cost);
-      pct = state.matter / cost;
-    } else {
-      const nxt = PS.sectorInfo(state.sector + 1);
-      const cur = PS.sectorInfo(state.sector);
-      text = 'Next sector · <b>' + nxt.name + '</b>';
-      val = fmt(state.runTotal) + ' / ' + fmt(nxt.at);
-      // Log-scaled within the sector so the bar keeps moving at big numbers.
-      const lo = Math.log10(Math.max(1, cur.at)), hi = Math.log10(nxt.at), v = Math.log10(Math.max(1, state.runTotal));
-      pct = state.sector === 0 ? state.runTotal / nxt.at : (v - lo) / (hi - lo);
-    }
-    setHTML(el.msText, text);
-    setText(el.msVal, val);
-    setWidth(el.msFill, pct);
-    const need = Math.ceil(stats.reelNeed);
-    const charge = world.reel ? need : Math.floor(state.reelCharge);
-    setText(el.reelVal, world.reel ? 'SPIN!' : charge + ' / ' + need);
-    setWidth(el.reelFill, charge / need);
-    el.reelFill.parentNode.classList.toggle('full', !!world.reel);
+  // ---------------------------------------------------------------------------
+  // Panel updates and badges
+  // ---------------------------------------------------------------------------
+  let panelClock = 0;
+  function updatePanel(force) {
+    const t = performance.now();
+    if (!force && !dirty.all && t - panelClock < 150) return;
+    panelClock = t;
+    dirty.all = false;
+    if (tab === 'harvest') { updateGens(); setHTML(el.goals, goalsHTML()); }
+    else if (tab === 'upgrades') { updateCatalog(); updatePowers(); updateCollapseCard(); }
+    else if (tab === 'pets') updatePets();
+    else if (tab === 'relics') updateRelics();
+    else if (tab === 'rewards') updateRewards();
+    else if (tab === 'trophies') updateTrophies();
+    updateBadges();
   }
 
+  function setBadge(name, n, text) {
+    const b = badges[name];
+    const show = n > 0 && tab !== name;
+    if (b.hidden === show) b.hidden = !show;
+    if (show) setText(b, text || String(n));
+  }
+  function updateBadges() {
+    let gens = 0;
+    CT.GENERATORS.forEach(function (g) { if (PS.genVisible(state, g.id) && PS.genCost(g.id, state.gens[g.id] || 0, 1) <= state.matter) gens++; });
+    setBadge('harvest', gens, '!');
+    let ups = 0;
+    for (const u of PS.availableUpgrades(state)) { if (u.cost > state.matter) break; ups++; }
+    setBadge('upgrades', ups);
+    setBadge('pets', state.tickets >= C.gacha.cost ? 1 : 0, '!');
+    setBadge('relics', (state.shards >= RL.cost || state.forge) ? 1 : 0, '!');
+    let ach = 0;
+    for (const id in state.ach) if (state.ach[id] === 1) ach++;
+    setBadge('trophies', ach);
+    const n = PS.claimables(state, todayKey, now()) - ach;
+    setBadge('rewards', n);
+    if (lastClaimables >= 0 && n > lastClaimables && !modalOpen) { toast('<b>Reward ready!</b> Open the Rewards tab', 'pink'); Sound.ticket(); }
+    lastClaimables = n;
+  }
+
+  // ---------------------------------------------------------------------------
+  // HUD
+  // ---------------------------------------------------------------------------
   let lastMatterStr = '';
   function updateHud() {
     const m = fmt(state.matter);
     if (m !== lastMatterStr) { lastMatterStr = m; el.matter.textContent = m; }
-    const rate = stats.dronePerSec * (world.surge > 0 ? C.comet.surgeMult : 1);
-    setText(el.rate, rate > 0 ? '+' + fmt(rate) + '/s passive' : '');
-    setText(el.singuLv, String(state.singuLevel));
-    const lo = state.singuLevel ? PS.singuNext(state.singuLevel - 1) : 0, hi = PS.singuNext(state.singuLevel);
-    setWidth(el.xp, (state.lifetime - lo) / (hi - lo));
+    const surge = world.surge > 0 ? C.comet.surgeMult : 1;
+    const comboMult = 1 + world.combo * stats.comboMax;
+    setText(el.perPulse, '+' + fmt(stats.tapValue * comboMult * surge) + ' per pulse');
+    setText(el.perSec, '+' + fmt(stats.genPerSec * surge) + ' /sec');
+    setHTML(el.multChip, '×<b>' + fmtMult(stats.globalMult) + '</b> income');
+    setWidth(el.comboFill, world.combo);
+    setText(el.comboVal, '×' + comboMult.toFixed(2));
+    el.combo.classList.toggle('full', world.combo >= 0.99);
+    setText(el.ticketCount, fmt(state.tickets));
+    setText(el.shardCount, fmt(Math.floor(state.shards)));
+    el.sdBtn.hidden = !state.stardust;
+    setText(el.sdCount, fmt(state.stardust));
     setText(el.sectorNum, String(state.sector + 1));
     setText(el.sectorName, stats.sector.name);
     setHTML(el.mut, 'Today: <b>' + mutation.name + '</b>');
+    // Form progression bar.
+    const f = CT.FORMS[state.form], nf = CT.FORMS[state.form + 1];
+    setText(el.formNum, String(state.form + 1));
+    setText(el.formName, f.name);
+    setText(el.formNext, nf ? 'next: ' + nf.name + ' at ' + fmt(nf.at) : 'final form!');
+    setWidth(el.formFill, formProgress());
+    // Next sector and Star Reel.
+    const nxt = PS.sectorInfo(state.sector + 1), cur = PS.sectorInfo(state.sector);
+    setHTML(el.msText, 'Sector ' + (state.sector + 2) + ' at <b>' + fmt(nxt.at) + '</b>');
+    const lo = Math.log10(Math.max(1, cur.at)), hi = Math.log10(nxt.at), v = Math.log10(Math.max(1, state.runTotal));
+    setWidth(el.msFill, state.sector === 0 ? state.runTotal / nxt.at : (v - lo) / (hi - lo));
+    const need = Math.ceil(stats.reelNeed);
+    const charge = world.reel ? need : Math.floor(state.reelCharge);
+    setText(el.reelVal, world.reel ? 'SPIN!' : charge + '/' + need);
+    setWidth(el.reelFill, charge / need);
+    el.reelFill.parentNode.classList.toggle('full', !!world.reel);
     if (world.surge > 0) {
       el.surge.hidden = false;
       setText(el.surge, 'SURGE ×' + C.comet.surgeMult + ' · ' + Math.ceil(world.surge) + 's');
-      el.universe.classList.add('surging');
+      el.scene.classList.add('surging');
     } else if (!el.surge.hidden) {
       el.surge.hidden = true;
-      el.universe.classList.remove('surging');
+      el.scene.classList.remove('surging');
     }
-    setText(el.atlasCount, PS.discoveryCount(state) + '/' + C.discoveries.length);
-    setWidth(el.pulseCd, Math.max(0, world.cooldown) / C.pulseCooldown);
-    // Overcharge offer.
     if (world.overcharge && !modalOpen) {
       if (el.oc.hidden) { el.oc.hidden = false; Sound.ticket(); }
       setWidth(el.ocTimer, world.overcharge.t / C.overcharge.window);
     } else if (!el.oc.hidden) el.oc.hidden = true;
+    updateGiftChip();
     updateHint();
   }
 
   let hintMode = null;
-  const COARSE = matchMedia('(pointer: coarse)').matches;
   function updateHint() {
-    let mode = '', text = '';
+    let mode = 'idle', text = 'Tap or hold Singu';
     const c = world.comet;
     if (c && !c.caught && Math.abs(c.x) < 1.15 && Math.abs(c.y) < 1) {
       const inRange = Math.hypot(c.x, c.y / 0.82) <= stats.pulseRadius;
       mode = inRange ? 'comet-in' : 'comet';
-      text = inRange ? 'Comet in range! Pulse now!' : 'A comet! Catch it in your pulse';
-    } else if (!state.stats.pulses) {
-      mode = 'first'; text = COARSE ? 'Tap anywhere to feed Singu' : 'Click anywhere or press Space to feed Singu';
-    } else if (state.stats.pulses < 4 && state.stats.captures < 6) {
-      mode = 'learn'; text = 'Bits inside the dotted ring get pulled in';
+      text = inRange ? 'Comet in range! Pulse!' : 'A comet! Catch it in your pulse';
+    } else if (state.stats.pulses < 4) {
+      mode = 'first'; text = 'Tap Singu to feed it';
+    } else if (state.stats.pulses > 300 && world.combo > 0.2) {
+      mode = 'hide';
     }
-    if (world.overcharge && !modalOpen) mode = '';
     if (mode !== hintMode) {
       hintMode = mode;
-      if (mode) { el.hint.textContent = text; el.hint.classList.remove('hide'); }
-      else el.hint.classList.add('hide');
-      el.hint.classList.toggle('comet', mode.indexOf('comet') === 0);
+      setText(el.hintText, text);
+      setClass(el.hint, 'tap-pill' + (mode === 'hide' ? ' hide' : mode === 'idle' ? '' : ' hot'));
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Events: sounds and UI. Visual effects go to the scene.
+  // ---------------------------------------------------------------------------
+  function handleEvents() {
+    for (let i = 0; i < ev.length; i++) {
+      const e = ev[i];
+      Scene.onEvent(e);
+      switch (e.t) {
+        case 'pulse': Sound.pulse(e.auto); if (e.lucky > 1) Sound.lucky(); break;
+        case 'capture': Sound.capture(e.idx, e.type); break;
+        case 'swallow': Sound.swallow(); break;
+        case 'blast': Sound.blast(); break;
+        case 'payout': if (e.total > 0) { if (!e.auto) Sound.payout(e.chain); flash(el.matter, 'bump'); } break;
+        case 'tickets': Sound.ticket(); flash(el.tickets, 'flash'); break;
+        case 'shards': flash(el.shards, 'flash'); break;
+        case 'level': Sound.level(); Platform.submitScore(state.singuLevel); break;
+        case 'comet': Sound.comet(); break;
+        case 'comboFull': Sound.lucky(); break;
+        case 'surge':
+          Sound.surge();
+          banner('Comet captured', 'Surge ×' + C.comet.surgeMult, 'All Matter ×' + C.comet.surgeMult + ' for ' + Math.round(e.dur) + ' seconds');
+          Platform.happytime();
+          break;
+        case 'reelStart': startReelAnim(e); break;
+        case 'reel': showReelResult(e); break;
+        case 'overcharge': Sound.overcharge(e.win); break;
+        case 'form': {
+          const f = CT.FORMS[e.form];
+          Sound.form();
+          refreshStats();
+          markDirty();
+          banner('Singu evolved', f.name + '!', 'Form ' + (e.form + 1) + ' · all Matter ×' + CT.FORM_MULT + (e.form === 4 || e.form === 7 ? ' · new relic slot!' : ''));
+          Platform.happytime();
+          break;
+        }
+        case 'ach': {
+          const a = PS.ACH[e.id];
+          markDirty();
+          if (a && !COVER) { Sound.achieve(); toast(SPR.img('icon_trophy', 1) + '<span><b>' + a.name + '</b> · ' + a.desc + '</span>', 'ach'); }
+          break;
+        }
+        case 'sector': {
+          const sec = PS.sectorInfo(e.index);
+          Sound.sector();
+          refreshStats();
+          markDirty();
+          banner('Sector ' + (e.index + 1) + ' revealed', sec.name, (SECTOR_NEWS[e.index] || 'Fragments worth more') + ' · +' + C.tickets.sector + ' tickets');
+          Platform.happytime();
+          break;
+        }
+        case 'discover': {
+          const d = C.discoveries.find(function (x) { return x.id === e.id; });
+          markDirty();
+          if (d) {
+            setTimeout(function () { Sound.discover(); toast('<b>' + d.name + '</b> discovered · +' + Math.round(C.atlasStep * 100) + '% · +' + C.tickets.discovery + ' tickets'); }, 250);
+            flash(el.atlasBtn, 'flash');
+          }
+          break;
+        }
+      }
+    }
+    ev.length = 0;
   }
 
   // Star Reel overlay -----------------------------------------------------------
@@ -700,14 +1115,11 @@
     el.reelResult.innerHTML = e.name + '<small>+' + fmt(e.matter) + ' Matter' + (e.tickets ? ' · +' + e.tickets + ' tickets' : '') + (e.surge ? ' · SURGE!' : '') + '</small>';
     if (big) el.reel.classList.add('jackpot');
     Sound.reelWin(big);
-    if (e.result === 'singu3') { banner('Star Reel', 'SINGU JACKPOT!', '+' + fmt(e.matter) + ' Matter · +' + e.tickets + ' tickets'); fx.flash = 2; Platform.happytime(); singuMood('happy', 4); }
-    else if (e.result !== 'none' && e.result !== 'pair') singuMood('happy', 1.5);
-    burst(CX, CY - 6, big ? 40 : 14, ['4', 'c', 'p']);
+    if (e.result === 'singu3') { banner('Star Reel', 'SINGU JACKPOT!', '+' + fmt(e.matter) + ' Matter · +' + e.tickets + ' tickets'); Platform.happytime(); }
     clearTimeout(reelHide);
     reelHide = setTimeout(function () { el.reel.hidden = true; }, 2100);
   }
 
-  // Overcharge -----------------------------------------------------------------
   el.oc.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
   el.oc.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -722,20 +1134,22 @@
     t.className = 'toast' + (tone ? ' ' + tone : '');
     t.innerHTML = html;
     el.toasts.appendChild(t);
-    while (el.toasts.children.length > 2) el.toasts.removeChild(el.toasts.firstChild);
+    while (el.toasts.children.length > (innerWidth < 700 ? 2 : 3)) el.toasts.removeChild(el.toasts.firstChild);
     setTimeout(function () { t.classList.add('out'); }, 3200);
     setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3500);
   }
-
   let bannerTimer = 0;
   function banner(kicker, title, sub) {
     el.banner.innerHTML = '<div class="b-kicker">' + kicker + '</div><div class="b-title">' + title + '</div>' + (sub ? '<div class="b-sub">' + sub + '</div>' : '');
+    el.banner.classList.remove('show'); void el.banner.offsetWidth;
     el.banner.classList.add('show');
     clearTimeout(bannerTimer);
     bannerTimer = setTimeout(function () { el.banner.classList.remove('show'); }, 3000);
   }
 
-  // Modals --------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Modals
+  // ---------------------------------------------------------------------------
   function setActions(actions) {
     el.modalActions.innerHTML = '';
     (actions || []).forEach(function (a) {
@@ -752,6 +1166,7 @@
   }
   function openModal(kind, title, body, actions) {
     modalOpen = kind;
+    holding = false;
     el.modalTitle.textContent = title;
     el.modalBody.innerHTML = body;
     setActions(actions);
@@ -779,17 +1194,16 @@
     const body =
       '<p>Fold this universe into <b>Stardust</b>. Every future run produces more Matter.</p>' +
       '<div class="big-gain" style="color:var(--lav)">+' + gain + ' Stardust</div>' +
-      '<p>Matter multiplier <b>×' + stats.sdMult.toFixed(2) + '</b> > <b style="color:var(--lav)">×' + (1 + C.collapse.step * after).toFixed(2) + '</b></p>' +
+      '<p>Matter multiplier <b>×' + stats.sdMult.toFixed(2) + '</b> > <b style="color:var(--lav)">×' + (1 + C.collapse.step * after).toFixed(2) + '</b> · plus <b>' + C.shards.collapse * gain + ' relic shards</b></p>' +
       (unlocks.length ? '<p>Unlocks: ' + unlocks.map(function (r) { return '<b style="color:var(--lav)">' + r.name + '</b>: ' + r.desc; }).join('<br>') + '</p>' : '') +
-      '<div class="cols"><div><h3 class="h-reset">Resets</h3><ul><li>Matter (' + fmt(state.matter) + ')</li><li>Upgrade levels' + (anchor ? ' (except Horizon &amp; Density)' : '') + '</li><li>Sector progress</li></ul></div>' +
-      '<div><h3 class="h-keep">Stays forever</h3><ul><li>Stardust</li><li>Critters &amp; tickets</li><li>Singu level</li><li>Atlas &amp; research</li></ul></div></div>' +
+      '<div class="cols"><div><h3 class="h-reset">Resets</h3><ul><li>Matter (' + fmt(state.matter) + ')</li><li>Harvesters &amp; upgrades</li><li>Singu powers' + (anchor ? ' (except Horizon &amp; Density)' : '') + '</li><li>Sector progress</li></ul></div>' +
+      '<div><h3 class="h-keep">Stays forever</h3><ul><li>Stardust</li><li>Pets, relics &amp; tickets</li><li>Form, Singu level &amp; trophies</li><li>Atlas &amp; research</li></ul></div></div>' +
       '<p class="small">Waiting longer earns more Stardust. There is no rush: Collapse whenever you like.</p>';
     openModal('collapse', 'Collapse this universe?', body, [
       { label: 'Not yet', fn: closeModal },
       { label: 'Collapse for +' + gain, cls: 'violet', fn: function (btn) { btn.disabled = true; confirmCollapse(); } }
     ]);
   }
-
   function confirmCollapse() {
     if (collapsing || !PS.canCollapse(state)) return;
     collapsing = true;
@@ -801,20 +1215,17 @@
     closeModal();
     refreshStats();
     world = PS.createWorld(Math.random, state, stats);
-    syncDrones();
-    fx.collapse = 1.6;
-    rebuildBackground(true);
+    Scene.sync();
+    Scene.collapseFx();
     Sound.collapse();
     Platform.happytime();
-    shopDirty = true;
-    updateShop(true);
+    resetKeys();
     banner('Universe collapsed', '+' + gain + ' Stardust', 'Matter ×' + stats.sdMult.toFixed(2) + ' · a new universe begins');
     C.research.forEach(function (r) {
       if (before < r.at && state.stardust >= r.at) setTimeout(function () { toast('<b>Research unlocked:</b> ' + r.name + ': ' + r.desc, 'violet'); }, 1200);
     });
     collapsing = false;
   }
-
   function openResearch() {
     const flags = PS.researchFlags(state);
     const list = C.research.map(function (r) {
@@ -825,6 +1236,7 @@
       '<div class="research">' + list + '</div>';
     openModal('research', 'Stardust research', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
+  el.sdBtn.addEventListener('click', openResearch);
 
   function openAtlas() {
     const n = PS.discoveryCount(state);
@@ -835,20 +1247,42 @@
     const body = '<p>Each discovery permanently adds <b>+' + Math.round(C.atlasStep * 100) + '% Matter</b> and gives <b>' + C.tickets.discovery + ' tickets</b>. Current bonus: <b style="color:var(--butter)">×' + stats.atlasMult.toFixed(2) + '</b> (' + n + '/' + C.discoveries.length + ').</p><div class="atlas">' + items + '</div>';
     openModal('atlas', 'Discovery Atlas', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
-
   function openMutation() {
     const body = '<p>Every day the universe drifts into a new <b>Cosmic Mutation</b>, a free bonus for that day. Nothing is lost when it changes.</p>' +
       '<div class="big-gain" style="color:var(--pink);font-size:24px">' + mutation.name + '</div><p><b>' + mutation.desc + '.</b></p>' +
       '<p class="small">A different mutation, new daily quests and the next login reward arrive tomorrow.</p>';
     openModal('mutation', "Today's Cosmic Mutation", body, [{ label: 'Nice', cls: 'primary', fn: closeModal }]);
   }
+  function openMults() {
+    const rows = [
+      ['Form · ' + CT.FORMS[state.form].name, stats.formMult], ['Stardust', stats.sdMult], ['Pets', stats.critterMult * stats.petMult],
+      ['Trophies', stats.achMult], ['Atlas', stats.atlasMult], ['Singu level ' + state.singuLevel, stats.singuMult],
+      ['Upgrades', stats.upgrades.global], ['Relics', 1 + stats.relics.global]
+    ];
+    const body = '<p>Everything that multiplies your income. Pulses also get <b>Pulse Focus ×' + fmtMult(stats.focusMult) + '</b>, combo and chains.</p><div class="mults">' +
+      rows.map(function (r) { return '<span>' + r[0] + '</span><span>×' + fmtMult(r[1]) + '</span>'; }).join('') + '<span><b>Total</b></span><span>×' + fmtMult(stats.globalMult) + '</span></div>';
+    openModal('mults', 'Income multipliers', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+  }
+  el.multChip.addEventListener('click', openMults);
+
+  function openLeaderboard() {
+    const can = Platform.canLeaderboard();
+    const body = '<div class="lb-score">' + SPR.img('singu', 3) + '<div><div class="small">Your score: Singu level</div><div class="big-gain num">' + state.singuLevel + '</div></div></div>' +
+      '<p>Singu gains a level every time the Matter it has ever eaten doubles. Your best level is your leaderboard score.</p>' +
+      (can ? '<p>Your score is submitted automatically. The leaderboard is shown on the <b>CrazyGames</b> game page.</p>'
+        : '<p class="small">The leaderboard works when the game runs on CrazyGames with its leaderboard set up. Your progress is still saved here.</p>') +
+      '<p class="small">Lifetime ' + fmt(state.lifetime) + ' Matter · Form ' + (state.form + 1) + ' ' + CT.FORMS[state.form].name + ' · ' + PS.achievementCount(state) + ' trophies · ' + Object.keys(state.critters).length + ' pets</p>';
+    if (can) Platform.submitScore(state.singuLevel);
+    openModal('leader', 'Leaderboard', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+  }
+  el.leader.addEventListener('click', openLeaderboard);
 
   function openSettings() {
     const body =
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or Space · Buy: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
-      '<p class="small">Capsule odds are shown on the Capsules tab. Tickets are earned only by playing and cannot be bought.</p>' +
+      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold Singu, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
+      '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
       '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
     openModal('settings', 'Settings', body, [
@@ -863,9 +1297,8 @@
       });
     });
   }
-
   function confirmReset() {
-    openModal('reset', 'Erase everything?', '<p>This permanently deletes your universe, Stardust, critters, tickets and Atlas on this device. It cannot be undone.</p>', [
+    openModal('reset', 'Erase everything?', '<p>This permanently deletes your universe, Stardust, pets, relics, trophies and tickets on this device. It cannot be undone.</p>', [
       { label: 'Keep my universe', cls: 'primary', fn: closeModal },
       { label: 'Erase everything', cls: 'danger', fn: function () {
         Platform.remove(SAVE_KEY); Platform.remove(BAK_KEY);
@@ -874,15 +1307,14 @@
         state.settings = settings;
         refreshStats();
         world = PS.createWorld(Math.random, state, stats);
-        syncDrones(); syncPets();
-        rebuildBackground(true);
-        shopDirty = true; collapseKey = ''; collectionKey = '';
+        Scene.sync(); Scene.rebuild(true);
+        resetKeys();
         save();
         closeModal();
       } }
     ]);
   }
-
+  function resetKeys() { collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
   function playTimeText(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? h + 'h ' + m + 'm' : m + 'm ' + Math.floor(s % 60) + 's';
@@ -901,7 +1333,7 @@
     if (viaModal && a.ms >= 60000) {
       awayPending = { gain: a.gain, doubled: false };
       const capped = ms > C.offlineCapMs;
-      const body = '<p>Your Orbital Drones kept Singu fed for <b>' + playTimeText(a.ms / 1000) + '</b>' + (capped ? ' (the 2 h maximum)' : '') + ' at ' + Math.round(stats.offlineRate * 100) + '% speed.</p>' +
+      const body = '<p>Your harvesters kept Singu fed for <b>' + playTimeText(a.ms / 1000) + '</b>' + (capped ? ' (the 2 h maximum)' : '') + ' at ' + Math.round(stats.offlineRate * 100) + '% speed.</p>' +
         '<div class="big-gain num">+' + fmt(a.gain) + ' Matter</div>' +
         '<p class="small">Away income is capped at 2 hours. Playing is always faster.</p>';
       const actions = [{ label: 'Collect', cls: 'primary', fn: closeModal }];
@@ -927,36 +1359,26 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Input
+  // Input: tap or hold Singu
   // ---------------------------------------------------------------------------
+  let holding = false;
   function doPulse() {
     if (modalOpen) return;
     Sound.unlock();
     Platform.gameplayStart();
     PS.pulse(world, state, stats, ev, false);
   }
-
-  function toArt(e) {
-    const r = el.cv.getBoundingClientRect();
-    return { x: (e.clientX - r.left) * BW / r.width, y: (e.clientY - r.top) * BH / r.height };
-  }
-  el.universe.addEventListener('pointerdown', function (e) {
+  el.scene.addEventListener('pointerdown', function (e) {
     if (e.button !== undefined && e.button !== 0) return;
     if (e.target.closest('button')) return;
     e.preventDefault();
-    const a = toArt(e);
-    tapPoint = { x: a.x, y: a.y, t: 0 };
+    Scene.tap(e.clientX, e.clientY);
+    holding = true;
+    try { el.scene.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     doPulse();
   });
-  el.universe.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  el.pulse.addEventListener('pointerdown', function (e) {
-    if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault();
-    el.pulse.classList.add('press');
-    doPulse();
-  });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (n) { el.pulse.addEventListener(n, function () { el.pulse.classList.remove('press'); }); });
-  el.pulse.addEventListener('click', function (e) { if (e.detail === 0) doPulse(); });  // keyboard activation only
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { el.scene.addEventListener(n, function () { holding = false; }); });
+  el.scene.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   document.addEventListener('keydown', function (e) {
     if (e.code === 'Escape') { closeModal(); return; }
@@ -964,18 +1386,15 @@
     if (e.code === 'Space') { e.preventDefault(); doPulse(); return; }
     if (e.repeat) return;
     const n = Number(e.key);
-    if (n >= 1 && n <= C.upgrades.length) { tryBuy(C.upgrades[n - 1].id); return; }
+    if (n >= 1 && n <= TAB_NAMES.length) { setTab(TAB_NAMES[n - 1]); return; }
     if (e.key === 'm' || e.key === 'M') toggleMute();
   });
   document.addEventListener('keyup', function (e) { if (e.code === 'Space' && !modalOpen) e.preventDefault(); });
 
-  document.querySelectorAll('.buy-mode button').forEach(function (btn) {
-    btn.addEventListener('click', function () { setBuyMode(Number(btn.dataset.mode)); save(); });
-  });
   el.atlasBtn.addEventListener('click', openAtlas);
   el.settings.addEventListener('click', openSettings);
   el.sound.addEventListener('click', toggleMute);
-  el.mut.addEventListener('click', function (e) { e.stopPropagation(); openMutation(); });
+  el.mut.addEventListener('click', openMutation);
 
   function toggleMute() {
     state.settings.muted = !state.settings.muted;
@@ -985,7 +1404,6 @@
     el.sound.setAttribute('aria-label', state.settings.muted ? 'Unmute sound' : 'Mute sound');
     save();
   }
-
   function setReduced(v) {
     reduced = v;
     state.settings.reducedMotion = v;
@@ -994,27 +1412,8 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Pixel rendering
+  // Layout: large screens scale the whole UI so text stays readable
   // ---------------------------------------------------------------------------
-  // The universe is drawn into a small buffer (BW×BH art pixels) and scaled up by an integer.
-  const buf = document.createElement('canvas');
-  const b = buf.getContext('2d');
-  let W = 0, H = 0, DPR = 1, PXS = 2, BW = 1, BH = 1, KK = 2, CX = 0, CY = 0, S = 100;
-  let bg = null, bgPrev = null;
-  const fx = { shake: 0, gulp: 0, flash: 0, collapse: 0, bgFade: 1, lucky: 0, ocWin: 0, ocLose: 0 };
-  let tapPoint = null;
-  const twinkles = [];
-  const particles = [];
-  const floats = [];
-  const blasts = [];
-  let drones = [];
-  let pets = [];
-  const MAX_PARTICLES = 320, MAX_FLOATS = 26;
-  const mood = { kind: '', t: 0, munch: 0 };
-
-  function singuMood(kind, secs) { if (kind === 'happy' || !mood.t || mood.kind !== 'happy') { mood.kind = kind; mood.t = secs; } }
-
-  // Large screens (fullscreen) scale the whole UI up so text stays readable.
   let uiScale = 1;
   const appEl = document.getElementById('app');
   function fitApp() {
@@ -1025,614 +1424,6 @@
     appEl.style.height = (innerHeight / uiScale) + 'px';
     appEl.style.transform = 'scale(' + uiScale + ')';
     appEl.style.transformOrigin = '0 0';
-  }
-
-  function resize() {
-    DPR = Math.min(3, window.devicePixelRatio || 1) * uiScale;
-    // Layout size (before the UI transform), so the canvas matches its box exactly.
-    W = Math.max(1, el.universe.clientWidth);
-    H = Math.max(1, el.universe.clientHeight);
-    PXS = Math.max(2, Math.min(8, Math.floor(Math.min(W, H) / 150)));
-    BW = Math.ceil(W / PXS); BH = Math.ceil(H / PXS);
-    KK = Math.max(1, Math.round(PXS * DPR));
-    el.cv.width = BW * KK; el.cv.height = BH * KK;
-    el.cv.style.width = BW * PXS + 'px'; el.cv.style.height = BH * PXS + 'px';
-    el.cv.style.left = Math.floor((W - BW * PXS) / 2) + 'px';
-    el.cv.style.top = Math.floor((H - BH * PXS) / 2) + 'px';
-    buf.width = BW; buf.height = BH;
-    CX = Math.floor(BW / 2);
-    CY = Math.floor(BH / 2) + 3;
-    S = Math.min(BW / 2 / 1.06, BH / 2 / (1.06 * 0.82));
-    for (const k in patterns) delete patterns[k];
-    rebuildBackground(false);
-  }
-
-  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  function dith(x, y, v) { return v * 16 > BAYER[((y & 3) << 2) | (x & 3)]; }
-  function rgb(key) { const n = parseInt(P[key].slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
-
-  // Dithered fill patterns for flashes, cached per colour and density.
-  const patterns = {};
-  function pattern(key, level) {
-    const id = key + level;
-    if (patterns[id]) return patterns[id];
-    const c = document.createElement('canvas');
-    c.width = c.height = 4;
-    const g = c.getContext('2d');
-    g.fillStyle = P[key];
-    for (let i = 0; i < 16; i++) if (BAYER[i] < level) g.fillRect(i & 3, i >> 2, 1, 1);
-    patterns[id] = b.createPattern(c, 'repeat');
-    return patterns[id];
-  }
-
-  function rebuildBackground(animate) {
-    if (!BW) return;
-    const sec = PS.sectorInfo(state.sector);
-    const skin = SKIES[(sec.palette + sec.tier * 2) % SKIES.length];
-    const amb = SKIES[sec.palette].ambient;
-    if (animate && bg) { bgPrev = bg; fx.bgFade = 0; } else { bgPrev = null; fx.bgFade = 1; }
-    const c = document.createElement('canvas');
-    c.width = BW; c.height = BH;
-    const g = c.getContext('2d');
-    const img = g.createImageData(BW, BH);
-    const d = img.data;
-    const stops = skin.stops.map(rgb);
-    const neb = skin.neb.map(rgb);
-    const rng = PS.mulberry32(1000 + sec.index * 7919);
-    const blobs = [];
-    for (let i = 0; i < 5; i++) blobs.push({ x: rng() * BW, y: rng() * BH, r: (0.2 + rng() * 0.3) * Math.max(BW, BH), k: i % 2 });
-    const maxd = Math.hypot(BW, BH) * 0.6;
-    for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) {
-      // Sky: darker at the top, warmer toward the bottom, in dithered bands.
-      const v = Math.min(0.999, Math.max(0, 0.03 + 0.63 * (y / BH) + 0.25 * (Math.hypot(x - CX, y - CY) / maxd)));
-      // Mostly flat bands; dithering only in the narrow seam between two bands.
-      const f = v * (stops.length - 1);
-      const i0 = Math.floor(f), fr = f - i0;
-      let col = fr > 0.7 && dith(x, y, (fr - 0.7) / 0.3) ? stops[Math.min(stops.length - 1, i0 + 1)] : stops[i0];
-      // Soft nebula clouds: a solid core with a dithered rim.
-      let n = 0, nk = 0;
-      for (const bl of blobs) { const q = 1 - Math.hypot(x - bl.x, (y - bl.y) * 1.6) / bl.r; if (q > n) { n = q; nk = bl.k; } }
-      if (n > 0.5 || (n > 0.3 && dith(x, y, (n - 0.3) / 0.2))) col = neb[nk];
-      const o = (y * BW + x) * 4;
-      d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
-    }
-    g.putImageData(img, 0, 0);
-    ambient(g, amb, rng);
-    // Static stars.
-    const count = Math.round(BW * BH / 110);
-    for (let i = 0; i < count; i++) {
-      const x = Math.floor(rng() * BW), y = Math.floor(rng() * BH), s = rng();
-      g.fillStyle = s > 0.9 ? P.c : s > 0.6 ? P.d : P.e;
-      g.fillRect(x, y, 1, 1);
-      if (s > 0.985) { g.fillStyle = P.e; g.fillRect(x - 1, y, 1, 1); g.fillRect(x + 1, y, 1, 1); g.fillRect(x, y - 1, 1, 1); g.fillRect(x, y + 1, 1, 1); }
-    }
-    bg = c;
-    twinkles.length = 0;
-    for (let i = 0; i < 28; i++) twinkles.push({ x: Math.floor(rng() * BW), y: Math.floor(rng() * BH), p: rng() * 6.28, s: 0.8 + rng() * 1.8, big: rng() > 0.7 });
-  }
-
-  function disc(g, x0, y0, r, colorFn) {
-    for (let dy = -r; dy <= r; dy++) {
-      const hw = Math.floor(Math.sqrt(r * r - dy * dy));
-      for (let dx = -hw; dx <= hw; dx++) { const c = colorFn(dx, dy); if (c) { g.fillStyle = P[c]; g.fillRect(x0 + dx, y0 + dy, 1, 1); } }
-    }
-  }
-
-  function ambient(g, kind, rng) {
-    if (kind === 'planet') {
-      // A small ringed planet resting in the lower left.
-      const r = Math.max(6, Math.round(Math.min(BW, BH) * 0.09)), x0 = Math.round(BW * 0.13), y0 = Math.round(BH * 0.78);
-      disc(g, x0, y0, r, function (dx, dy) { const l = (dx + dy) / r; return l > 0.5 ? '2' : l > -0.3 ? (dith(dx + 64, dy + 64, 0.5 - l) ? '3' : '2') : ((dy + 64) % 3 === 0 ? '4' : '3'); });
-      for (let a = 0; a < Math.PI * 2; a += 0.02) {
-        const x = Math.round(x0 + Math.cos(a) * r * 1.9), y = Math.round(y0 + Math.sin(a) * r * 0.45);
-        if (Math.sin(a) < 0 && Math.hypot(x - x0, y - y0) < r) continue;
-        g.fillStyle = P['4']; g.fillRect(x, y, 1, 1);
-      }
-    } else if (kind === 'belt') {
-      for (let i = 0; i < 160; i++) {
-        const t = rng(), x = Math.round(t * BW), y = Math.round(BH * 0.2 + t * BH * 0.5 + (rng() - 0.5) * BH * 0.14);
-        const s = rng() > 0.85 ? 2 : 1;
-        g.fillStyle = rng() > 0.5 ? P.e : P.f;
-        g.fillRect(x, y, s + 1, s);
-        if (s > 1) { g.fillStyle = P.d; g.fillRect(x, y, 1, 1); }
-      }
-    } else if (kind === 'moon') {
-      const r = Math.round(Math.min(BW, BH) * 0.2), x0 = Math.round(BW * 0.88), y0 = Math.round(BH * 0.86);
-      const craters = [];
-      for (let i = 0; i < 6; i++) craters.push([(rng() - 0.5) * r * 1.3, (rng() - 0.5) * r * 1.3, r * (0.08 + rng() * 0.15)]);
-      disc(g, x0, y0, r, function (dx, dy) {
-        for (const c of craters) if (Math.hypot(dx - c[0], dy - c[1]) < c[2]) return 'e';
-        const l = (dx + dy) / (r * 1.4);
-        return l > 0.45 ? (dith(dx + 64, dy + 64, 0.6) ? 'e' : 'd') : l > 0 ? 'd' : (dith(dx + 64, dy + 64, 0.3) ? 'c' : 'd');
-      });
-    } else if (kind === 'nebula') {
-      for (let k = 0; k < 4; k++) {
-        const off = rng() * 6.28, rr = Math.min(BW, BH) * (0.35 + rng() * 0.35);
-        for (let t = 0; t < 1; t += 0.004) {
-          const a = off + t * 3.4, r2 = rr * (0.6 + t * 0.6);
-          const x = Math.round(CX + Math.cos(a) * r2 * 1.3), y = Math.round(CY + Math.sin(a) * r2 * 0.6);
-          if (dith(x, y, 0.5)) { g.fillStyle = k % 2 ? P['2'] : P.w; g.fillRect(x, y, 2, 1); }
-        }
-      }
-    } else if (kind === 'nursery') {
-      for (let i = 0; i < 10; i++) {
-        const x = Math.round(rng() * BW), y = Math.round(rng() * BH), s = 2 + Math.floor(rng() * 3);
-        if (Math.hypot(x - CX, y - CY) < S * 0.55) continue;
-        g.fillStyle = P['4'];
-        g.fillRect(x - s, y, s * 2 + 1, 1); g.fillRect(x, y - s, 1, s * 2 + 1);
-        g.fillStyle = P.c; g.fillRect(x, y, 1, 1);
-        g.fillStyle = P['3']; g.fillRect(x - 1, y - 1, 1, 1); g.fillRect(x + 1, y + 1, 1, 1); g.fillRect(x + 1, y - 1, 1, 1); g.fillRect(x - 1, y + 1, 1, 1);
-      }
-    }
-  }
-
-  function sx(x) { return Math.round(CX + x * S); }
-  function sy(y) { return Math.round(CY + y * S); }
-
-  function syncDrones() {
-    const n = Math.min(16, state.levels.drones);
-    while (drones.length < n) drones.push({ a: Math.random() * 6.28, r: 1.55 + Math.random() * 0.5, s: 0.6 + Math.random() * 0.6 });
-    drones.length = n;
-  }
-
-  // The best critters you own float around Singu.
-  function syncPets() {
-    const owned = C.critters.filter(function (c) { return state.critters[c.id]; })
-      .sort(function (a, c) { return c.rarity - a.rarity || state.critters[c.id].stars - state.critters[a.id].stars; })
-      .slice(0, 6);
-    pets = owned.map(function (c, i) { return { id: c.id, phase: i / Math.max(1, owned.length) * Math.PI * 2, bob: Math.random() * 6 }; });
-  }
-
-  function addParticle(x, y, vx, vy, life, key) {
-    if (particles.length >= MAX_PARTICLES) particles.shift();
-    particles.push({ x: x, y: y, vx: vx, vy: vy, life: life, max: life, key: key });
-  }
-  function burst(x, y, n, keys) {
-    if (reduced) n = Math.ceil(n / 3);
-    for (let k = 0; k < n; k++) {
-      const a = Math.random() * 6.28, sp = 15 + Math.random() * 45;
-      addParticle(x, y, Math.cos(a) * sp, Math.sin(a) * sp * 0.8, 0.4 + Math.random() * 0.5, keys[k % keys.length]);
-    }
-  }
-
-  // Floating text lives in CSS pixels on the full-resolution canvas so it stays crisp.
-  function addFloat(text, x, y, color, size, life, shadow) {
-    if (floats.length >= MAX_FLOATS) floats.shift();
-    floats.push({ text: text, x: x, y: y, color: color, size: size, life: life || 1.1, max: life || 1.1, shadow: shadow || P['0'] });
-  }
-
-  const SINGU_SCALE = 1.3;   // Singu is drawn a little larger than its rules radius so the face reads
-  const TYPE_KEYS = { dust: ['d', 'c'], ice: ['b', 'a'], crystal: ['4', 'c'], shard: ['3', '2'] };
-
-  function handleEvents() {
-    const coreR = PS.coreRadius(state) * S * SINGU_SCALE;
-    for (let i = 0; i < ev.length; i++) {
-      const e = ev[i];
-      switch (e.t) {
-        case 'pulse':
-          Sound.pulse(e.auto);
-          if (!e.auto) { fx.flash = Math.max(fx.flash, 0.6); el.pulse.classList.add('press'); setTimeout(function () { el.pulse.classList.remove('press'); }, 90); }
-          if (e.lucky > 1) {
-            fx.lucky = 1;
-            Sound.lucky();
-            addFloat('LUCKY ×' + (+e.lucky.toFixed(1)) + '!', CX * PXS, Math.max(40, (CY - coreR * 3.4) * PXS), P['5'], 26, 1.4, P['6']);
-            burst(CX, CY, 24, ['5', '6', '4']);
-            singuMood('happy', 1.5);
-          }
-          break;
-        case 'capture': {
-          fx.gulp = Math.min(1, fx.gulp + 0.3);
-          mood.munch = 0.35;
-          Sound.capture(e.idx, e.type);
-          const keys = TYPE_KEYS[e.type];
-          for (let k = 0; k < (reduced ? 2 : e.type === 'crystal' ? 8 : 4); k++) {
-            const a = Math.random() * 6.28, sp = 20 + Math.random() * 40;
-            addParticle(CX + Math.cos(a) * coreR, CY + Math.sin(a) * coreR * 0.8, Math.cos(a) * sp, Math.sin(a) * sp, 0.35 + Math.random() * 0.3, keys[k % 2]);
-          }
-          break;
-        }
-        case 'swallow':
-          fx.gulp = Math.min(1, fx.gulp + 0.12);
-          mood.munch = 0.2;
-          Sound.swallow();
-          break;
-        case 'blast':
-          Sound.blast();
-          blasts.push({ x: sx(e.x), y: sy(e.y), r: e.r * S, t: 0 });
-          burst(sx(e.x), sy(e.y), 14, ['3', '2', '4']);
-          break;
-        case 'payout': {
-          if (e.total <= 0) break;
-          const big = e.chain >= 12 ? 1.5 : e.chain >= 5 ? 1.25 : 1;
-          const color = e.lucky > 1 ? P['5'] : e.chain >= 12 ? P['4'] : e.chain >= 5 ? P.p : P.c;
-          const fy = Math.max(46, (CY - coreR * 2.4) * PXS - 10);
-          addFloat('+' + fmt(e.total), CX * PXS, fy, color, Math.round(18 * big), 1.2);
-          if (e.chain >= 2) addFloat('CHAIN ×' + e.chain, CX * PXS, fy + 20 * big, e.chain >= 12 ? P['4'] : P.b, Math.round(13 * big), 1.2);
-          if (e.chain >= 8 && !reduced && !e.auto) fx.shake = Math.min(1, 0.3 + e.chain * 0.03);
-          if (e.chain >= 8) singuMood('happy', 1.2);
-          if (!e.auto) Sound.payout(e.chain);
-          el.matter.classList.remove('bump'); void el.matter.offsetWidth; el.matter.classList.add('bump');
-          break;
-        }
-        case 'tickets':
-          Sound.ticket();
-          addFloat('+' + e.n + ' TICKET' + (e.n > 1 ? 'S' : ''), CX * PXS + 70, (CY - coreR * 1.5) * PXS, P['4'], 13, 1.4, P['2']);
-          el.tickets.classList.remove('flash'); void el.tickets.offsetWidth; el.tickets.classList.add('flash');
-          break;
-        case 'level':
-          Sound.level();
-          addFloat('SINGU LV ' + e.level + '!', CX * PXS, (CY + coreR * 2.6) * PXS, P.p, 15, 1.6, P['1']);
-          burst(CX, CY, 16, ['p', 'c', 'v']);
-          singuMood('happy', 1.2);
-          break;
-        case 'comet':
-          Sound.comet();
-          break;
-        case 'surge':
-          Sound.surge();
-          fx.flash = 1.5;
-          burst(CX, CY, 40, ['4', 'c', '3']);
-          banner('Comet captured', 'Surge ×' + C.comet.surgeMult, 'All Matter ×' + C.comet.surgeMult + ' for ' + Math.round(e.dur) + ' seconds');
-          singuMood('star', e.dur);
-          Platform.happytime();
-          break;
-        case 'reelStart':
-          startReelAnim(e);
-          break;
-        case 'reel':
-          showReelResult(e);
-          break;
-        case 'overcharge':
-          Sound.overcharge(e.win);
-          if (e.win) {
-            fx.ocWin = 1;
-            burst(CX, CY, 50, ['4', '5', 'c', 'p']);
-            addFloat('OVERCHARGED! +' + fmt(e.amount), CX * PXS, (CY - 20) * PXS, P['5'], 22, 1.6, P['6']);
-            singuMood('happy', 2);
-          } else {
-            fx.ocLose = 1;
-            burst(CX, CY, 20, ['e', 'f', 'd']);
-            addFloat('Fizzled... -' + fmt(e.amount), CX * PXS, (CY - 20) * PXS, P.p, 18, 1.6, P['1']);
-            singuMood('dizzy', 1.6);
-          }
-          break;
-        case 'sector': {
-          const sec = PS.sectorInfo(e.index);
-          Sound.sector();
-          rebuildBackground(true);
-          refreshStats();
-          shopDirty = true;
-          const news = SECTOR_NEWS[e.index] || 'Fragments worth more';
-          banner('Sector ' + (e.index + 1) + ' revealed', sec.name, news + ' · +' + C.tickets.sector + ' tickets');
-          Platform.happytime();
-          break;
-        }
-        case 'discover': {
-          const d = C.discoveries.find(function (x) { return x.id === e.id; });
-          refreshStats();
-          shopDirty = true;
-          if (d) {
-            setTimeout(function () { Sound.discover(); toast('<b>' + d.name + '</b> discovered · +' + Math.round(C.atlasStep * 100) + '% · +' + C.tickets.discovery + ' tickets'); }, 250);
-            el.atlasBtn.classList.remove('flash'); void el.atlasBtn.offsetWidth; el.atlasBtn.classList.add('flash');
-          }
-          break;
-        }
-      }
-    }
-    ev.length = 0;
-  }
-
-  function ellipse(cx, cy, rx, ry, key, dotted, phase) {
-    if (rx < 1) return;
-    const steps = Math.max(24, Math.ceil(Math.PI * 2 * rx));
-    b.fillStyle = P[key];
-    let lastX = null, lastY = null;
-    for (let i = 0; i < steps; i++) {
-      if (dotted && ((i + (phase || 0)) % dotted) !== 0) continue;
-      const a = (i / steps) * Math.PI * 2;
-      const x = Math.round(cx + Math.cos(a) * rx), y = Math.round(cy + Math.sin(a) * ry);
-      if (x === lastX && y === lastY) continue;
-      lastX = x; lastY = y;
-      b.fillRect(x, y, 1, 1);
-    }
-  }
-
-  function sprite(name, x, y) {
-    const s = SPR.get(name);
-    b.drawImage(s, Math.round(x - s.width / 2), Math.round(y - s.height / 2));
-  }
-
-  function draw(dt, t) {
-    b.setTransform(1, 0, 0, 1, 0, 0);
-    let ox = 0, oy = 0;
-    if (fx.shake > 0) {
-      const a = Math.ceil(fx.shake * 2);
-      ox = Math.round((Math.random() - 0.5) * a * 2); oy = Math.round((Math.random() - 0.5) * a * 2);
-      fx.shake = Math.max(0, fx.shake - dt * 4);
-    }
-    // Background, dissolving through an ordered-dither mask on sector change.
-    if (bg) {
-      b.drawImage(bg, 0, 0);
-      if (bgPrev && fx.bgFade < 1) {
-        const lvl = Math.floor((1 - fx.bgFade) * 16);
-        b.fillStyle = b.createPattern(bgPrev, 'no-repeat');
-        for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
-          if (BAYER[(y << 2) | x] >= lvl) continue;
-          for (let yy = y; yy < BH; yy += 4) for (let xx = x; xx < BW; xx += 4) b.fillRect(xx, yy, 1, 1);
-        }
-        fx.bgFade = Math.min(1, fx.bgFade + dt / 1.2);
-        if (fx.bgFade >= 1) bgPrev = null;
-      }
-    }
-    b.save();
-    b.translate(ox, oy);
-    // Twinkles.
-    for (const s of twinkles) {
-      const v = Math.sin(t * s.s + s.p);
-      if (v < 0.3) continue;
-      b.fillStyle = v > 0.85 ? P.c : P.d;
-      b.fillRect(s.x, s.y, 1, 1);
-      if (s.big && v > 0.9) { b.fillStyle = P.e; b.fillRect(s.x - 1, s.y, 1, 1); b.fillRect(s.x + 1, s.y, 1, 1); b.fillRect(s.x, s.y - 1, 1, 1); b.fillRect(s.x, s.y + 1, 1, 1); }
-    }
-
-    const coreR = PS.coreRadius(state) * S * SINGU_SCALE;
-    const surge = world.surge > 0;
-
-    // Pulse range: a dotted ellipse so the player can see what a pulse will reach.
-    const R = stats.pulseRadius * S;
-    const cometIn = world.comet && !world.comet.caught && Math.hypot(world.comet.x, world.comet.y / 0.82) <= stats.pulseRadius;
-    const ready = world.cooldown <= 0;
-    ellipse(CX, CY, R, R * 0.82, cometIn ? (Math.floor(t * 8) % 2 ? '4' : '3') : surge ? '3' : ready ? 'd' : 'e', cometIn ? 2 : 4, Math.floor(t * 6));
-
-    // Tap feedback.
-    if (tapPoint && !reduced) {
-      tapPoint.t += dt;
-      const p = tapPoint.t / 0.25;
-      if (p >= 1) tapPoint = null;
-      else ellipse(tapPoint.x, tapPoint.y, 2 + p * 6, 2 + p * 6, 'b', 2);
-    }
-
-    // Pulse rings.
-    for (const r of world.rings) {
-      const rr = Math.min(r.max, r.t * C.ringSpeed) * S;
-      const life = r.max / C.ringSpeed + 0.45;
-      const a = 1 - r.t / life;
-      if (a <= 0) continue;
-      const key = r.auto ? 'v' : surge ? '4' : 'b';
-      if (a > 0.25) ellipse(CX, CY, rr, rr * 0.82, key, a > 0.6 ? 0 : 2);
-      if (!r.auto && a > 0.4) ellipse(CX, CY, rr * 0.86, rr * 0.86 * 0.82, a > 0.7 ? 'a' : '9', 3);
-    }
-
-    // Shard blasts.
-    for (let i = blasts.length - 1; i >= 0; i--) {
-      const bl = blasts[i];
-      bl.t += dt;
-      const p = bl.t / 0.35;
-      if (p >= 1) { blasts.splice(i, 1); continue; }
-      ellipse(bl.x, bl.y, bl.r * p + 1, (bl.r * p + 1) * 0.82, p < 0.5 ? '3' : '2', p < 0.5 ? 0 : 2);
-    }
-
-    drawPets(t, coreR, true);
-    drawDisk(t, coreR, true);
-    for (const f of world.frags) drawFragment(f, t);
-    drawSingu(t, coreR, surge, dt);
-    drawDisk(t, coreR, false);
-    drawDrones(dt, coreR);
-    drawPets(t, coreR, false);
-    drawComet(t);
-
-    // Particles.
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.life -= dt;
-      if (p.life <= 0) { particles.splice(i, 1); continue; }
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      p.vx *= 1 - dt * 3; p.vy *= 1 - dt * 3;
-      if (p.life / p.max < 0.3 && (Math.floor(t * 20) + i) % 2) continue;  // pixel flicker as it fades
-      b.fillStyle = P[p.key];
-      b.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
-    }
-
-    // Dithered flashes.
-    if (fx.lucky > 0) { b.fillStyle = pattern('5', Math.ceil(fx.lucky * 3)); b.fillRect(0, 0, BW, BH); fx.lucky = Math.max(0, fx.lucky - dt * 5); }
-    if (fx.ocWin > 0) { b.fillStyle = pattern('4', Math.ceil(fx.ocWin * 7)); b.fillRect(0, 0, BW, BH); fx.ocWin = Math.max(0, fx.ocWin - dt * 2); }
-    if (fx.ocLose > 0) { b.fillStyle = pattern('0', Math.ceil(fx.ocLose * 9)); b.fillRect(0, 0, BW, BH); fx.ocLose = Math.max(0, fx.ocLose - dt * 1.5); }
-    if (fx.flash > 1) { b.fillStyle = pattern('c', Math.ceil((fx.flash - 1) * 3)); b.fillRect(0, 0, BW, BH); }
-    if (fx.collapse > 0) {
-      b.fillStyle = pattern('k', Math.max(1, Math.min(15, Math.ceil(fx.collapse * 10)))); b.fillRect(0, 0, BW, BH);
-      const rr = (1.6 - fx.collapse) * Math.max(BW, BH);
-      ellipse(CX, CY, rr, rr * 0.82, 'v', 2);
-      fx.collapse -= dt;
-    }
-    b.restore();
-
-    // Upscale to the screen canvas.
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(buf, 0, 0, BW * KK, BH * KK);
-
-    // Floating text in CSS pixels.
-    const k = KK / PXS;
-    ctx.setTransform(k, 0, 0, k, 0, 0);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let i = floats.length - 1; i >= 0; i--) {
-      const f = floats[i];
-      f.life -= dt;
-      if (f.life <= 0) { floats.splice(i, 1); continue; }
-      const p = 1 - f.life / f.max;
-      const rise = Math.round((reduced ? 8 : 22) * Math.min(1, p * 2));
-      if (p > 0.75 && Math.floor(t * 16) % 2) continue;  // blink out, retro style
-      ctx.font = '700 ' + f.size + 'px Cozy, monospace';
-      ctx.fillStyle = f.shadow;
-      ctx.fillText(f.text, f.x + 2, f.y - rise + 2);
-      ctx.fillText(f.text, f.x - 1, f.y - rise - 1);
-      ctx.fillStyle = f.color;
-      ctx.fillText(f.text, f.x, f.y - rise);
-    }
-  }
-
-  function drawFragment(f, t) {
-    const p = PS.fragPos(f);
-    const x = sx(p.x), y = sy(p.y);
-    if (f.alpha < 1 && (Math.floor(t * 20) % 2 || f.alpha < 0.4)) return;  // spawn in with a pixel blink
-    const falling = f.state === PS.FALL && f.delay <= 0;
-    if (falling) {
-      // Streak of pixels toward the core.
-      const keys = TYPE_KEYS[f.type];
-      if (!f.trail) f.trail = [];
-      f.trail.unshift([x, y]);
-      if (f.trail.length > 5) f.trail.length = 5;
-      for (let i = 1; i < f.trail.length; i++) { b.fillStyle = P[keys[i % 2]]; b.fillRect(f.trail[i][0], f.trail[i][1], 1, 1); }
-      const pr = Math.min(1, f.t / f.dur);
-      if (pr > 0.65) { b.fillStyle = P[keys[0]]; b.fillRect(x - 1, y - 1, 2, 2); return; }
-    }
-    let name = f.type;
-    if (f.type === 'dust' && Math.floor(t * 3 + f.wob) % 2) name = 'dust2';
-    if (f.type === 'crystal' && Math.floor(t * 4 + f.wob) % 4 === 0) name = 'crystal2';
-    if (f.type === 'shard' && Math.floor(t * 8 + f.wob) % 2) name = 'shard2';
-    const bob = f.type === 'crystal' ? Math.round(Math.sin(t * 3 + f.wob)) : 0;
-    sprite(name, x, y + bob);
-    if (f.state === PS.FALL && !falling) { b.fillStyle = P.c; b.fillRect(x, y - 4, 1, 1); }
-  }
-
-  function drawDisk(t, coreR, back) {
-    // Accretion disk as rotating bands of warm pixels. Back half behind Singu, front half in front.
-    const stage = PS.coreStage(state);
-    const surge = world.surge > 0;
-    const rings = 2 + Math.min(3, stage);
-    const bands = surge ? ['4', 'c', '4', '3'] : ['4', '3', '2', '3'];
-    for (let i = 0; i < rings; i++) {
-      const rx = coreR * (1.55 + i * 0.32), ry = Math.max(2, rx * 0.3);
-      const steps = Math.ceil(Math.PI * 2 * rx * 1.2);
-      const spin = t * (0.9 - i * 0.12);
-      const outer = i === rings - 1 && stage >= 2;
-      for (let s = 0; s < steps; s++) {
-        const a = (s / steps) * Math.PI * 2;
-        const sn = Math.sin(a);
-        if (back ? sn >= 0 : sn < 0) continue;
-        if (i > 0 && (s + i) % (i + 1) === 0) continue;
-        const band = Math.floor(((a + spin) / (Math.PI * 2)) * 10 + i) % bands.length;
-        const key = outer ? (s % 2 ? 'v' : 'w') : bands[(band + 4) % bands.length];
-        b.fillStyle = P[key];
-        b.fillRect(Math.round(CX + Math.cos(a) * rx), Math.round(CY + sn * ry), 1, 1);
-      }
-    }
-    // Jets at higher stages.
-    if (!back && stage >= 3) {
-      const len = Math.round(coreR * (0.8 + stage * 0.25));
-      for (let j = 2; j < len; j++) {
-        if (!dith(CX, j + Math.floor(t * 20), 1 - j / len)) continue;
-        b.fillStyle = P[j % 3 ? 'v' : 'c'];
-        b.fillRect(CX, CY - Math.round(coreR) - j, 1, 1);
-        b.fillRect(CX, CY + Math.round(coreR) + j, 1, 1);
-      }
-    }
-  }
-
-  function drawSingu(t, coreR, surge, dt) {
-    // Mood only tints the rim now (no face): pink after a win, gold in a Surge, grey on a fizzle.
-    mood.t = Math.max(0, mood.t - dt);
-    if (!mood.t) mood.kind = '';
-    mood.munch = Math.max(0, mood.munch - dt);
-
-    const R = Math.max(5, Math.round(coreR * (1 + fx.gulp * 0.12)));
-    const cx = CX, cy = CY;
-    const squash = fx.gulp > 0.5 ? 1 : 0;
-    // Glow halo (dithered).
-    const haloKey = surge ? '3' : mood.kind === 'happy' ? '1' : '9';
-    for (let dy = -R - 3; dy <= R + 3; dy++) for (let dx = -R - 3; dx <= R + 3; dx++) {
-      const d = Math.hypot(dx, dy * 1.05);
-      if (d > R + 0.5 && d < R + 3.5 && dith(cx + dx, cy + dy, (R + 3.5 - d) / 3 * (0.55 + Math.min(1, fx.flash) * 0.3))) { b.fillStyle = P[haloKey]; b.fillRect(cx + dx, cy + dy, 1, 1); }
-    }
-    // Body.
-    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'happy' ? 'p' : mood.kind === 'dizzy' ? 'e' : 'b';
-    for (let dy = -R + squash; dy <= R - squash; dy++) {
-      const hw = Math.floor(Math.sqrt(R * R - dy * dy)) + squash;
-      b.fillStyle = P.k;
-      b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
-    }
-    // Swirling event horizon: three faint spiral arms falling inward.
-    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2);
-    for (let arm = 0; arm < 3; arm++) {
-      for (let r = R * 0.95; r > R * 0.18; r -= 0.5) {
-        const fr = r / R;
-        const a = arm * 2.094 + spin + fr * 3.2;
-        const x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r);
-        if (!dith(x, y, fr * 0.9)) continue;
-        b.fillStyle = P[fr > 0.7 ? 'w' : fr > 0.45 ? '1' : 'f'];
-        b.fillRect(x, y, 1, 1);
-      }
-    }
-    // Swallow ripple: a ring contracting toward the centre.
-    if (mood.munch > 0) {
-      const rr = R * (0.3 + mood.munch * 1.8);
-      if (rr < R) ellipse(cx, cy, rr, rr, 'v', 2);
-    }
-    // Photon rim with a rotating bright arc.
-    for (let dy = -R + squash; dy <= R - squash; dy++) {
-      const hw = Math.floor(Math.sqrt(R * R - dy * dy)) + squash;
-      b.fillStyle = P[rimKey];
-      b.fillRect(cx - hw, cy + dy, 1, 1); b.fillRect(cx + hw, cy + dy, 1, 1);
-    }
-    const capW = Math.floor(Math.sqrt(Math.max(0, R * R - (R - squash) * (R - squash)))) + 1;
-    b.fillStyle = P[rimKey];
-    b.fillRect(cx - capW, cy - R + squash, capW * 2 + 1, 1);
-    b.fillRect(cx - capW, cy + R - squash, capW * 2 + 1, 1);
-    b.fillStyle = P.c;
-    for (let i = 0; i < 6; i++) {
-      const a = t * 1.6 + i * 0.09;
-      b.fillRect(Math.round(cx + Math.cos(a) * R), Math.round(cy + Math.sin(a) * R), 1, 1);
-    }
-  }
-
-  let droneTick = 0;
-  function drawDrones(dt, coreR) {
-    if (!drones.length) return;
-    droneTick += dt;
-    const emit = droneTick > 0.5;
-    if (emit) droneTick = 0;
-    for (let i = 0; i < drones.length; i++) {
-      const d = drones[i];
-      d.a += dt * d.s * (reduced ? 0.4 : 1);
-      const x = CX + Math.cos(d.a) * coreR * d.r * 1.9, y = CY + Math.sin(d.a) * coreR * d.r * 0.7;
-      if (Math.sin(d.a) < -0.2 && Math.hypot(x - CX, y - CY) < coreR) continue;
-      sprite('drone', x, y);
-      if (emit && i === Math.floor(Math.random() * drones.length) && !reduced) addParticle(x, y, (CX - x) * 2.2, (CY - y) * 2.2, 0.4, '5');
-    }
-  }
-
-  function drawPets(t, coreR, back) {
-    if (!pets.length) return;
-    const rx = Math.max(coreR * 3.3, 26), ry = rx * 0.42;
-    for (const pet of pets) {
-      const a = pet.phase + t * 0.22;
-      const sn = Math.sin(a);
-      if (back ? sn >= 0 : sn < 0) continue;
-      const x = CX + Math.cos(a) * rx;
-      const y = CY + sn * ry + Math.round(Math.sin(t * 3 + pet.bob) * 1.5) - 2;
-      sprite('critter_' + pet.id, x, y);
-    }
-  }
-
-  function drawComet(t) {
-    const c = world.comet;
-    if (!c) return;
-    const x = sx(c.x), y = sy(c.y);
-    const sp = Math.hypot(c.vx, c.vy) || 1;
-    const ux = -c.vx / sp, uy = -c.vy / sp;
-    const len = Math.round(0.4 * S);
-    const keys = ['c', '4', '4', '3', '3', '2', '1'];
-    for (let i = 2; i < len; i++) {
-      const fr = i / len;
-      const wob = Math.round(Math.sin(i * 0.7 - t * 12) * fr * 1.5);
-      const px = Math.round(x + ux * i - uy * wob), py = Math.round(y + uy * i + ux * wob);
-      if (!dith(px, py, 1 - fr * 0.9)) continue;
-      b.fillStyle = P[keys[Math.min(keys.length - 1, Math.floor(fr * keys.length))]];
-      b.fillRect(px, py, 1, 1);
-    }
-    sprite('cometHead', x, y);
-    if (Math.floor(t * 6) % 2) { b.fillStyle = P.c; b.fillRect(x - 3, y, 1, 1); b.fillRect(x + 3, y, 1, 1); b.fillRect(x, y - 3, 1, 1); b.fillRect(x, y + 3, 1, 1); }
   }
 
   // ---------------------------------------------------------------------------
@@ -1658,21 +1449,19 @@
 
     // Day rollover while playing.
     if (PS.dayKey(new Date()) !== todayKey) {
-      rollMutation(); refreshStats(); shopDirty = true;
+      rollMutation(); refreshStats(); markDirty();
       PS.ensureDaily(state, todayKey); rewardsKey = ''; pendingLogin = true;
       toast('<b>New day!</b> ' + mutation.name + ', new quests and a login reward.', 'violet');
     }
 
+    if (holding && !modalOpen && world.cooldown <= 0) doPulse();
     if (!COVER) PS.step(world, state, stats, dt, ev);
-    for (let i = 0; i < ev.length; i++) if (ev[i].t === 'level' || ev[i].t === 'discover') { refreshStats(); break; }
+    for (let i = 0; i < ev.length; i++) { const t = ev[i].t; if (t === 'level' || t === 'discover' || t === 'form' || t === 'ach') { refreshStats(); break; } }
     handleEvents();
-    draw(dt, tNow / 1000);
+    Scene.draw(dt, tNow / 1000);
     updateHud();
-    updateShop(false);
-    updateMilestone();
-    updateCollapseCard();
-    updateCapsules(false);
-    updateRewards(false);
+    updatePanel(false);
+    if (tab === 'pets') drawMachine(performance.now() < crankUntil ? Math.floor(tNow / 90) % 4 : 0);
     // The daily login calendar pops up for returning players, and for new ones once they have settled in.
     if (!pendingLogin && !COVER && PS.loginReady(state, todayKey) && PS.playToday(state) > 45 && state.milestones.firstBuy) pendingLogin = true;
     if (pendingLogin && !modalOpen && !hatching && PS.loginReady(state, todayKey)) { pendingLogin = false; openLogin(); }
@@ -1699,16 +1488,22 @@
     document.body.classList.toggle('reduced', reduced);
     Sound.setMuted(state.settings.muted);
     el.sound.classList.toggle('muted', state.settings.muted);
+    Scene.init({
+      canvas: el.cv, container: el.scene,
+      state: function () { return state; }, stats: function () { return stats; }, world: function () { return world; }, reduced: function () { return reduced; }
+    });
     staticArt();
-    buildShop();
+    buildGens();
+    buildPowers();
     setBuyMode(state.settings.buyMode);
-    syncDrones();
-    syncPets();
+    drawMachine(0);
     fitApp();
-    resize();
+    Scene.resize(uiScale);
+    Scene.sync();
     window.addEventListener('resize', fitApp);
-    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(el.universe);
-    else window.addEventListener('resize', resize);
+    const onResize = function () { Scene.resize(uiScale); };
+    if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(el.scene);
+    else window.addEventListener('resize', onResize);
     if (document.fonts && document.fonts.load) Promise.all(['400 16px Cozy', '700 16px Cozy'].map(function (f) { return document.fonts.load(f, 'Ab12'); })).catch(function () {});
 
     if (COVER) setupCover();
@@ -1721,6 +1516,7 @@
     }
     if (loaded.notice) setTimeout(function () { toast('<b>Save:</b> ' + loaded.notice, 'violet'); }, 600);
     if (!COVER) { save(); backup(); }
+    setTab('harvest');
 
     lastWall = now();
     lastFrame = performance.now();
@@ -1728,7 +1524,7 @@
     Platform.loadingStop();
 
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) { save(); Sound.suspend(); Platform.gameplayStop(); }
+      if (document.hidden) { save(); Sound.suspend(); Platform.gameplayStop(); holding = false; }
       else { Sound.resume(); if (state.stats.pulses && !modalOpen) Platform.gameplayStart(); }
     });
     window.addEventListener('pagehide', save);
@@ -1742,11 +1538,12 @@
         state = cloud.state;
         refreshStats();
         world = PS.createWorld(Math.random, state, stats);
-        syncDrones(); syncPets(); rebuildBackground(false); shopDirty = true; collapseKey = ''; collectionKey = '';
+        Scene.sync(); Scene.rebuild(false); resetKeys();
         Sound.setMuted(state.settings.muted);
         toast('<b>Save:</b> loaded your synced universe.', 'violet');
       }
       save();
+      Platform.submitScore(state.singuLevel);
     });
     Platform.on('mute', function (m) { Sound.setExternalMute(m); });
     Platform.on('pause', function (p) { Sound.setExternalMute(!!p); });
@@ -1755,7 +1552,7 @@
     window.__ps = {
       get state() { return state; }, get world() { return world; }, get stats() { return stats; },
       PS: PS, save: save,
-      refresh: function () { refreshStats(); shopDirty = true; syncDrones(); syncPets(); rebuildBackground(false); collapseKey = ''; collectionKey = ''; },
+      refresh: function () { refreshStats(); Scene.sync(); Scene.rebuild(false); resetKeys(); },
       pulse: doPulse,
       freeze: function () { frozen = true; },
       today: function () { return todayKey; },
@@ -1769,15 +1566,15 @@
     const tag = document.createElement('div');
     tag.className = 'cover-title';
     tag.innerHTML = '<div class="ct1">Pocket</div><div class="ct2">Singularity</div>';
-    el.universe.appendChild(tag);
+    el.scene.appendChild(tag);
     const sector = Number(QS.get('sector') || 3);
-    state.lifetime = 5e9; state.stardust = 6;
-    state.levels.drones = 9;
+    state.lifetime = 5e12; state.stardust = 6; state.form = 5;
+    state.gens = { sweeper: 40, net: 30, drone: 25, miner: 12, hauler: 8, sail: 3 };
     state.runTotal = PS.sectorInfo(sector).at; state.sector = sector;
-    ['cat', 'dragon', 'jelly', 'penguin', 'frog', 'whale'].forEach(function (id) { state.critters[id] = { stars: 3, copies: 0 }; });
+    CT.PETS.filter(function (p) { return p.rarity >= 2; }).slice(0, 6).forEach(function (p) { state.critters[p.id] = { stars: 3, copies: 0 }; });
     refreshStats();
-    syncDrones(); syncPets();
-    rebuildBackground(false);
+    Scene.sync();
+    Scene.rebuild(false);
     const rng = PS.mulberry32(7);
     world = PS.createWorld(rng, state, stats);
     const types = ['dust', 'dust', 'ice', 'ice', 'crystal', 'shard', 'dust', 'ice'];
@@ -1787,7 +1584,7 @@
     }
     world.rings.push({ t: 0.16, max: 0.9, auto: false });
     world.comet = { x: 0.75, y: -0.45, vx: -0.2, vy: 0.08, t: 0, life: 99, caught: false, fall: 0 };
-    mood.kind = 'happy'; mood.t = 1e9;
+    Scene.mood('happy', 1e9);
   }
 
   boot();
