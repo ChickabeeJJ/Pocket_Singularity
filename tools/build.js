@@ -27,6 +27,9 @@ if (/href="css\/|src="js\/|url\(['"]?\.\.\/fonts/.test(html)) throw new Error('a
 
 fs.mkdirSync(DIST, { recursive: true });
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
+// Vercel's default static output folder is public/, so the site deploys even without vercel.json.
+fs.mkdirSync(path.join(ROOT, 'public'), { recursive: true });
+fs.writeFileSync(path.join(ROOT, 'public', 'index.html'), html);
 
 const zip = path.join(DIST, 'pocket-singularity.zip');
 if (fs.existsSync(zip)) fs.unlinkSync(zip);

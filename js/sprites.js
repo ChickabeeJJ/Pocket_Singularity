@@ -120,16 +120,38 @@
     singu: [
       '....bbbb....',
       '..bbkkkkbb..',
-      '.bkkkkkkkkb.',
-      '.bkkkkkkkkb.',
-      'bkkcckkcckkb',
-      'bkkckkkckkkb',
-      'bkpkkkkkkpkb',
-      'bkkkkppkkkkb',
-      '.bkkkkkkkkb.',
+      '.bkkk1kkkkb.',
+      '.bk1kkkkwkb.',
+      'bkkkkwkkkkkb',
+      '43bkkkk1kb34',
+      '443333333344',
+      '.b44444444b.',
       '.bkkkkkkkkb.',
       '..bbkkkkbb..',
-      '....bbbb....'
+      '....bbbb....',
+      '............'
+    ],
+    capsule: [
+      '..000..',
+      '.0ppp0.',
+      '0ppcpp0',
+      '0ppppp0',
+      '0000000',
+      '0ccccc0',
+      '.0ccc0.',
+      '..000..'
+    ],
+    gift: [
+      '..0...0..',
+      '.020.020.',
+      '..02020..',
+      '000000000',
+      '022242220',
+      '000040000',
+      '.0334330.',
+      '.0334330.',
+      '.0334330.',
+      '.0000000.'
     ],
     comet: [
       '............',

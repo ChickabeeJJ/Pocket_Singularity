@@ -93,7 +93,7 @@
 
     tickets: {
       chainMin: 4, chainBase: 0.18, chainPer: 0.015, chainMax: 0.35, chainCooldown: 12,
-      comet: 5, sector: 10, level: 3, discovery: 2, daily: 30
+      comet: 5, sector: 10, level: 3, discovery: 2
     },
 
     gacha: {
@@ -127,6 +127,57 @@
       { id: 'dragon',  name: 'Sun Dragon',   rarity: 3, bonus: { mult: 0.5 },     text: 'All Matter ×{mult}' },
       { id: 'whale',   name: 'Cosmo Whale',  rarity: 3, bonus: { drones: 1, tickets: 1 }, text: 'Drones +{drones}%, +{tickets} ticket per comet & reel' }
     ],
+
+    // Reasons to come back. Rewards: tickets, mins (minutes of current income), surge (seconds),
+    // capsule (list of minimum rarities for free hatches: 0 any, 1 Rare+, 2 Epic+).
+    rewards: {
+      login: [
+        { tickets: 20 },
+        { tickets: 20, mins: 10 },
+        { tickets: 30, surge: 30 },
+        { tickets: 20, capsule: [1] },
+        { tickets: 40, mins: 20 },
+        { tickets: 50, surge: 60 },
+        { tickets: 60, capsule: [2] }
+      ],
+      loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
+      questsPerDay: 3,
+      quests: [
+        { id: 'pulses',      stat: 'pulses',      n: 150, text: 'Pulse {n} times',               reward: { tickets: 10 } },
+        { id: 'captures',    stat: 'captures',    n: 400, text: 'Swallow {n} fragments',         reward: { tickets: 10 } },
+        { id: 'spins',       stat: 'spins',       n: 4,   text: 'Spin the Star Reel {n} times',  reward: { tickets: 12 } },
+        { id: 'lucky',       stat: 'lucky',       n: 8,   text: 'Land {n} Lucky Pulses',         reward: { tickets: 12 } },
+        { id: 'comets',      stat: 'comets',      n: 2,   text: 'Catch {n} comets',              reward: { tickets: 15 } },
+        { id: 'hatches',     stat: 'hatches',     n: 3,   text: 'Hatch {n} capsules',            reward: { tickets: 15 } },
+        { id: 'buys',        stat: 'buys',        n: 20,  text: 'Buy {n} upgrade levels',        reward: { tickets: 10 } },
+        { id: 'chain',       stat: 'chainToday',  n: 12,  text: 'Make a chain of {n}',           reward: { tickets: 12 }, best: true },
+        { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
+        { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
+      ],
+      questBonus: { tickets: 25, capsule: [1] },
+      playChests: [
+        { at: 120,  reward: { tickets: 5 } },
+        { at: 300,  reward: { tickets: 8 } },
+        { at: 600,  reward: { tickets: 10, mins: 5 } },
+        { at: 1200, reward: { tickets: 15, surge: 30 } },
+        { at: 1800, reward: { tickets: 20, capsule: [1] } }
+      ],
+      freeCapsuleMs: 4 * 60 * 60 * 1000,
+      goalTickets: [5, 10, 15, 25, 40, 60, 80],
+      goals: [
+        { id: 'pulses',      name: 'Pulse Master',    stat: 'pulses',      tiers: [50, 250, 1000, 5000, 20000, 100000], text: 'Pulse {n} times' },
+        { id: 'captures',    name: 'Big Eater',       stat: 'captures',    tiers: [200, 1000, 5000, 25000, 100000, 500000], text: 'Swallow {n} fragments' },
+        { id: 'bestChain',   name: 'Chain Artist',    stat: 'bestChain',   tiers: [6, 12, 20, 30, 45], text: 'Make a chain of {n}' },
+        { id: 'hatches',     name: 'Collector',       stat: 'hatches',     tiers: [5, 20, 50, 100, 250, 500], text: 'Hatch {n} capsules' },
+        { id: 'maxSector',   name: 'Explorer',        stat: 'maxSector',   tiers: [2, 3, 4, 5, 7, 10], text: 'Reach sector {n}' },
+        { id: 'singuLevel',  name: 'Growing Up',      stat: 'singuLevel',  tiers: [5, 10, 20, 30, 40, 50, 60], text: 'Singu level {n}' },
+        { id: 'lucky',       name: 'Lucky Star',      stat: 'lucky',       tiers: [10, 50, 200, 1000, 5000], text: 'Land {n} Lucky Pulses' },
+        { id: 'spins',       name: 'Reel Regular',    stat: 'spins',       tiers: [5, 25, 100, 400, 1000], text: 'Spin the reel {n} times' },
+        { id: 'comets',      name: 'Comet Chaser',    stat: 'comets',      tiers: [1, 5, 20, 50, 150], text: 'Catch {n} comets' },
+        { id: 'collapses',   name: 'Universe Folder', stat: 'collapses',   tiers: [1, 3, 10, 25], text: 'Collapse {n} times' },
+        { id: 'discoveries', name: 'Atlas Keeper',    stat: 'discoveries', tiers: [5, 10, 15, 18], text: 'Make {n} discoveries' }
+      ]
+    },
 
     mutations: [
       { id: 'frost',    name: 'Frost Tide',     desc: 'Ice fragments are worth 2×',           ice: 2 },
@@ -247,9 +298,12 @@
       reelCharge: 0,
       critters: {},            // id -> { stars, copies }
       gacha: { pulls: 0, sinceEpic: 0, sinceLegend: 0 },
-      dailyGift: '',           // day key of the last claimed daily gift
+      login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
+      daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
+      freeCapAt: 0,            // when the next free capsule is ready (ms)
+      goals: {},               // goal id -> tiers claimed
       discoveries: {},
-      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0 },
+      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
       settings: { muted: false, reducedMotion: null, buyMode: 1 },
       lastSeen: now || 0,
@@ -289,7 +343,30 @@
     s.gacha.pulls = Math.floor(nonNeg(g.pulls));
     s.gacha.sinceEpic = int(g.sinceEpic, 0, CONFIG.gacha.pityEpic);
     s.gacha.sinceLegend = int(g.sinceLegend, 0, CONFIG.gacha.pityLegend);
-    s.dailyGift = typeof raw.dailyGift === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyGift) ? raw.dailyGift : '';
+    const dayRe = /^\d{4}-\d{2}-\d{2}$/;
+    const lg = raw.login && typeof raw.login === 'object' ? raw.login : {};
+    s.login.day = int(lg.day, 0, CONFIG.rewards.login.length - 1);
+    s.login.week = int(lg.week, 0, 9999);
+    s.login.last = typeof lg.last === 'string' && dayRe.test(lg.last) ? lg.last : '';
+    const dl = raw.daily && typeof raw.daily === 'object' ? raw.daily : {};
+    if (typeof dl.key === 'string' && dayRe.test(dl.key) && Array.isArray(dl.quests)) {
+      const qids = {};
+      CONFIG.rewards.quests.forEach(function (q) { qids[q.id] = true; });
+      s.daily.key = dl.key;
+      s.daily.quests = dl.quests.filter(function (q) { return q && qids[q.id]; }).slice(0, CONFIG.rewards.questsPerDay)
+        .map(function (q) { return { id: q.id, claimed: q.claimed === true }; });
+      const base = dl.base && typeof dl.base === 'object' ? dl.base : {};
+      Object.keys(base).forEach(function (k) { if (/^[A-Za-z]{1,20}$/.test(k)) s.daily.base[k] = nonNeg(base[k]); });
+      s.daily.chainToday = Math.floor(nonNeg(dl.chainToday));
+      s.daily.bonus = dl.bonus === true;
+      s.daily.play0 = nonNeg(dl.play0);
+      s.daily.chests = int(dl.chests, 0, CONFIG.rewards.playChests.length);
+      if (s.daily.quests.length < CONFIG.rewards.questsPerDay) s.daily.key = '';   // malformed: re-roll today
+    }
+    s.freeCapAt = nonNeg(raw.freeCapAt);
+    if (now && s.freeCapAt > now + CONFIG.rewards.freeCapsuleMs) s.freeCapAt = now + CONFIG.rewards.freeCapsuleMs;  // clock moved back
+    const gl = raw.goals && typeof raw.goals === 'object' ? raw.goals : {};
+    CONFIG.rewards.goals.forEach(function (g) { if (gl[g.id]) s.goals[g.id] = int(gl[g.id], 0, g.tiers.length); });
     const known = {};
     CONFIG.discoveries.forEach(function (d) { known[d.id] = true; });
     if (raw.discoveries && typeof raw.discoveries === 'object') {
@@ -299,6 +376,7 @@
     }
     const st = raw.stats && typeof raw.stats === 'object' ? raw.stats : {};
     Object.keys(s.stats).forEach(function (k) { s.stats[k] = nonNeg(st[k]); });
+    s.daily.play0 = Math.min(s.daily.play0, s.stats.playTime);
     const ms = raw.milestones && typeof raw.milestones === 'object' ? raw.milestones : {};
     Object.keys(ms).forEach(function (k) { if (/^[A-Za-z0-9_]{1,24}$/.test(k)) s.milestones[k] = nonNeg(ms[k]); });
     const set = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
@@ -482,11 +560,139 @@
     return p;
   }
 
-  function claimDaily(state, key) {
-    if (state.dailyGift === key) return 0;
-    state.dailyGift = key;
-    state.tickets += CONFIG.tickets.daily;
-    return CONFIG.tickets.daily;
+
+  // ---------------------------------------------------------------------------
+  // Retention: daily login calendar, daily quests, play-time gifts, free capsule, goals
+  // ---------------------------------------------------------------------------
+  const RW = CONFIG.rewards;
+
+  function statValue(state, stat) {
+    switch (stat) {
+      case 'hatches': return state.gacha.pulls;
+      case 'maxSector': return state.maxSector + 1;
+      case 'singuLevel': return state.singuLevel;
+      case 'collapses': return state.collapses;
+      case 'discoveries': return discoveryCount(state);
+      case 'chainToday': return state.daily.chainToday;
+      default: return state.stats[stat] || 0;
+    }
+  }
+
+  // Starts a new day's quests and gifts if the calendar day changed. Returns true on rollover.
+  function ensureDaily(state, key) {
+    if (state.daily.key === key) return false;
+    const rng = mulberry32(hashString('quests:' + key));
+    const pool = RW.quests.slice();
+    const picks = [];
+    while (picks.length < RW.questsPerDay && pool.length) picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+    const base = {};
+    picks.forEach(function (q) { if (!q.best) base[q.stat] = statValue(state, q.stat); });
+    state.daily = { key: key, quests: picks.map(function (q) { return { id: q.id, claimed: false }; }), base: base, chainToday: 0, bonus: false, play0: state.stats.playTime, chests: 0 };
+    return true;
+  }
+
+  function questDef(id) { return RW.quests.find(function (q) { return q.id === id; }); }
+  function questProgress(state, i) {
+    const dq = state.daily.quests[i];
+    const q = dq && questDef(dq.id);
+    if (!q) return null;
+    const cur = q.best ? state.daily.chainToday : statValue(state, q.stat) - (state.daily.base[q.stat] || 0);
+    return { def: q, cur: Math.max(0, cur), n: q.n, done: cur >= q.n, claimed: dq.claimed, text: q.text.replace('{n}', q.n) };
+  }
+  function claimQuest(state, i) {
+    const p = questProgress(state, i);
+    if (!p || !p.done || p.claimed) return null;
+    state.daily.quests[i].claimed = true;
+    return p.def.reward;
+  }
+  function questBonusReady(state) {
+    return !state.daily.bonus && state.daily.quests.length > 0 && state.daily.quests.every(function (q) { return q.claimed; });
+  }
+  function claimQuestBonus(state) {
+    if (!questBonusReady(state)) return null;
+    state.daily.bonus = true;
+    return RW.questBonus;
+  }
+
+  function loginReady(state, key) { return state.login.last !== key; }
+  function loginReward(state, day) {
+    const r = Object.assign({}, RW.login[day]);
+    if (r.tickets) r.tickets = Math.round(r.tickets * (1 + RW.loginWeekBonus * Math.min(RW.loginWeekCap, state.login.week)));
+    return r;
+  }
+  // Claims today's calendar reward. Missing days never resets the calendar; it just waits.
+  function claimLogin(state, key) {
+    if (!loginReady(state, key)) return null;
+    const day = state.login.day;
+    const reward = loginReward(state, day);
+    state.login.last = key;
+    state.login.day = day + 1;
+    if (state.login.day >= RW.login.length) { state.login.day = 0; state.login.week++; }
+    return { day: day, reward: reward };
+  }
+
+  function playToday(state) { return Math.max(0, state.stats.playTime - state.daily.play0); }
+  function chestStatus(state) {
+    const i = state.daily.chests;
+    if (i >= RW.playChests.length) return null;
+    const c = RW.playChests[i];
+    const t = playToday(state);
+    return { index: i, at: c.at, reward: c.reward, left: Math.max(0, c.at - t), ready: t >= c.at };
+  }
+  function claimChest(state) {
+    const c = chestStatus(state);
+    if (!c || !c.ready) return null;
+    state.daily.chests++;
+    return c.reward;
+  }
+
+  function freeCapsuleReady(state, now) { return now >= state.freeCapAt; }
+  function claimFreeCapsule(state, now) {
+    if (!freeCapsuleReady(state, now)) return null;
+    state.freeCapAt = now + RW.freeCapsuleMs;
+    return { capsule: [0] };
+  }
+
+  function goalStatus(state, g) {
+    const claimed = state.goals[g.id] || 0;
+    const cur = statValue(state, g.stat);
+    if (claimed >= g.tiers.length) return { claimed: claimed, cur: cur, maxed: true, ready: false };
+    const target = g.tiers[claimed];
+    return { claimed: claimed, cur: cur, target: target, ready: cur >= target, maxed: false, tickets: RW.goalTickets[Math.min(claimed, RW.goalTickets.length - 1)], text: g.text.replace('{n}', target) };
+  }
+  function claimGoal(state, id) {
+    const g = RW.goals.find(function (x) { return x.id === id; });
+    if (!g) return null;
+    const st = goalStatus(state, g);
+    if (!st.ready) return null;
+    state.goals[id] = st.claimed + 1;
+    return { tickets: st.tickets };
+  }
+
+  // How many rewards are waiting to be claimed right now (for badges).
+  function claimables(state, key, now) {
+    let n = 0;
+    if (loginReady(state, key)) n++;
+    for (let i = 0; i < state.daily.quests.length; i++) { const p = questProgress(state, i); if (p && p.done && !p.claimed) n++; }
+    if (questBonusReady(state)) n++;
+    const c = chestStatus(state);
+    if (c && c.ready) n++;
+    if (freeCapsuleReady(state, now)) n++;
+    RW.goals.forEach(function (g) { if (goalStatus(state, g).ready) n++; });
+    return n;
+  }
+
+  // Applies a reward. Free capsules hatch immediately (they count toward pity like any hatch).
+  function grantReward(state, stats, world, reward, rng) {
+    rng = rng || Math.random;
+    const out = { tickets: 0, matter: 0, surge: 0, hatches: [] };
+    if (!reward) return out;
+    if (reward.tickets) { state.tickets += reward.tickets; out.tickets = reward.tickets; }
+    if (reward.mins) out.matter = earn(state, stats.refIncome * 60 * reward.mins);
+    if (reward.surge && world) { world.surge = Math.max(0, world.surge) + reward.surge; out.surge = reward.surge; }
+    (reward.capsule || []).forEach(function (min) { out.hatches.push(pullOnce(state, rng, min)); });
+    checkProgress(state, null);
+    return out;
   }
 
   // ---------------------------------------------------------------------------
@@ -518,6 +724,7 @@
     if (q.maxed || q.cost > state.matter || q.n === 0) return 0;
     state.matter -= q.cost;
     state.levels[id] += q.n;
+    state.stats.buys += q.n;
     return q.n;
   }
 
@@ -826,6 +1033,7 @@
     const bonus = Math.max(0, total - g.credited);
     earn(state, bonus);
     if (!g.auto && g.count > state.stats.bestChain) state.stats.bestChain = g.count;
+    if (!g.auto && g.count > state.daily.chainToday) state.daily.chainToday = g.count;
     if (g.count >= 5) discover(state, 'chain5', ev);
     if (g.count >= 12) discover(state, 'chain12', ev);
     if (g.count >= 25) discover(state, 'chain25', ev);
@@ -1058,7 +1266,10 @@
     createState: createState, sanitize: sanitize, serialize: serialize, parseSave: parseSave,
     sectorInfo: sectorInfo, sectorFor: sectorFor, dayKey: dayKey, mutationFor: mutationFor,
     researchFlags: researchFlags, discoveryCount: discoveryCount, singuLevelFor: singuLevelFor, singuNext: singuNext,
-    critterBonus: critterBonus, critterText: critterText, pull: pull, gachaOdds: gachaOdds, claimDaily: claimDaily,
+    critterBonus: critterBonus, critterText: critterText, pull: pull, gachaOdds: gachaOdds,
+    statValue: statValue, ensureDaily: ensureDaily, questProgress: questProgress, claimQuest: claimQuest, questBonusReady: questBonusReady, claimQuestBonus: claimQuestBonus,
+    loginReady: loginReady, loginReward: loginReward, claimLogin: claimLogin, playToday: playToday, chestStatus: chestStatus, claimChest: claimChest,
+    freeCapsuleReady: freeCapsuleReady, claimFreeCapsule: claimFreeCapsule, goalStatus: goalStatus, claimGoal: claimGoal, claimables: claimables, grantReward: grantReward,
     upgradeCost: upgradeCost, bulkQuote: bulkQuote, buy: buy, derive: derive, chainMult: chainMult, earn: earn,
     stardustFor: stardustFor, canCollapse: canCollapse, doCollapse: doCollapse, awayGain: awayGain,
     checkProgress: checkProgress, discover: discover, mark: mark,

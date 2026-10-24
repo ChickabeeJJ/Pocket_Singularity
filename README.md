@@ -1,6 +1,6 @@
 # Pocket Singularity
 
-A cozy pixel-art clicker / incremental game for CrazyGames. Feed **Singu**, a tiny hungry black hole: every pulse pulls cosmic bits into its mouth, a Star Reel spins for prizes, and capsule tickets hatch cute cosmic critters that orbit Singu and boost your universe.
+A cozy pixel-art clicker / incremental game for CrazyGames. Feed **Singu**, a tiny hungry black hole: every pulse pulls cosmic bits into it, a Star Reel spins for prizes, capsule tickets hatch cute cosmic critters that orbit Singu, and a Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours, lifetime goals).
 
 **Play locally:** open `index.html` in a browser, or serve the folder (`npx http-server .`) and open it there. There is no build step needed to play.
 
@@ -27,12 +27,12 @@ js/game.js          pixel renderer, UI, input, saving, away income
 js/audio.js         chiptune sound synthesized with Web Audio (no audio files)
 js/platform.js      CrazyGames SDK v3 adapter + storage; every call is safe without the SDK
 tools/sim.js        pacing simulator: plays the real rules with a scripted player
-tools/build.js      production build → dist/index.html (single file, fonts inlined) + dist/pocket-singularity.zip
+tools/build.js      production build → dist/index.html (single file, fonts inlined) + dist/pocket-singularity.zip + public/index.html
 tools/covers.js     renders store art from the live game → store/
 tools/spritesheet.html  every sprite at 6×, for art review
 tests/core.test.js  rule tests (Node's built-in test runner)
 tests/browser.qa.js browser QA in Chromium via Playwright (desktop 907×510, 1920×1080, phone portrait/landscape)
-vercel.json         Vercel deploy: runs the build and serves dist/
+vercel.json         Vercel deploy: runs the build and serves public/
 ```
 
 All tuning values live in `CONFIG` at the top of `js/core.js`.
@@ -54,7 +54,7 @@ Add `?debug` to the URL to see playtest timings (first pulse, first purchase, ea
 
 ## Deploying
 
-**Vercel:** `vercel.json` sets the build command (`npm run build`) and the output directory (`dist`), which fixes the "No Output Directory named public" error. No dependencies are installed.
+**Vercel:** `npm run build` writes the site to both `dist/` and `public/` (Vercel's default folder), and `vercel.json` points Vercel at `public/`, so the deploy works whatever the project settings say. Make sure Vercel deploys the latest commit on the branch: the failing log was from the older commit `a724d9f`, which had no deploy config.
 
 **CrazyGames:**
 1. `npm run build`.

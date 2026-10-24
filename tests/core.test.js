@@ -282,11 +282,105 @@ test('overcharge resolves exactly once', () => {
   assert.equal(PS.overcharge(w, s, []), null);
 });
 
-test('daily gift claims once per day', () => {
+test('daily login: once per day, advances the calendar, never resets on a missed day', () => {
   const s = PS.createState(0);
-  assert.equal(PS.claimDaily(s, '2026-10-24'), PS.CONFIG.tickets.daily);
-  assert.equal(PS.claimDaily(s, '2026-10-24'), 0);
-  assert.equal(PS.claimDaily(s, '2026-10-25'), PS.CONFIG.tickets.daily);
+  const r1 = PS.claimLogin(s, '2026-10-24');
+  assert.equal(r1.day, 0);
+  assert.equal(PS.claimLogin(s, '2026-10-24'), null, 'second claim same day');
+  // Skip several days: the calendar continues from day 2, it does not reset.
+  const r2 = PS.claimLogin(s, '2026-10-29');
+  assert.equal(r2.day, 1);
+  for (let d = 2; d < 7; d++) PS.claimLogin(s, '2026-11-0' + d);
+  assert.equal(s.login.day, 0);
+  assert.equal(s.login.week, 1);
+  assert.ok(PS.loginReward(s, 0).tickets > PS.CONFIG.rewards.login[0].tickets, 'week 2 pays more');
+});
+
+test('daily quests roll deterministically, track progress from the day start and claim once', () => {
+  const s = PS.createState(0);
+  s.stats.pulses = 1000;
+  PS.ensureDaily(s, '2026-10-24');
+  const ids = s.daily.quests.map((q) => q.id);
+  assert.equal(ids.length, 3);
+  assert.equal(new Set(ids).size, 3);
+  const t = PS.createState(0);
+  PS.ensureDaily(t, '2026-10-24');
+  assert.deepEqual(t.daily.quests.map((q) => q.id), ids, 'same quests for the same day');
+  assert.equal(PS.ensureDaily(s, '2026-10-24'), false);
+  for (let i = 0; i < 3; i++) {
+    const p = PS.questProgress(s, i);
+    assert.equal(p.cur, 0, 'progress starts at zero for ' + p.def.id);
+    if (p.def.best) s.daily.chainToday = p.n;
+    else if (p.def.stat === 'hatches') s.gacha.pulls += p.n;
+    else s.stats[p.def.stat] += p.n;
+    assert.ok(PS.questProgress(s, i).done);
+    assert.ok(PS.claimQuest(s, i));
+    assert.equal(PS.claimQuest(s, i), null);
+  }
+  assert.ok(PS.claimQuestBonus(s));
+  assert.equal(PS.claimQuestBonus(s), null);
+  assert.equal(PS.ensureDaily(s, '2026-10-25'), true, 'new day rolls');
+  assert.equal(s.daily.bonus, false);
+});
+
+test('play-time gifts unlock in order with play time today', () => {
+  const s = PS.createState(0);
+  PS.ensureDaily(s, '2026-10-24');
+  assert.equal(PS.claimChest(s), null);
+  s.stats.playTime += PS.CONFIG.rewards.playChests[0].at;
+  assert.ok(PS.claimChest(s));
+  assert.equal(PS.claimChest(s), null, 'next chest needs more time');
+  s.stats.playTime += 99999;
+  let n = 1;
+  while (PS.claimChest(s)) n++;
+  assert.equal(n, PS.CONFIG.rewards.playChests.length);
+  assert.equal(PS.chestStatus(s), null);
+});
+
+test('free capsule every 4 hours, and a clock moved back cannot skip the wait', () => {
+  const s = PS.createState(0);
+  const now = 1e12;
+  assert.ok(PS.claimFreeCapsule(s, now));
+  assert.equal(PS.claimFreeCapsule(s, now + 1000), null);
+  assert.ok(PS.claimFreeCapsule(s, now + PS.CONFIG.rewards.freeCapsuleMs));
+  const raw = JSON.parse(PS.serialize(s));
+  raw.freeCapAt = now + 1e12;
+  const back = PS.sanitize(raw, now).state;
+  assert.ok(back.freeCapAt <= now + PS.CONFIG.rewards.freeCapsuleMs);
+});
+
+test('goals pay each tier once, in order', () => {
+  const s = PS.createState(0);
+  assert.equal(PS.claimGoal(s, 'pulses'), null);
+  s.stats.pulses = 300;
+  assert.ok(PS.claimGoal(s, 'pulses'));
+  assert.ok(PS.claimGoal(s, 'pulses'));
+  assert.equal(PS.claimGoal(s, 'pulses'), null, 'third tier needs 1000');
+  assert.equal(s.goals.pulses, 2);
+});
+
+test('grantReward applies tickets, matter, surge and free hatches', () => {
+  const s = PS.createState(0);
+  const st = PS.derive(s, {});
+  const w = PS.createWorld(PS.mulberry32(1), s, st);
+  const out = PS.grantReward(s, st, w, { tickets: 7, mins: 1, surge: 10, capsule: [2] }, PS.mulberry32(3));
+  assert.equal(out.tickets, 7);
+  assert.ok(s.tickets >= 7, 'Singu level-ups from the Matter can add more');
+  assert.ok(out.matter > 0 && s.matter > 0);
+  assert.ok(w.surge >= 10);
+  assert.equal(out.hatches.length, 1);
+  assert.ok(out.hatches[0].rarity >= 2, 'Epic+ capsule');
+  assert.equal(s.gacha.pulls, 1);
+});
+
+test('claimable count drives the badges', () => {
+  const s = PS.createState(0);
+  PS.ensureDaily(s, '2026-10-24');
+  const n = PS.claimables(s, '2026-10-24', 1e12);
+  assert.ok(n >= 2, 'login + free capsule on a fresh save');
+  PS.claimLogin(s, '2026-10-24');
+  PS.claimFreeCapsule(s, 1e12);
+  assert.equal(PS.claimables(s, '2026-10-24', 1e12), 0);
 });
 
 test('Singu level follows lifetime Matter and cannot be forged in a save', () => {

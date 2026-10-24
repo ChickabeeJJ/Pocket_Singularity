@@ -39,6 +39,7 @@
             <span>Singu <b>Lv <span id="singu-lv" class="num">0</span></b></span>
             <div class="xp"><i id="xp-fill"></i></div>
           </div>
+          <button id="gift-chip" class="gift-chip" type="button"><span id="gift-icon"></span><span id="gift-text"></span></button>
         </div>
         <div class="hud-right">
           <div class="label">Sector <span id="sector-num" class="num">1</span></div>
@@ -83,6 +84,7 @@
       <div class="tabs" role="tablist">
         <button type="button" class="tab on" data-tab="upgrades" role="tab">Upgrades</button>
         <button type="button" class="tab" data-tab="capsules" role="tab">Capsules <span id="cap-badge" class="badge" hidden>!</span></button>
+        <button type="button" class="tab" data-tab="rewards" role="tab">Rewards <span id="rw-badge" class="badge" hidden>0</span></button>
       </div>
       <div id="tab-upgrades" class="tab-body">
         <div class="shop-head">
@@ -104,14 +106,14 @@
               <button id="pull1" type="button" class="btn pink">Hatch ×1 <small class="num"></small></button>
               <button id="pull10" type="button" class="btn gold">Hatch ×10 <small class="num"></small></button>
             </div>
-            <button id="daily" type="button" class="btn green daily" hidden>Daily gift: +30 tickets</button>
           </div>
         </div>
         <div id="odds" class="odds"></div>
         <div class="label col-head">Critters <span id="col-count" class="num"></span></div>
         <div id="collection" class="collection"></div>
-        <p class="small earn-help">Earn tickets from big chains, comets, the Star Reel, new sectors, Singu levels and discoveries. Tickets are only ever earned by playing.</p>
+        <p class="small earn-help">Earn tickets from big chains, comets, the Star Reel, new sectors, Singu levels, discoveries and the Rewards tab. Tickets are only ever earned by playing.</p>
       </div>
+      <div id="tab-rewards" class="tab-body" hidden></div>
     </aside>
   </main>
 

@@ -97,7 +97,8 @@
     shop: $('shop'), collapse: $('collapse-card'), atlasBtn: $('btn-atlas'), atlasCount: $('atlas-count'),
     tickets: $('btn-tickets'), ticketCount: $('ticket-count'),
     sound: $('btn-sound'), settings: $('btn-settings'),
-    capBadge: $('cap-badge'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'), daily: $('daily'),
+    capBadge: $('cap-badge'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'),
+    rwBadge: $('rw-badge'), rewards: $('tab-rewards'), giftChip: $('gift-chip'), giftText: $('gift-text'),
     odds: $('odds'), collection: $('collection'), colCount: $('col-count'), machine: $('machine-art'),
     modal: $('modal'), modalTitle: $('modal-title'), modalBody: $('modal-body'), modalActions: $('modal-actions'), modalX: $('modal-x')
   };
@@ -117,6 +118,7 @@
     $('ticket-icon').innerHTML = SPR.img('ticket', 1.5);
     $('atlas-icon').innerHTML = SPR.img('star', 2);
     $('m-ticket-icon').innerHTML = SPR.img('ticket', 1.5);
+    $('gift-icon').innerHTML = SPR.img('gift', 2);
     el.machine.innerHTML = SPR.img('machine', 3);
     el.reel.querySelectorAll('.slot img').forEach(function (img) { img.src = SPR.url('singu', 1); });
   }
@@ -220,7 +222,9 @@
     document.querySelectorAll('.tab').forEach(function (btn) { btn.classList.toggle('on', btn.dataset.tab === name); });
     $('tab-upgrades').hidden = name !== 'upgrades';
     $('tab-capsules').hidden = name !== 'capsules';
+    $('tab-rewards').hidden = name !== 'rewards';
     if (name === 'capsules') { collectionKey = ''; updateCapsules(true); }
+    if (name === 'rewards') { rewardsKey = ''; updateRewards(true); }
   }
   document.querySelectorAll('.tab').forEach(function (btn) { btn.addEventListener('click', function () { setTab(btn.dataset.tab); }); });
 
@@ -228,18 +232,16 @@
   let collectionKey = '';
   let hatching = false;
   let hatchCleanup = null;
-  function canDaily() { return state.dailyGift !== todayKey; }
   function updateCapsules(force) {
     const G = C.gacha;
     setText(el.ticketCount, fmt(state.tickets));
     setText(el.mTickets, fmt(state.tickets));
-    el.capBadge.hidden = !((state.tickets >= G.cost || canDaily()) && tab !== 'capsules');
+    el.capBadge.hidden = !(state.tickets >= G.cost && tab !== 'capsules');
     if (tab !== 'capsules' && !force) return;
     setHTML(el.pull1.querySelector('small'), String(G.cost));
     setHTML(el.pull10.querySelector('small'), String(G.cost10));
     el.pull1.disabled = state.tickets < G.cost || hatching;
     el.pull10.disabled = state.tickets < G.cost10 || hatching;
-    el.daily.hidden = !canDaily();
     const odds = PS.gachaOdds(state);
     const g = state.gacha;
     const pctTxt = (p) => p >= 0.995 ? '100%' : p < 0.0005 ? '0%' : (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%';
@@ -260,10 +262,6 @@
   el.tickets.addEventListener('click', function () { setTab('capsules'); });
   el.pull1.addEventListener('click', function () { doPull(1); });
   el.pull10.addEventListener('click', function () { doPull(10); });
-  el.daily.addEventListener('click', function () {
-    const n = PS.claimDaily(state, todayKey);
-    if (n) { Sound.unlock(); Sound.ticket(); toast('<b>Daily gift:</b> +' + n + ' tickets', 'pink'); save(); updateCapsules(true); }
-  });
 
   function doPull(count) {
     if (hatching) return;
@@ -341,7 +339,7 @@
     const body = '<div class="hatch"><div class="multi">' + list.map(function (r, i) {
       return '<div class="cell" data-i="' + i + '"><div class="mini-cap" style="--cap:' + RARITY_COL[0] + '"></div></div>';
     }).join('') + '</div><p class="small">Best: <b class="best">…</b></p></div>';
-    openModal('hatch', 'Hatching ×10…', body, []);
+    openModal('hatch', 'Hatching ×' + list.length + '…', body, []);
     const cells = el.modalBody.querySelectorAll('.cell');
     let i = 0, done = false;
     const best = list.reduce(function (a, c) { return c.rarity > a.rarity ? c : a; }, list[0]);
@@ -362,7 +360,7 @@
       clearInterval(iv);
       for (; i < list.length; i++) open(i);
       el.modalBody.querySelector('.best').textContent = critterName(best.id) + ' (' + C.gacha.rarities[best.rarity].name + ')';
-      el.modalTitle.textContent = 'Hatched ×10!';
+      el.modalTitle.textContent = 'Hatched ×' + list.length + '!';
       Sound.reveal(best.rarity);
       if (best.rarity === 3) { fx.flash = 2; Platform.happytime(); }
       setActions([{ label: 'Yay!', cls: 'primary', fn: closeModal }]);
@@ -370,6 +368,182 @@
     }
     setActions([{ label: 'Skip', fn: finish }]);
     hatchCleanup = finish;
+  }
+
+  // Rewards: daily login, free capsule, play gifts, quests, goals --------------------
+  const RW = C.rewards;
+  let rewardsKey = '';
+  let rewardsClock = 0;
+  let pendingLogin = false;
+  let lastClaimables = -1;
+
+  function fmtClock(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0');
+  }
+  function secsToMidnight() {
+    const d = new Date(), m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    return (m - d) / 1000;
+  }
+
+  function rewardHTML(r) {
+    const parts = [];
+    if (r.tickets) parts.push(SPR.img('ticket', 1) + '<b>' + r.tickets + '</b>');
+    if (r.mins) parts.push(SPR.img('matter', 2) + '<b>' + r.mins + 'm</b>');
+    if (r.surge) parts.push(SPR.img('comet', 1) + '<b>' + r.surge + 's</b>');
+    (r.capsule || []).forEach(function (min) { parts.push(SPR.img('capsule', 2) + '<b class="r' + min + '">' + (min ? C.gacha.rarities[min].name + '+' : 'Free') + '</b>'); });
+    return '<span class="rw">' + parts.join('') + '</span>';
+  }
+
+  function loginRowHTML() {
+    const L = state.login;
+    const claimedToday = !PS.loginReady(state, todayKey);
+    return '<div class="login-row">' + RW.login.map(function (r, d) {
+      let cls = 'lcell';
+      if (d < L.day) cls += ' got';
+      if (d === L.day && !claimedToday) cls += ' today';
+      if (r.capsule) cls += ' big';
+      return '<div class="' + cls + '"><span class="ld">Day ' + (d + 1) + '</span>' + rewardHTML(PS.loginReward(state, d)) + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function rewardsHTML() {
+    const t = now();
+    const L = state.login;
+    const loginReady = PS.loginReady(state, todayKey);
+    let h = '';
+    // Daily login calendar.
+    h += '<section class="rw-sec' + (loginReady ? ' hot' : '') + '"><div class="rw-head"><b>Daily login</b><span>Week ' + (L.week + 1) + ' · Day ' + (L.day + (loginReady ? 1 : 0) || 7) + '/7</span></div>' + loginRowHTML() +
+      (loginReady ? '<button class="btn gold" type="button" data-claim="login">Claim Day ' + (L.day + 1) + '</button>'
+        : '<div class="small">Next reward in <span class="cd" data-cd="midnight"></span>. Missing a day never resets your calendar.</div>') + '</section>';
+    // Free capsule.
+    const freeReady = PS.freeCapsuleReady(state, t);
+    h += '<section class="rw-sec' + (freeReady ? ' hot' : '') + '"><div class="free-row">' + SPR.img('capsule', 3) + '<span class="ft">Free capsule<small>A free hatch every 4 hours</small></span>' +
+      (freeReady ? '<button class="btn pink sm" type="button" data-claim="free">Hatch free</button>' : '<span class="cd" data-cd="free"></span>') + '</div></section>';
+    // Play gifts.
+    const chest = PS.chestStatus(state);
+    const played = PS.playToday(state);
+    const last = RW.playChests[RW.playChests.length - 1].at;
+    h += '<section class="rw-sec' + (chest && chest.ready ? ' hot' : '') + '"><div class="rw-head"><b>Play gifts</b><span>' + state.daily.chests + '/' + RW.playChests.length + ' today</span></div>' +
+      '<div class="chest-track"><i style="width:' + Math.min(100, played / last * 100).toFixed(1) + '%"></i>' +
+      RW.playChests.map(function (c, i) { return '<span class="mk ' + (i < state.daily.chests ? 'got' : chest && i === chest.index && chest.ready ? 'ready' : '') + '" style="left:' + (c.at / last * 100) + '%"></span>'; }).join('') + '</div>' +
+      (chest ? '<div class="rw-row"><span class="rt">Gift ' + (chest.index + 1) + ': ' + rewardHTML(chest.reward) + '</span><span class="act">' +
+        (chest.ready ? '<button class="btn gold sm" type="button" data-claim="chest">Open</button>' : '<span class="cd" data-cd="chest"></span>') + '</span></div>'
+        : '<div class="small">All of today\'s play gifts opened. More tomorrow!</div>') + '</section>';
+    // Daily quests.
+    h += '<section class="rw-sec"><div class="rw-head"><b>Daily quests</b><span>new in <span class="cd" data-cd="midnight"></span></span></div>';
+    for (let i = 0; i < state.daily.quests.length; i++) {
+      const p = PS.questProgress(state, i);
+      if (!p) continue;
+      h += '<div class="rw-row"><span class="rt">' + p.text + ' <small>' + fmt(Math.min(p.cur, p.n)) + '/' + fmt(p.n) + '</small></span><span class="act">' +
+        (p.claimed ? '<span class="done">Done ✓</span>' : p.done ? '<button class="btn gold sm" type="button" data-claim="quest:' + i + '">Claim</button>' : rewardHTML(p.def.reward)) + '</span>' +
+        '<div class="bar"><i style="width:' + Math.min(100, p.cur / p.n * 100).toFixed(1) + '%"></i></div></div>';
+    }
+    h += '<div class="rw-sep"></div><div class="rw-row"><span class="rt">Finish all three: ' + rewardHTML(RW.questBonus) + '</span><span class="act">' +
+      (state.daily.bonus ? '<span class="done">Done ✓</span>' : PS.questBonusReady(state) ? '<button class="btn gold sm" type="button" data-claim="bonus">Claim</button>' : '') + '</span></div></section>';
+    // Goals.
+    const goals = RW.goals.map(function (g) { return { g: g, st: PS.goalStatus(state, g) }; })
+      .sort(function (a, c) { return (c.st.ready - a.st.ready) || (a.st.maxed - c.st.maxed) || ((c.st.cur / (c.st.target || 1)) - (a.st.cur / (a.st.target || 1))); });
+    h += '<section class="rw-sec"><div class="rw-head"><b>Goals</b><span>forever</span></div>' + goals.map(function (x) {
+      const g = x.g, st = x.st;
+      if (st.maxed) return '<div class="rw-row"><span class="rt">' + g.name + ' <small>all ' + g.tiers.length + ' tiers</small></span><span class="act"><span class="done">Complete ✓</span></span></div>';
+      return '<div class="rw-row"><span class="rt">' + g.name + ' <small>' + (st.claimed + 1) + '/' + g.tiers.length + ' · ' + st.text + '</small></span><span class="act">' +
+        (st.ready ? '<button class="btn gold sm" type="button" data-claim="goal:' + g.id + '">Claim</button>' : rewardHTML({ tickets: st.tickets })) + '</span>' +
+        '<div class="bar"><i style="width:' + Math.min(100, st.cur / st.target * 100).toFixed(1) + '%"></i></div></div>';
+    }).join('') + '</section>';
+    return h;
+  }
+
+  function updateCountdowns(root) {
+    const t = now();
+    const chest = PS.chestStatus(state);
+    root.querySelectorAll('[data-cd]').forEach(function (n) {
+      const k = n.dataset.cd;
+      const v = k === 'midnight' ? secsToMidnight() : k === 'free' ? (state.freeCapAt - t) / 1000 : chest ? chest.left : 0;
+      setText(n, fmtClock(v));
+    });
+  }
+
+  function updateGiftChip() {
+    const c = PS.chestStatus(state);
+    let text, ready;
+    if (c) { ready = c.ready; text = ready ? 'GIFT READY!' : 'Gift in ' + fmtClock(c.left); }
+    else { const ms = state.freeCapAt - now(); ready = ms <= 0; text = ready ? 'FREE CAPSULE!' : 'Free capsule ' + fmtClock(ms / 1000); }
+    setText(el.giftText, text);
+    el.giftChip.classList.toggle('ready', ready);
+  }
+
+  function updateRewards(force) {
+    if (!force && performance.now() - rewardsClock < 250) return;
+    rewardsClock = performance.now();
+    const n = PS.claimables(state, todayKey, now());
+    setText(el.rwBadge, String(n));
+    el.rwBadge.hidden = n === 0;
+    if (lastClaimables >= 0 && n > lastClaimables && !modalOpen) { toast('<b>Reward ready!</b> Open the Rewards tab', 'pink'); Sound.ticket(); }
+    lastClaimables = n;
+    updateGiftChip();
+    if (tab !== 'rewards') return;
+    const html = rewardsHTML();
+    if (html !== rewardsKey) { rewardsKey = html; el.rewards.innerHTML = html; }
+    updateCountdowns(el.rewards);
+  }
+
+  function claim(kind, arg) {
+    Sound.unlock();
+    let reward = null, title = 'Reward!';
+    if (kind === 'login') { const r = PS.claimLogin(state, todayKey); if (r) { reward = r.reward; title = 'Day ' + (r.day + 1) + ' reward'; } }
+    else if (kind === 'quest') { reward = PS.claimQuest(state, Number(arg)); title = 'Quest reward'; }
+    else if (kind === 'bonus') { reward = PS.claimQuestBonus(state); title = 'All quests done'; }
+    else if (kind === 'chest') { reward = PS.claimChest(state); title = 'Play gift'; }
+    else if (kind === 'free') { reward = PS.claimFreeCapsule(state, now()); title = 'Free capsule'; }
+    else if (kind === 'goal') { reward = PS.claimGoal(state, arg); title = 'Goal reward'; }
+    if (!reward) { Sound.deny(); return false; }
+    const out = PS.grantReward(state, stats, world, reward, Math.random);
+    refreshStats();
+    shopDirty = true; rewardsKey = ''; collectionKey = '';
+    lastClaimables = PS.claimables(state, todayKey, now());
+    save();
+    const bits = [];
+    if (out.tickets) bits.push('+' + out.tickets + ' tickets');
+    if (out.matter) bits.push('+' + fmt(out.matter) + ' Matter');
+    if (out.surge) bits.push('Surge +' + out.surge + 's');
+    Sound.reelWin(out.hatches.length > 0 || kind === 'login');
+    burst(CX, CY, 30, ['4', 'p', 'c']);
+    if (bits.length) toast('<b>' + title + ':</b> ' + bits.join(' · '), 'pink');
+    if (out.surge) singuMood('star', out.surge);
+    if (out.hatches.length) {
+      if (modalOpen) { modalOpen = null; el.modal.hidden = true; }
+      hatching = true;
+      if (out.hatches.length === 1) hatchOne(out.hatches[0]); else hatchMany(out.hatches);
+    }
+    updateRewards(true);
+    return true;
+  }
+
+  function onClaim(e) {
+    const btn = e.target.closest('[data-claim]');
+    if (!btn || btn.disabled) return;
+    if (e.type === 'click' && e.detail !== 0) return;   // pointer input is handled on pointerdown
+    if (e.type === 'pointerdown' && e.button !== 0) return;
+    e.preventDefault();
+    btn.disabled = true;
+    const parts = btn.dataset.claim.split(':');
+    claim(parts[0], parts[1]);
+  }
+  // Claim on pointerdown: the tab re-renders often (progress bars), which could swallow a slow click.
+  el.rewards.addEventListener('pointerdown', onClaim);
+  el.rewards.addEventListener('click', onClaim);
+  el.giftChip.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  el.giftChip.addEventListener('click', function (e) { e.stopPropagation(); setTab('rewards'); });
+
+  function openLogin() {
+    const ready = PS.loginReady(state, todayKey);
+    const body = '<p>Come back every day for a bigger reward. Day 4 and Day 7 hatch bonus capsules, every finished week makes the calendar richer, and <b>a missed day never resets it</b>.</p>' + loginRowHTML();
+    const actions = ready
+      ? [{ label: 'Claim Day ' + (state.login.day + 1), cls: 'gold', fn: function (btn) { btn.disabled = true; if (claim('login') && modalOpen === 'login') openLogin(); } }]
+      : [{ label: 'See you tomorrow!', cls: 'primary', fn: closeModal }];
+    openModal('login', ready ? 'Daily reward!' : 'Claimed!', body, actions);
   }
 
   // Collapse card -------------------------------------------------------------
@@ -665,7 +839,7 @@
   function openMutation() {
     const body = '<p>Every day the universe drifts into a new <b>Cosmic Mutation</b>, a free bonus for that day. Nothing is lost when it changes.</p>' +
       '<div class="big-gain" style="color:var(--pink);font-size:24px">' + mutation.name + '</div><p><b>' + mutation.desc + '.</b></p>' +
-      '<p class="small">A different mutation arrives tomorrow' + (canDaily() ? ', and your daily gift of ' + C.tickets.daily + ' tickets is waiting in the Capsules tab' : '') + '.</p>';
+      '<p class="small">A different mutation, new daily quests and the next login reward arrive tomorrow.</p>';
     openModal('mutation', "Today's Cosmic Mutation", body, [{ label: 'Nice', cls: 'primary', fn: closeModal }]);
   }
 
@@ -759,7 +933,6 @@
     if (modalOpen) return;
     Sound.unlock();
     Platform.gameplayStart();
-    idleTime = 0;
     PS.pulse(world, state, stats, ev, false);
   }
 
@@ -772,13 +945,8 @@
     if (e.target.closest('button')) return;
     e.preventDefault();
     const a = toArt(e);
-    look.x = a.x; look.y = a.y; look.t = 1.5;
     tapPoint = { x: a.x, y: a.y, t: 0 };
     doPulse();
-  });
-  el.universe.addEventListener('pointermove', function (e) {
-    const a = toArt(e);
-    look.x = a.x; look.y = a.y; look.t = 1;
   });
   el.universe.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   el.pulse.addEventListener('pointerdown', function (e) {
@@ -835,7 +1003,6 @@
   let bg = null, bgPrev = null;
   const fx = { shake: 0, gulp: 0, flash: 0, collapse: 0, bgFade: 1, lucky: 0, ocWin: 0, ocLose: 0 };
   let tapPoint = null;
-  const look = { x: 0, y: 0, t: 0 };
   const twinkles = [];
   const particles = [];
   const floats = [];
@@ -843,8 +1010,7 @@
   let drones = [];
   let pets = [];
   const MAX_PARTICLES = 320, MAX_FLOATS = 26;
-  let idleTime = 0;
-  const mood = { kind: '', t: 0, blink: 2.5, blinkT: 0, munch: 0 };
+  const mood = { kind: '', t: 0, munch: 0 };
 
   function singuMood(kind, secs) { if (kind === 'happy' || !mood.t || mood.kind !== 'happy') { mood.kind = kind; mood.t = secs; } }
 
@@ -1271,7 +1437,7 @@
     if (fx.lucky > 0) { b.fillStyle = pattern('5', Math.ceil(fx.lucky * 3)); b.fillRect(0, 0, BW, BH); fx.lucky = Math.max(0, fx.lucky - dt * 5); }
     if (fx.ocWin > 0) { b.fillStyle = pattern('4', Math.ceil(fx.ocWin * 7)); b.fillRect(0, 0, BW, BH); fx.ocWin = Math.max(0, fx.ocWin - dt * 2); }
     if (fx.ocLose > 0) { b.fillStyle = pattern('0', Math.ceil(fx.ocLose * 9)); b.fillRect(0, 0, BW, BH); fx.ocLose = Math.max(0, fx.ocLose - dt * 1.5); }
-    if (fx.flash > 1) { b.fillStyle = pattern('c', Math.ceil((fx.flash - 1) * 8)); b.fillRect(0, 0, BW, BH); }
+    if (fx.flash > 1) { b.fillStyle = pattern('c', Math.ceil((fx.flash - 1) * 3)); b.fillRect(0, 0, BW, BH); }
     if (fx.collapse > 0) {
       b.fillStyle = pattern('k', Math.max(1, Math.min(15, Math.ceil(fx.collapse * 10)))); b.fillRect(0, 0, BW, BH);
       const rr = (1.6 - fx.collapse) * Math.max(BW, BH);
@@ -1365,105 +1531,58 @@
   }
 
   function drawSingu(t, coreR, surge, dt) {
-    // Expression state.
+    // Mood only tints the rim now (no face): pink after a win, gold in a Surge, grey on a fizzle.
     mood.t = Math.max(0, mood.t - dt);
     if (!mood.t) mood.kind = '';
     mood.munch = Math.max(0, mood.munch - dt);
-    mood.blink -= dt;
-    if (mood.blink <= 0) { mood.blinkT = 0.12; mood.blink = 2 + Math.random() * 3.5; }
-    mood.blinkT = Math.max(0, mood.blinkT - dt);
-    idleTime += dt;
-    look.t = Math.max(0, look.t - dt);
 
     const R = Math.max(5, Math.round(coreR * (1 + fx.gulp * 0.12)));
-    const bobY = reduced ? 0 : Math.round(Math.sin(t * 2.2) * 0.8);
-    const cx = CX, cy = CY + bobY;
+    const cx = CX, cy = CY;
     const squash = fx.gulp > 0.5 ? 1 : 0;
     // Glow halo (dithered).
-    const haloKey = surge ? '3' : '9';
+    const haloKey = surge ? '3' : mood.kind === 'happy' ? '1' : '9';
     for (let dy = -R - 3; dy <= R + 3; dy++) for (let dx = -R - 3; dx <= R + 3; dx++) {
       const d = Math.hypot(dx, dy * 1.05);
       if (d > R + 0.5 && d < R + 3.5 && dith(cx + dx, cy + dy, (R + 3.5 - d) / 3 * (0.55 + Math.min(1, fx.flash) * 0.3))) { b.fillStyle = P[haloKey]; b.fillRect(cx + dx, cy + dy, 1, 1); }
     }
-    // Body with a photon rim.
-    const rim = P[surge ? '4' : 'b'];
+    // Body.
+    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'happy' ? 'p' : mood.kind === 'dizzy' ? 'e' : 'b';
     for (let dy = -R + squash; dy <= R - squash; dy++) {
       const hw = Math.floor(Math.sqrt(R * R - dy * dy)) + squash;
       b.fillStyle = P.k;
       b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
-      b.fillStyle = rim;
+    }
+    // Swirling event horizon: three faint spiral arms falling inward.
+    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2);
+    for (let arm = 0; arm < 3; arm++) {
+      for (let r = R * 0.95; r > R * 0.18; r -= 0.5) {
+        const fr = r / R;
+        const a = arm * 2.094 + spin + fr * 3.2;
+        const x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r);
+        if (!dith(x, y, fr * 0.9)) continue;
+        b.fillStyle = P[fr > 0.7 ? 'w' : fr > 0.45 ? '1' : 'f'];
+        b.fillRect(x, y, 1, 1);
+      }
+    }
+    // Swallow ripple: a ring contracting toward the centre.
+    if (mood.munch > 0) {
+      const rr = R * (0.3 + mood.munch * 1.8);
+      if (rr < R) ellipse(cx, cy, rr, rr, 'v', 2);
+    }
+    // Photon rim with a rotating bright arc.
+    for (let dy = -R + squash; dy <= R - squash; dy++) {
+      const hw = Math.floor(Math.sqrt(R * R - dy * dy)) + squash;
+      b.fillStyle = P[rimKey];
       b.fillRect(cx - hw, cy + dy, 1, 1); b.fillRect(cx + hw, cy + dy, 1, 1);
     }
     const capW = Math.floor(Math.sqrt(Math.max(0, R * R - (R - squash) * (R - squash)))) + 1;
-    b.fillStyle = rim;
+    b.fillStyle = P[rimKey];
     b.fillRect(cx - capW, cy - R + squash, capW * 2 + 1, 1);
     b.fillRect(cx - capW, cy + R - squash, capW * 2 + 1, 1);
     b.fillStyle = P.c;
-    b.fillRect(cx - Math.round(R * 0.55), cy - Math.round(R * 0.62), 1, 1);
-    b.fillRect(cx - Math.round(R * 0.68), cy - Math.round(R * 0.45), 1, 1);
-
-    // Face.
-    const sleepy = idleTime > 25 && !mood.kind;
-    const ex = Math.max(2, Math.round(R * 0.4));
-    const ew = Math.max(2, Math.round(R * 0.24)), eh = Math.max(2, Math.round(R * 0.32));
-    const ey = cy - Math.round(R * 0.18);
-    let lx = 0, ly = 0;
-    if (look.t > 0) {
-      const dx = look.x - cx, dy = look.y - cy, d = Math.hypot(dx, dy) || 1;
-      lx = Math.sign(Math.round(dx / d)); ly = Math.sign(Math.round(dy / d));
-    }
-    for (const side of [-1, 1]) {
-      const x0 = cx + side * ex - Math.floor(ew / 2), y0 = ey - Math.floor(eh / 2);
-      b.fillStyle = P.c;
-      if (mood.kind === 'happy' || sleepy) {
-        // ^ ^ happy eyes, or – – sleepy eyes.
-        if (sleepy) b.fillRect(x0, y0 + Math.floor(eh / 2), ew, 1);
-        else for (let i = 0; i < ew; i++) b.fillRect(x0 + i, y0 + Math.round(Math.abs(i - (ew - 1) / 2)), 1, 1);
-      } else if (mood.kind === 'dizzy') {
-        const s = Math.min(ew, eh);
-        for (let i = 0; i < s; i++) { b.fillRect(x0 + i, y0 + i, 1, 1); b.fillRect(x0 + s - 1 - i, y0 + i, 1, 1); }
-      } else if (mood.blinkT > 0) {
-        b.fillRect(x0, y0 + Math.floor(eh / 2), ew, 1);
-      } else {
-        // Big glossy pupils with a white rim and a sparkle: reads as "cute" at any size.
-        b.fillStyle = mood.kind === 'star' ? P['4'] : P.c;
-        b.fillRect(x0, y0, ew, eh);
-        const pw = Math.max(1, ew - 1), ph = Math.max(1, eh - 1);
-        const px = x0 + (lx > 0 ? 1 : 0), py = y0 + (ly < 0 ? 0 : 1);
-        b.fillStyle = mood.kind === 'star' ? P['3'] : P['8'];
-        b.fillRect(px, py, pw, ph);
-        b.fillStyle = P.c;
-        b.fillRect(px, py, 1, 1);
-        if (pw >= 3 && ph >= 3) b.fillRect(px + pw - 1, py + ph - 2, 1, 1);
-      }
-      // Blush.
-      b.fillStyle = P.p;
-      const bw = Math.max(1, Math.round(R * 0.15));
-      b.fillRect(side > 0 ? x0 + ew : x0 - bw, ey + Math.ceil(eh / 2) + 1, bw, 1);
-    }
-    // Mouth.
-    const my = ey + Math.ceil(eh / 2) + Math.max(2, Math.round(R * 0.18));
-    const mw = Math.max(2, Math.round(R * 0.22));
-    if (mood.munch > 0) {
-      const open = Math.max(1, Math.round(mw * 0.6 * (0.5 + Math.abs(Math.sin(t * 30)) * 0.5)));
-      b.fillStyle = P['2']; b.fillRect(cx - Math.floor(mw / 2), my, mw, open + 1);
-      b.fillStyle = P.p; b.fillRect(cx - Math.floor(mw / 2) + 1, my + open, Math.max(1, mw - 2), 1);
-    } else if (mood.kind === 'happy' || mood.kind === 'star') {
-      b.fillStyle = P.p;
-      for (let i = -mw; i <= mw; i++) b.fillRect(cx + i, my + (Math.abs(i) < mw ? 1 : 0), 1, 1);
-      b.fillStyle = P['2']; b.fillRect(cx - mw + 1, my + 1, mw * 2 - 1, 1);
-    } else if (mood.kind === 'dizzy') {
-      b.fillStyle = P.p; for (let i = -mw; i <= mw; i++) b.fillRect(cx + i, my + (i & 1), 1, 1);
-    } else {
-      // Little cat mouth: w
-      b.fillStyle = P.p;
-      b.fillRect(cx - 2, my, 1, 1); b.fillRect(cx - 1, my + 1, 1, 1); b.fillRect(cx, my, 1, 1); b.fillRect(cx + 1, my + 1, 1, 1); b.fillRect(cx + 2, my, 1, 1);
-    }
-    if (sleepy) {
-      const zt = (t % 2) / 2;
-      b.fillStyle = P.d;
-      const zx = cx + R + 2 + Math.round(zt * 4), zy = cy - R - Math.round(zt * 6);
-      b.fillRect(zx, zy, 3, 1); b.fillRect(zx + 1, zy + 1, 1, 1); b.fillRect(zx, zy + 2, 3, 1);
+    for (let i = 0; i < 6; i++) {
+      const a = t * 1.6 + i * 0.09;
+      b.fillRect(Math.round(cx + Math.cos(a) * R), Math.round(cy + Math.sin(a) * R), 1, 1);
     }
   }
 
@@ -1540,7 +1659,8 @@
     // Day rollover while playing.
     if (PS.dayKey(new Date()) !== todayKey) {
       rollMutation(); refreshStats(); shopDirty = true;
-      toast('<b>New day!</b> ' + mutation.name + ': ' + mutation.desc + '. Daily gift ready.', 'violet');
+      PS.ensureDaily(state, todayKey); rewardsKey = ''; pendingLogin = true;
+      toast('<b>New day!</b> ' + mutation.name + ', new quests and a login reward.', 'violet');
     }
 
     if (!COVER) PS.step(world, state, stats, dt, ev);
@@ -1552,6 +1672,10 @@
     updateMilestone();
     updateCollapseCard();
     updateCapsules(false);
+    updateRewards(false);
+    // The daily login calendar pops up for returning players, and for new ones once they have settled in.
+    if (!pendingLogin && !COVER && PS.loginReady(state, todayKey) && PS.playToday(state) > 45 && state.milestones.firstBuy) pendingLogin = true;
+    if (pendingLogin && !modalOpen && !hatching && PS.loginReady(state, todayKey)) { pendingLogin = false; openLogin(); }
 
     saveClock += dt;
     if (saveClock > 5) { saveClock = 0; save(); }
@@ -1565,6 +1689,8 @@
     const loaded = loadState();
     state = loaded.state;
     rollMutation();
+    PS.ensureDaily(state, todayKey);
+    pendingLogin = !COVER && state.stats.pulses > 0 && PS.loginReady(state, todayKey);
     refreshStats();
     PS.checkProgress(state, null);
     refreshStats();
@@ -1632,6 +1758,7 @@
       refresh: function () { refreshStats(); shopDirty = true; syncDrones(); syncPets(); rebuildBackground(false); collapseKey = ''; collectionKey = ''; },
       pulse: doPulse,
       freeze: function () { frozen = true; },
+      today: function () { return todayKey; },
       setTab: setTab
     };
   }

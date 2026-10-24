@@ -18,11 +18,25 @@ So:
 
 Recheck the current CrazyGames and PEGI rules before submission. This environment could not open docs.crazygames.com, so the rules above come from search results.
 
+## Version 3: daily rewards, faceless Singu
+
+The owner asked for Singu's face to be removed and for daily rewards. Singu is now a plain black hole with a swirling event horizon. Its rim colour still reacts (pink after wins, gold in a Surge, grey on a fizzle), and a ripple runs inward when it swallows. A new **Rewards** tab collects every reason to come back. Its badge counts what is ready to claim, and a gift chip under the Singu level shows the next timer.
+
+| System | Rule |
+|---|---|
+| **Daily login calendar** | 7 days: 20 tickets → 20 + 10 min of Matter → 30 + Surge → 20 + Rare+ capsule → 40 + 20 min → 50 + 60 s Surge → 60 + **Epic+ capsule**. Each finished week adds +25% tickets (up to +100%). Claim once per local day. **A missed day pauses the calendar; it never resets.** The calendar pops up for returning players, and for new players after 45 s and their first upgrade. |
+| **Daily quests** | 3 a day, picked deterministically from 10 (pulse, swallow, spin, lucky, comets, hatch, buy, chain of 12, play 10 min, overcharge). 10–15 tickets each; finishing all three adds 25 tickets + a Rare+ capsule. A countdown shows when new quests arrive at midnight. |
+| **Play gifts** | 5 chests at 2, 5, 10, 20 and 30 minutes of play each day: tickets, Matter, a Surge, and a Rare+ capsule at 30 min. They target session length directly. |
+| **Free capsule** | A free hatch every 4 hours, counting toward pity. New players get one immediately. Moving the clock back cannot skip the wait. |
+| **Goals** | 11 lifetime goals with 4–7 tiers each (pulses, captures, chains, hatches, sectors, Singu level, lucky pulses, spins, comets, collapses, discoveries), each paying 5–80 tickets. They are claimed manually for the payoff moment. |
+
+All claims are pure functions in `core.js` that pay out once (tested), and rewards go through one `grantReward`. The old one-off "daily gift" button became Day 1 of the calendar.
+
 ## The hook
 
 > Feed Singu. Spin the stars. Hatch the cosmos.
 
-**Singu** is a cute black hole with a face. It blinks, follows your cursor, munches when it eats, beams after big chains, gets starry eyes during a Surge, and dozes off ("zzz") if you leave it alone. Your hatched critters orbit it. A mascot with moods gives players something to care about beyond numbers.
+**Singu** is the black hole at the centre. Since version 3 it has no face, and its rim, swirl and swallow ripple carry the feedback instead. Your hatched critters orbit it, so your collection is always on screen.
 
 ### Reward loops, from seconds to days
 
@@ -37,7 +51,7 @@ Recheck the current CrazyGames and PEGI rules before submission. This environmen
 | Singu levels | log scale on lifetime Matter | +3% Matter and 3 tickets per level; never resets |
 | Sectors | about 3:50, 5:55, 7:30, 9:00, 10:40, then endless | new sky, ambient scene and fragment mix, plus 10 tickets each |
 | Collapse / Stardust | optional from about 7:30 | +25% Matter per Stardust forever, plus 4 research unlocks |
-| Daily | once per local day | Cosmic Mutation (always positive) + a daily gift of 30 tickets = 3 hatches; no streaks, nothing lost |
+| Daily | once per local day | Cosmic Mutation (always positive), login calendar, 3 quests, 5 play gifts; nothing is ever lost |
 
 Times are from `npm run sim` with an active player. In 20 minutes it gets about 40 hatches, 90 reel spins and 500 lucky pulses; an idle-ish player gets about 10 hatches in 6 minutes.
 
@@ -46,7 +60,7 @@ Times are from `npm run sim` with an active player. In 20 minutes it gets about 
 - Rarities: Common 62%, Rare 27%, Epic 9%, Legendary 2%. The first hatch ever is always Rare.
 - Pity: Epic or better within 25 hatches. Legendary within 70, and its odds climb each hatch after 50.
 - Duplicates star up (★1→★5 needs 1/2/3/4 extra copies), and each star adds +50% of the base bonus (★5 = ×3). Extra copies at ★5 refund 1/2/4/8 tickets by rarity.
-- Tickets come from discoveries (2), Singu levels (3), big chains (18–35% chance, 12 s cooldown), comets (5), Star Reel prizes (1–20), sectors (10) and the daily gift (30).
+- Tickets come from discoveries (2), Singu levels (3), big chains (18–35% chance, 12 s cooldown), comets (5), Star Reel prizes (1–20), sectors (10), and everything in the Rewards tab.
 
 ### Scaling
 - Upgrades: Event Horizon (12 levels), Matter Density (25), Resonance (25), Lucky Charm (20), **Orbital Drones up to 1000** (×2 every 25 levels) and **Pulse Focus up to 200** (×1.32 per level). Costs grow exponentially, so the long caps act as soft walls broken by Collapse, critters and Singu levels.
@@ -66,8 +80,8 @@ Times are from `npm run sim` with an active player. In 20 minutes it gets about 
 Versioned validated saves (v1 saves load and migrate), a backup slot, corrupt-save recovery, away income capped at 2 h at 50% (paid once, a clock moved backwards pays nothing), mute, reduced motion (no shake, fewer particles, no blinking UI), keyboard and touch input, layouts for 907×510, fullscreen and phone, store art rendered from the game, and the guarded SDK adapter.
 
 ## Verification done
-- `npm test`: 26 rule tests. They cover costs, max levels, save sanitising (including forged Singu levels, tickets and critters), v1 migration, Collapse exactly once, the away cap, mutation determinism and no repeats, first pulse always catches, cooldown buffering, payout maths, pacing targets, first hatch Rare, Epic and Legendary pity across 40 seeds × 400 hatches, ten-pulls always Rare+, odds summing to 1, star scaling, reel result mapping, the reel paying out, Overcharge resolving once, and the daily gift claiming once.
-- `npm run qa` and `npm run qa:dist`: 31 browser checks in headless Chromium, all passing on both the source and the build. New ones cover hatch ×1 and ×10 (skip), the daily gift across reload, Star Reel spin and payout, Overcharge, critters orbiting, and capsules by touch on a phone.
+- `npm test`: 32 rule tests. The newest cover login once per day with no reset on missed days and week scaling, deterministic quests that pay once, play gifts in order, the free-capsule timer and clock-back guard, goal tiers, reward granting, and badge counts. Earlier ones cover costs, max levels, save sanitising (including forged Singu levels, tickets and critters), v1 migration, Collapse exactly once, the away cap, mutation determinism and no repeats, first pulse always catches, cooldown buffering, payout maths, pacing targets, first hatch Rare, Epic and Legendary pity across 40 seeds × 400 hatches, ten-pulls always Rare+, odds summing to 1, star scaling, reel result mapping, the reel paying out, and Overcharge resolving once.
+- `npm run qa` and `npm run qa:dist`: 35 browser checks (now including login, free capsule, play gift, quest and goal claims, the badge and gift chip, and Rewards by touch on a phone) in headless Chromium, all passing on both the source and the build. New ones cover hatch ×1 and ×10 (skip), the daily gift across reload, Star Reel spin and payout, Overcharge, critters orbiting, and capsules by touch on a phone.
 - The production build works without `zip` installed, as on Vercel.
 - Several real-time Chromium sessions with human-like clicking and buying (up to 3 minutes), plus screenshot review at every sector, modal and viewport.
 

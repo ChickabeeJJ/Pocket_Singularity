@@ -78,6 +78,19 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(await S(p, () => __ps.state.matter > 0), 'matter');
   });
 
+  await check('rewards: daily login claims from the Rewards tab once per day', async () => {
+    await p.click('.tab[data-tab="rewards"]');
+    await p.waitForSelector('[data-claim="login"]');
+    const t0 = await S(p, () => __ps.state.tickets);
+    await p.click('[data-claim="login"]');
+    await p.waitForTimeout(150);
+    const st = await S(p, () => ({ t: __ps.state.tickets, login: __ps.state.login, today: __ps.today() }));
+    assert(st.t - t0 >= 20, 'day 1 pays 20 tickets, got ' + (st.t - t0));
+    assert(st.login.day === 1 && st.login.last === st.today, JSON.stringify(st.login));
+    assert((await p.locator('[data-claim="login"]').count()) === 0, 'claim button gone');
+    await p.click('.tab[data-tab="upgrades"]');
+  });
+
   await check('Space and the button both pulse', async () => {
     await p.waitForTimeout(400);
     const n0 = await S(p, () => __ps.state.stats.pulses);
@@ -308,20 +321,6 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.keyboard.press('Escape');
   });
 
-  await check('capsules: daily gift pays once per day and survives reload', async () => {
-    await S(p, () => { __ps.state.dailyGift = ''; __ps.setTab('capsules'); });
-    await p.waitForSelector('#daily:not([hidden])');
-    const t0 = await S(p, () => __ps.state.tickets);
-    await p.click('#daily');
-    assert((await S(p, () => __ps.state.tickets)) - t0 === 30, 'daily amount');
-    assert(await p.isHidden('#daily'), 'button hides after claiming');
-    await S(p, () => __ps.save());
-    await p.reload(); await p.waitForTimeout(300);
-    await S(p, () => __ps.setTab('capsules'));
-    assert(await p.isHidden('#daily'), 'still claimed after reload');
-    await S(p, () => __ps.setTab('upgrades'));
-  });
-
   await check('Star Reel spins after enough pulses and pays out', async () => {
     await S(p, () => { __ps.state.reelCharge = __ps.stats.reelNeed - 1; });
     const m0 = await S(p, () => __ps.state.stats.spins);
@@ -344,6 +343,60 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert((await S(p, () => __ps.world.overcharge)) === null, 'offer consumed');
   });
 
+  await check('rewards: free capsule hatches and then counts down', async () => {
+    await S(p, () => { __ps.state.freeCapAt = 0; __ps.setTab('rewards'); });
+    await p.waitForSelector('[data-claim="free"]');
+    const n0 = await S(p, () => __ps.state.gacha.pulls);
+    await p.click('[data-claim="free"]');
+    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    assert((await S(p, () => __ps.state.gacha.pulls)) === n0 + 1, 'hatched');
+    await p.click('#modal-actions .btn.primary');
+    await S(p, () => __ps.setTab('rewards'));
+    await p.waitForSelector('[data-cd="free"]');
+    assert(/\d:\d\d/.test(await p.textContent('[data-cd="free"]')), 'countdown shown');
+  });
+
+  await check('rewards: play gift, quest and goal claims each pay once', async () => {
+    await S(p, () => { __ps.state.stats.playTime = __ps.state.daily.play0 + 130; });
+    await p.waitForSelector('[data-claim="chest"]');
+    await shot(p, '907-rewards');
+    let t0 = await S(p, () => __ps.state.tickets);
+    await p.click('[data-claim="chest"]');
+    await p.waitForTimeout(100);
+    assert((await S(p, () => __ps.state.tickets)) > t0, 'chest paid');
+    assert((await S(p, () => __ps.state.daily.chests)) === 1, 'one chest claimed');
+    // Complete the first quest by pushing its stat.
+    await S(p, () => {
+      const q = __ps.PS.questProgress(__ps.state, 0);
+      if (q.def.best) __ps.state.daily.chainToday = q.n;
+      else if (q.def.stat === 'hatches') __ps.state.gacha.pulls += q.n;
+      else __ps.state.stats[q.def.stat] += q.n;
+    });
+    await p.waitForSelector('[data-claim="quest:0"]');
+    t0 = await S(p, () => __ps.state.tickets);
+    await p.click('[data-claim="quest:0"]');
+    await p.waitForTimeout(100);
+    assert((await S(p, () => __ps.state.tickets)) > t0, 'quest paid');
+    assert((await p.locator('[data-claim="quest:0"]').count()) === 0, 'quest claim gone');
+    await S(p, () => { __ps.state.stats.pulses = Math.max(__ps.state.stats.pulses, 60); });
+    await p.waitForSelector('[data-claim="goal:pulses"]');
+    await p.click('[data-claim="goal:pulses"]');
+    await p.waitForTimeout(100);
+    assert((await S(p, () => __ps.state.goals.pulses)) >= 1, 'goal tier claimed');
+    await S(p, () => __ps.setTab('upgrades'));
+  });
+
+  await check('rewards: badge and gift chip reflect what is waiting', async () => {
+    await S(p, () => { __ps.state.freeCapAt = 0; });
+    await p.waitForTimeout(400);
+    assert(await p.isVisible('#rw-badge'), 'badge visible');
+    assert(Number(await p.textContent('#rw-badge')) >= 1);
+    assert((await p.textContent('#gift-text')).length > 3, 'gift chip text');
+    await p.click('#gift-chip');
+    assert(await p.isVisible('#tab-rewards'), 'gift chip opens rewards');
+    await S(p, () => __ps.setTab('upgrades'));
+  });
+
   await check('owned critters orbit Singu', async () => {
     const n = await S(p, () => Object.keys(__ps.state.critters).length);
     assert(n >= 1, 'no critters');
@@ -352,10 +405,11 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
 
   await check('object counts stay bounded during a long busy session', async () => {
     await S(p, () => { const st = __ps.state; st.levels.density = 20; st.levels.radius = 12; __ps.refresh(); });
+    const dom0 = await S(p, () => document.getElementsByTagName('*').length);
     for (let i = 0; i < 30; i++) { await p.keyboard.press('Space'); await p.waitForTimeout(120); }
     const n = await S(p, () => ({ f: __ps.world.frags.length, r: __ps.world.rings.length, g: __ps.world.groups.length, cap: __ps.stats.cap, dom: document.getElementsByTagName('*').length }));
     assert(n.f <= n.cap + 30 && n.r < 20 && n.g < 20, JSON.stringify(n));
-    assert(n.dom < 400, 'DOM nodes ' + n.dom);
+    assert(n.dom - dom0 < 30, 'DOM grew from ' + dom0 + ' to ' + n.dom);
   });
   await p.context().close();
 
@@ -406,6 +460,14 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await S(p, () => { __ps.state.matter = 100; });
     await p.tap('.card >> nth=0');
     assert((await S(p, () => __ps.state.levels.radius)) === 1);
+  });
+  await check('phone portrait: rewards tab works by touch', async () => {
+    await p.tap('.tab[data-tab="rewards"]');
+    await p.waitForSelector('[data-claim="login"]');
+    await p.tap('[data-claim="login"]');
+    await p.waitForTimeout(150);
+    assert((await S(p, () => __ps.state.login.day)) === 1, 'login claimed by touch');
+    await shot(p, '390-rewards');
   });
   await check('phone portrait: capsules tab works by touch', async () => {
     await S(p, () => { __ps.state.tickets = 50; });
