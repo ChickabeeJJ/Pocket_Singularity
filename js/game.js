@@ -1289,6 +1289,7 @@
   function openSettings() {
     const body =
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
+      '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
       '<p class="small" style="margin-top:12px">Pulse: click, tap or hold Singu, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
       '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
@@ -1300,9 +1301,11 @@
     ]);
     el.modalBody.querySelectorAll('[data-set]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (btn.dataset.set === 'sound') toggleMute();
+        const k = btn.dataset.set;
+        if (k === 'sound') toggleMute();
+        else if (k === 'music') { state.settings.music = !state.settings.music; Sound.unlock(); Sound.setMusic(state.settings.music); save(); }
         else setReduced(!reduced);
-        btn.classList.toggle('on', btn.dataset.set === 'sound' ? !state.settings.muted : reduced);
+        btn.classList.toggle('on', k === 'sound' ? !state.settings.muted : k === 'music' ? state.settings.music : reduced);
       });
     });
   }
@@ -1496,6 +1499,7 @@
     reduced = state.settings.reducedMotion === null ? matchMedia('(prefers-reduced-motion: reduce)').matches : state.settings.reducedMotion;
     document.body.classList.toggle('reduced', reduced);
     Sound.setMuted(state.settings.muted);
+    Sound.setMusic(state.settings.music && !COVER);
     el.sound.classList.toggle('muted', state.settings.muted);
     Scene.init({
       canvas: el.cv, container: el.scene,
@@ -1549,6 +1553,7 @@
         world = PS.createWorld(Math.random, state, stats);
         Scene.sync(); Scene.rebuild(false); resetKeys();
         Sound.setMuted(state.settings.muted);
+        Sound.setMusic(state.settings.music);
         toast('<b>Save:</b> loaded your synced universe.', 'violet');
       }
       save();

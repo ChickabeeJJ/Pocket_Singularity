@@ -302,7 +302,7 @@
       discoveries: {},
       stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
-      settings: { muted: false, reducedMotion: null, buyMode: 1 },
+      settings: { muted: false, music: true, reducedMotion: null, buyMode: 1 },
       lastSeen: now || 0,
       created: now || 0
     };
@@ -402,6 +402,7 @@
     Object.keys(ms).forEach(function (k) { if (/^[A-Za-z0-9_]{1,24}$/.test(k)) s.milestones[k] = nonNeg(ms[k]); });
     const set = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
     s.settings.muted = set.muted === true;
+    s.settings.music = set.music !== false;
     s.settings.reducedMotion = typeof set.reducedMotion === 'boolean' ? set.reducedMotion : null;
     s.settings.buyMode = [1, 10, 100, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
     s.lastSeen = nonNeg(raw.lastSeen) || (now || 0);

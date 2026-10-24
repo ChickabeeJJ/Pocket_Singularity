@@ -8,6 +8,9 @@
 @font-face { font-family: 'Cozy'; src: url(../fonts/silkscreen-latin-700-normal.woff2) format('woff2'); font-weight: 700; font-display: swap; unicode-range: U+0030-0039, U+0043; }
 
 :root {
+  --gut: 12px;
+  --col: 150px;
+  --dock: 88px;
   --night: #1a1c2c;
   --deep: #0b0b16;
   --ink: #07070f;
@@ -63,7 +66,7 @@ kbd { font: inherit; }
 #cv { position: absolute; left: 0; top: 0; display: block; image-rendering: pixelated; }
 .scene.surging::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 3px var(--butter); }
 
-.hud-tl { position: absolute; left: 12px; top: 12px; width: 190px; pointer-events: none; display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+.hud-tl { position: absolute; left: var(--gut); top: var(--gut); width: var(--col); pointer-events: none; display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
 .hud-label { font-size: 12px; letter-spacing: .2em; color: var(--butter); text-shadow: 2px 2px 0 var(--ink); }
 .matter { font-size: 34px; font-weight: 700; line-height: 1; color: var(--cream); text-shadow: 3px 3px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink); }
 .matter.bump { animation: bump 160ms steps(2); }
@@ -86,7 +89,9 @@ kbd { font: inherit; }
 @keyframes chipFlash { 50% { background: var(--plum); box-shadow: 0 0 0 2px var(--butter); } }
 #btn-stardust[hidden] { display: none; }
 
-.hud-top { position: absolute; left: 216px; right: 12px; top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+.hud-top { position: absolute; left: 50%; top: var(--gut); transform: translateX(-50%); display: flex; justify-content: center; pointer-events: none; }
+.hud-tr { position: absolute; right: var(--gut); top: var(--gut); width: var(--col); display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; pointer-events: none; }
+.sector-name { font-weight: 700; font-size: 15px; line-height: 1.1; color: var(--cream); text-shadow: 2px 2px 0 var(--ink); }
 .tap-pill {
   display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px; white-space: nowrap;
   background: rgba(11, 11, 22, .85); color: var(--cream); font-size: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
@@ -96,12 +101,10 @@ kbd { font: inherit; }
 .tap-pill.hide { display: none; }
 .tap-pill.hot { box-shadow: 0 0 0 2px var(--butter), 0 4px 0 0 var(--ink); color: var(--butter); animation: blink 900ms steps(2) infinite; }
 @keyframes blink { 50% { box-shadow: 0 0 0 2px var(--peach), 0 4px 0 0 var(--ink); } }
-.sector-line { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mist); text-shadow: 2px 2px 0 var(--ink); white-space: nowrap; }
-.sector-line b { color: var(--cream); }
-.mut-chip { pointer-events: auto; font-size: 12px; padding: 1px 7px; background: var(--plum); color: var(--pink); box-shadow: 0 0 0 2px var(--ink); max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.mut-chip { pointer-events: auto; margin-top: 3px; font-size: 11px; padding: 1px 7px; background: var(--plum); color: var(--pink); box-shadow: 0 0 0 2px var(--ink); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mut-chip b { color: var(--cream); }
 
-.hud-bl { position: absolute; left: 12px; bottom: 12px; width: 118px; display: flex; flex-direction: column; align-items: stretch; gap: 7px; }
+.hud-bl { position: absolute; left: var(--gut); bottom: var(--gut); width: var(--col); height: var(--dock); display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; }
 .gold-pill {
   display: flex; align-items: center; justify-content: center; gap: 5px; height: 26px; padding: 0 6px; font-weight: 700; font-size: 12px; color: var(--ink);
   background: var(--gold); box-shadow: 0 0 0 2px var(--ink), inset 0 2px 0 0 #fff0b0, 0 4px 0 0 #b0702a, 0 6px 0 0 var(--ink);
@@ -124,18 +127,18 @@ kbd { font: inherit; }
 .gift-chip.ready { color: var(--ink); background: var(--butter); box-shadow: 0 0 0 2px var(--ink), 0 3px 0 0 var(--peach); animation: giftBounce 700ms steps(2) infinite; }
 @keyframes giftBounce { 50% { transform: translateY(-2px); } }
 
-.hud-bottom { position: absolute; left: 144px; right: 12px; bottom: 12px; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
-.form-card { background: rgba(11, 11, 22, .85); padding: 5px 8px 7px; box-shadow: 0 0 0 2px var(--line), 0 4px 0 0 var(--ink); }
+.hud-bottom { position: absolute; left: calc(var(--gut) * 2 + var(--col)); right: var(--gut); bottom: var(--gut); height: var(--dock); display: flex; flex-direction: column; justify-content: space-between; padding: 7px 10px 8px; pointer-events: none;
+  background: rgba(11, 11, 22, .85); box-shadow: 0 0 0 2px var(--line), 0 4px 0 0 var(--ink); }
 .form-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--mist); white-space: nowrap; }
 .form-name b { color: var(--butter); }
 .form-next { overflow: hidden; text-overflow: ellipsis; }
-.form-bar { height: 10px; margin-top: 4px; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.form-bar { height: 10px; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
 .form-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--lav), var(--pink)); box-shadow: inset 0 2px 0 0 rgba(255, 255, 255, .35); }
 .mini-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mm { font-size: 11px; color: var(--mist); text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; overflow: hidden; }
 .mm b { color: var(--cream); }
 .mm .reel-label { color: var(--pink); }
-.bar { height: 6px; margin-top: 3px; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.bar { height: 6px; margin-top: 4px; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
 .bar i { display: block; height: 100%; width: 0; background: var(--sky); box-shadow: inset 0 2px 0 0 var(--cyan); }
 .bar-reel i { background: var(--berry); box-shadow: inset 0 2px 0 0 var(--pink); }
 .bar-reel.full i { animation: fullFlash 300ms steps(2) infinite; }
@@ -150,7 +153,7 @@ kbd { font: inherit; }
 .banner .b-title { font-size: 30px; font-weight: 700; color: var(--butter); text-shadow: 3px 3px 0 var(--berry), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink); }
 .banner .b-sub { color: var(--cream); font-size: 13px; text-shadow: 2px 2px 0 var(--ink); }
 
-.toasts { position: absolute; right: 12px; top: 84px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(30%, 200px); }
+.toasts { position: absolute; right: var(--gut); top: 78px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(30%, 200px); }
 .toast { background: var(--ink); padding: 2px 6px; font-size: 11px; color: var(--cream); box-shadow: 0 0 0 2px var(--butter); animation: toastIn 200ms steps(3); }
 .toast b { color: var(--butter); }
 .toast.green { box-shadow: 0 0 0 2px var(--lime); } .toast.green b { color: var(--lime); }
@@ -492,12 +495,12 @@ kbd { font: inherit; }
   .gen .gi { width: 34px; height: 34px; }
   .gen .gi img { width: 28px; height: 28px; }
   .gen .gn { font-size: 13px; }
-  .hud-bottom { bottom: 8px; }
-  .hud-bl { bottom: 8px; }
+  :root { --gut: 10px; }
   .hud-tl { gap: 3px; }
   #machine { width: 84px; height: 108px; }
 }
 @media (max-height: 440px) {
+  :root { --dock: 60px; }
   .mini-meters, .gift-chip { display: none; }
   .purse { display: none; }
 }
@@ -516,13 +519,13 @@ kbd { font: inherit; }
   .matter { font-size: 26px; }
   .rates { font-size: 12px; }
   .combo-bar { width: 64px; }
-  .hud-top { top: auto; bottom: 64px; left: 8px; right: 8px; }
-  .sector-line { display: none; }
+  .hud-top { top: auto; bottom: 64px; }
+  .hud-tr { display: none; }
   .tap-pill { font-size: 12px; }
   .tap-pill kbd { display: none; }
-  .hud-bottom { width: auto; left: 8px; right: 8px; bottom: 8px; transform: none; }
+  .hud-bottom { left: 8px; right: 8px; bottom: 8px; height: auto; gap: 4px; padding: 5px 8px 7px; }
   .mini-meters { display: none; }
-  .hud-bl { left: auto; right: 8px; top: 8px; bottom: auto; width: 36px; gap: 8px; }
+  .hud-bl { left: auto; right: 8px; top: 8px; bottom: auto; width: 36px; height: auto; gap: 8px; }
   .hud-bl .gold-pill span:last-child { display: none; }
   .gold-pill { padding: 0; height: 34px; }
   .round-row { flex-direction: column; gap: 8px; }
@@ -547,11 +550,9 @@ kbd { font: inherit; }
   .tab .tl { display: none; }
   .tab { padding: 4px 0; }
   .tab .ti img { width: 20px; height: 20px; }
-  .hud-bottom { left: 140px; }
-  .hud-tl { width: 160px; }
-  .hud-top { left: 184px; }
+  :root { --col: 130px; }
   .tap-pill { font-size: 12px; }
-  .sector-line { display: none; }
+  .mut-chip { display: none; }
   .hud-tl .combo { display: none; }
   .toasts { top: 64px; max-width: 40%; }
 }
@@ -563,7 +564,7 @@ body.reduced .tap-pill.hot, body.reduced .gift-chip.ready, body.reduced .lcell.t
 body.reduced .bar-reel.full i, body.reduced .reel.jackpot, body.reduced .tro.ready, body.reduced .crit.ra4, body.reduced .combo.full .combo-bar i { animation: none; }
 
 /* Store-art mode (index.html?cover=1): only the universe and the title. */
-body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, body.cover .hud-bottom, body.cover .toasts { display: none !important; }
+body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, body.cover .hud-bl, body.cover .hud-bottom, body.cover .toasts { display: none !important; }
 .cover-title { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; pointer-events: none; line-height: .95; }
 .cover-title .ct1 { font-size: 7vmin; font-weight: 700; letter-spacing: .3em; color: var(--cyan); margin-right: -.3em; text-shadow: .5vmin .5vmin 0 var(--ink); }
 .cover-title .ct2 { font-size: 14vmin; font-weight: 700; color: var(--butter); text-shadow: 1vmin 1vmin 0 var(--berry), -.5vmin -.5vmin 0 var(--ink), .5vmin -.5vmin 0 var(--ink), -.5vmin .5vmin 0 var(--ink); }

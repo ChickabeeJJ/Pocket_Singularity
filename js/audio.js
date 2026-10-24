@@ -1,4 +1,4 @@
-/* Pocket Singularity — chiptune sound, synthesized with Web Audio. No audio files. */
+/* Pocket Singularity — chiptune sound effects synthesized with Web Audio, plus one soft looping soundtrack. */
 (function (root) {
   'use strict';
 
@@ -21,19 +21,51 @@
         this.master.connect(comp); comp.connect(this.ctx.destination);
         this.noise = this.makeNoise();
       } catch (e) { this.ctx = null; }
+      this.syncMusic();
     },
 
     isSilent: function () { return this.muted || this.external; },
-    setMuted: function (m) { this.muted = !!m; this.applyGain(); },
-    setExternalMute: function (m) { this.external = !!m; this.applyGain(); },
+    setMuted: function (m) { this.muted = !!m; this.applyGain(); this.syncMusic(); },
+    setExternalMute: function (m) { this.external = !!m; this.applyGain(); this.syncMusic(); },
+
+    // Soundtrack: a quiet background loop, started by the first tap (browsers block autoplay).
+    musicOn: true, musicEl: null, musicVol: 0.55, hidden: false,
+    setMusic: function (on) { this.musicOn = !!on; this.syncMusic(); },
+    syncMusic: function () {
+      const want = this.musicOn && !this.isSilent() && !this.hidden && !!this.ctx;
+      if (want && !this.musicEl) {
+        try {
+          this.musicEl = new root.Audio('assets/music/quiet-between-stars.mp3');
+          this.musicEl.loop = true;
+          this.musicEl.volume = 0;
+        } catch (e) { this.musicEl = null; return; }
+      }
+      const el = this.musicEl;
+      if (!el) return;
+      clearInterval(this.fadeTimer);
+      const self = this;
+      if (want) {
+        if (el.paused) { const p = el.play(); if (p && p.catch) p.catch(function () {}); }
+        // Gentle fade in.
+        this.fadeTimer = setInterval(function () {
+          el.volume = Math.min(self.musicVol, el.volume + 0.02);
+          if (el.volume >= self.musicVol) clearInterval(self.fadeTimer);
+        }, 60);
+      } else {
+        this.fadeTimer = setInterval(function () {
+          el.volume = Math.max(0, el.volume - 0.05);
+          if (el.volume <= 0) { clearInterval(self.fadeTimer); el.pause(); }
+        }, 40);
+      }
+    },
     applyGain: function () {
       if (!this.master) return;
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
       this.master.gain.setTargetAtTime(this.isSilent() ? 0 : 0.5, t, 0.03);
     },
-    suspend: function () { if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(function () {}); },
-    resume: function () { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(function () {}); },
+    suspend: function () { this.hidden = true; this.syncMusic(); if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(function () {}); },
+    resume: function () { this.hidden = false; this.syncMusic(); if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(function () {}); },
     ok: function () { return this.ctx && this.ctx.state === 'running' && !this.isSilent(); },
 
     makeNoise: function () {

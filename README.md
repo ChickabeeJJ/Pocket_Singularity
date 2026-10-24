@@ -26,7 +26,8 @@ js/core.js          all rules and balance: economy, gacha, relic forge, Star Ree
 js/sprites.js       palette, hand-made sprites, the pet painter (25 species), capsules, machine, icons
 js/render.js        the scene: layered sky, planet horizon, parallax stars, Singu, orbiting harvesters and pets, effects
 js/game.js          UI (HUD, six panel tabs, modals), input, saving, away income
-js/audio.js         chiptune sound synthesized with Web Audio (no audio files)
+js/audio.js         chiptune sound effects (Web Audio) and the looping soundtrack
+assets/music/       soundtrack (a softened, quieter mix of "The Quiet Between Stars"), shipped next to index.html
 js/platform.js      CrazyGames SDK v3 adapter + storage; every call is safe without the SDK
 tools/sim.js        pacing simulator: plays the real rules with a scripted player
 tools/build.js      production build → dist/index.html (single file, fonts inlined) + dist/pocket-singularity.zip + public/index.html
@@ -46,7 +47,7 @@ Node 18+ is needed. The browser QA and cover scripts also need Playwright (`npm 
 ```
 npm test                 # rule tests
 npm run qa               # browser QA against the source files (pass a folder to save screenshots)
-npm run build            # dist/index.html + dist/pocket-singularity.zip
+npm run build            # dist/index.html + music + dist/pocket-singularity.zip
 npm run qa:dist          # the same browser QA against the production build
 npm run covers           # store/cover-*.png
 npm run sim -- 40 smart  # pacing report: minutes, policy (smart | spam | idle), seed, collapse-at-Stardust

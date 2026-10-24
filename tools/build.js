@@ -31,10 +31,19 @@ fs.writeFileSync(path.join(DIST, 'index.html'), html);
 fs.mkdirSync(path.join(ROOT, 'public'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'public', 'index.html'), html);
 
+// Audio is too big to inline usefully, so it ships next to index.html.
+const ASSETS = ['assets/music/quiet-between-stars.mp3'];
+for (const a of ASSETS) {
+  for (const out of [DIST, path.join(ROOT, 'public')]) {
+    fs.mkdirSync(path.join(out, path.dirname(a)), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, a), path.join(out, a));
+  }
+}
+
 const zip = path.join(DIST, 'pocket-singularity.zip');
 if (fs.existsSync(zip)) fs.unlinkSync(zip);
 try {
-  execFileSync('zip', ['-q', '-9', zip, 'index.html'], { cwd: DIST });
+  execFileSync('zip', ['-q', '-9', zip, 'index.html'].concat(ASSETS), { cwd: DIST });
 } catch (e) {
   console.warn('zip not available; upload dist/index.html directly');
 }
