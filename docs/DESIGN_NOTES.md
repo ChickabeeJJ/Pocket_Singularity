@@ -31,6 +31,25 @@ The curve follows Cookie Clicker and AdVenture Capitalist:
 
 The old balance went from 2M to 19Qa (×10 billion) between minutes 8 and 15.
 
+## Scarcer tickets and shards
+
+Tickets and shards were far too easy to get: a 40-minute sim run made 106 hatches and 14 relics. Now it makes about 20 and 2.
+
+| Source | Tickets before → now | Shards before → now |
+|---|---|---|
+| Big chain drop | 18–35%, every 12 s → 5–12% (chains of 6+), every 30 s | – |
+| Comet | 5 → 2 | 1 → 0 |
+| New sector / Singu level / discovery | 10 / 3 / 2 → 4 / 1 / 1 | 3 → 1 (sector) |
+| Star Reel prizes | 1–20 → 0–8 | 2 / 10 (big / jackpot) → 1 / 3 |
+| Trophy claim | 3 + 1 shard → 1 (gold and spectral also give 1 shard and 1 key) | |
+| Daily quests / all-quest bonus | 10–15 / 25 → 3–5 / 10 | 5 → 2 |
+| Login calendar | 20–60 a day → 5–15 | 15 → 5 (day 7) |
+| Play gifts | 5–20 → 2–8 | 5 → 2 |
+| Collapse | – | 5 × Stardust gained → 2 + 1 per 25 Stardust |
+| Skin duplicates / relic salvage / shattered push | – | 2–40 / 2–40 / 3 → 1–10 / 1–15 / 1 |
+
+Skin crates were made much rarer as well (top tiers down to 0.1%; see the table below). The wardrobe is one grid sorted from common to mythic.
+
 ## Skins and crates
 
 A **Skins** tab adds cosmetic gacha with real buffs. **Cosmic Keys** open crates and are earned only by playing:
@@ -47,9 +66,9 @@ New and existing players start with 3.
 
 | Crate | Cost | Odds (C / R / E / L / M) | Pity | Skins |
 |---|---|---|---|---|
-| Stardust | 1 key | 64 / 27 / 7.5 / 1.5 / 0 | Legendary within 30 | Dusty, Mint Swirl, Peach Fizz · Frostbite, Ember · Candy Nebula · **Golden Hour** |
-| Nebula | 4 keys | 0 / 60 / 30.5 / 8 / 1.5 | Mythic within 45 | Bubblegum, Aurora · Supernova, Deep Sea · **Prism** · ***Starforge*** |
-| Event Horizon | 10 keys | 0 / 0 / 67 / 27.5 / 5.5 | Mythic within 20 | Void Walker, Solar Flare · **Quasar**, **Glitch** · ***Singularity Prime*** |
+| Stardust | 1 key | 78 / 19 / 2.7 / 0.3 / 0 | Legendary within 300 | Dusty, Mint Swirl, Peach Fizz · Frostbite, Ember · Candy Nebula · **Golden Hour** |
+| Nebula | 4 keys | 0 / 82 / 16 / 1.8 / 0.2 | Mythic within 500 | Bubblegum, Aurora · Supernova, Deep Sea · **Prism** · ***Starforge*** |
+| Event Horizon | 10 keys | 0 / 0 / 90 / 9.9 / 0.1 | Mythic within 400 | Void Walker, Solar Flare · **Quasar**, **Glitch** · ***Singularity Prime*** |
 
 - **Unique pools:** each crate has its own skins, so every crate has different commons, rares and so on.
 - **Look:** a skin recolours the halo, rim, swirl and accretion disk, and many add particles (snow, flames, hearts, bubbles, sparkles, orbiting stars, an inward void pull, a rainbow cycle, glitch flicker).

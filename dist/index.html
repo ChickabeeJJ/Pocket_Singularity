@@ -1057,14 +1057,14 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   const RELICS = {
     cost: 10,
     rarities: [
-      { name: 'Common',    w: 55,  affixes: 1, scale: 1,   salvage: 2 },
-      { name: 'Rare',      w: 28,  affixes: 2, scale: 1.6, salvage: 4 },
-      { name: 'Epic',      w: 12.5, affixes: 2, scale: 2.6, salvage: 8 },
-      { name: 'Legendary', w: 4,   affixes: 3, scale: 4.2, salvage: 16 },
-      { name: 'Mythic',    w: 0.5, affixes: 4, scale: 7,   salvage: 40 }
+      { name: 'Common',    w: 55,  affixes: 1, scale: 1,   salvage: 1 },
+      { name: 'Rare',      w: 28,  affixes: 2, scale: 1.6, salvage: 2 },
+      { name: 'Epic',      w: 12.5, affixes: 2, scale: 2.6, salvage: 3 },
+      { name: 'Legendary', w: 4,   affixes: 3, scale: 4.2, salvage: 6 },
+      { name: 'Mythic',    w: 0.5, affixes: 4, scale: 7,   salvage: 15 }
     ],
     push: [0.55, 0.4, 0.25, 0.12],   // chance to climb one rarity when you Push; a failed push shatters the relic
-    shatterRefund: 3,
+    shatterRefund: 1,
     fuseNeed: 3,
     invCap: 40,
     stats: [
@@ -1146,11 +1146,11 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   // ---------------------------------------------------------------------------
   const CRATES = [
     { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
-      weights: [64, 27, 7.5, 1.5, 0], pity: { rarity: 3, within: 30 } },
+      weights: [78, 19, 2.7, 0.3, 0], pity: { rarity: 3, within: 300 } },
     { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
-      weights: [0, 60, 30.5, 8, 1.5], pity: { rarity: 4, within: 45 } },
+      weights: [0, 82, 16, 1.8, 0.2], pity: { rarity: 4, within: 500 } },
     { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
-      weights: [0, 0, 67, 27.5, 5.5], pity: { rarity: 4, within: 20 } }
+      weights: [0, 0, 90, 9.9, 0.1], pity: { rarity: 4, within: 400 } }
   ];
   const SKINS = [
     // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
@@ -1282,12 +1282,12 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       ],
       // Seconds of current income paid per result, plus tickets.
       prizes: {
-        singu3:   { secs: 120, tickets: 20, surge: true, name: 'SINGU JACKPOT' },
-        comet3:   { secs: 40,  tickets: 10, surge: true, name: 'Comet Triple' },
-        crystal3: { secs: 60,  tickets: 8,  name: 'Crystal Triple' },
-        triple:   { secs: 30,  tickets: 4,  name: 'Triple' },
-        pairRare: { secs: 12,  tickets: 2,  name: 'Lucky Pair' },
-        pair:     { secs: 8,   tickets: 1,  name: 'Pair' },
+        singu3:   { secs: 120, tickets: 8, surge: true, name: 'SINGU JACKPOT' },
+        comet3:   { secs: 40,  tickets: 4, surge: true, name: 'Comet Triple' },
+        crystal3: { secs: 60,  tickets: 3, name: 'Crystal Triple' },
+        triple:   { secs: 30,  tickets: 1, name: 'Triple' },
+        pairRare: { secs: 12,  tickets: 1, name: 'Lucky Pair' },
+        pair:     { secs: 8,   tickets: 0, name: 'Pair' },
         none:     { secs: 3,   tickets: 0,  name: 'Stardust Sparkle' }
       }
     },
@@ -1296,16 +1296,17 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     overcharge: { minChain: 10, window: 3.5, cooldown: 25, winChance: 0.5, win: 1, lose: 0.5 },
 
     tickets: {
-      chainMin: 4, chainBase: 0.18, chainPer: 0.015, chainMax: 0.35, chainCooldown: 12,
-      comet: 5, sector: 10, level: 3, discovery: 2, ach: 3
+      chainMin: 6, chainBase: 0.05, chainPer: 0.005, chainMax: 0.12, chainCooldown: 30,
+      comet: 2, sector: 4, level: 1, discovery: 1, ach: 1
     },
 
     // Relic shards (Relic Forge currency). Earned only by playing.
     // Cosmic Keys open skin crates. Earned only by playing.
     keys: { start: 3, comet: 1, sector: 1, form: 2, collapse: 3, levelEvery: 5, trophyGold: 1, questBonus: 2, login7: 5 },
     skinOwnBonus: 0.01,       // +1% Matter for every skin you own
-    skinRefund: [2, 4, 8, 16, 40],   // relic shards for a duplicate skin, by rarity
-    shards: { start: 10, comet: 1, sector: 3, reelBig: 2, jackpot: 10, collapse: 5, ach: 1, questBonus: 5, login7: 15 },
+    skinRefund: [1, 1, 2, 4, 10],   // relic shards for a duplicate skin, by rarity
+    // Shards are scarce: no comet drops, trophies only give them at gold and spectral, and Collapse pays 2 + 1 per 25 Stardust.
+    shards: { start: 10, comet: 0, sector: 1, reelBig: 1, jackpot: 3, collapse: 2, collapsePer: 25, ach: 1, questBonus: 2, login7: 5 },
     achStep: 0.015,           // +1.5% Matter per unlocked achievement
 
     gacha: {
@@ -1333,35 +1334,35 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     // capsule (list of minimum rarities for free hatches: 0 any, 1 Rare+, 2 Epic+).
     rewards: {
       login: [
-        { tickets: 20 },
-        { tickets: 20, mins: 10 },
-        { tickets: 30, surge: 30 },
-        { tickets: 20, capsule: [1] },
-        { tickets: 40, mins: 20 },
-        { tickets: 50, surge: 60 },
-        { tickets: 60, shards: 15, keys: 5, capsule: [2] }
+        { tickets: 5 },
+        { tickets: 5, mins: 10 },
+        { tickets: 8, surge: 30 },
+        { tickets: 5, capsule: [1] },
+        { tickets: 10, mins: 20 },
+        { tickets: 12, surge: 60 },
+        { tickets: 15, shards: 5, keys: 5, capsule: [2] }
       ],
       loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
       questsPerDay: 3,
       quests: [
-        { id: 'pulses',      stat: 'pulses',      n: 150, text: 'Pulse {n} times',               reward: { tickets: 10 } },
-        { id: 'captures',    stat: 'captures',    n: 400, text: 'Swallow {n} fragments',         reward: { tickets: 10 } },
-        { id: 'spins',       stat: 'spins',       n: 4,   text: 'Spin the Star Reel {n} times',  reward: { tickets: 12 } },
-        { id: 'lucky',       stat: 'lucky',       n: 8,   text: 'Land {n} Lucky Pulses',         reward: { tickets: 12 } },
-        { id: 'comets',      stat: 'comets',      n: 2,   text: 'Catch {n} comets',              reward: { tickets: 15 } },
-        { id: 'hatches',     stat: 'hatches',     n: 3,   text: 'Hatch {n} capsules',            reward: { tickets: 15 } },
-        { id: 'buys',        stat: 'buys',        n: 20,  text: 'Buy {n} upgrade levels',        reward: { tickets: 10 } },
-        { id: 'chain',       stat: 'chainToday',  n: 12,  text: 'Make a chain of {n}',           reward: { tickets: 12 }, best: true },
-        { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
-        { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
+        { id: 'pulses',      stat: 'pulses',      n: 150, text: 'Pulse {n} times',               reward: { tickets: 3 } },
+        { id: 'captures',    stat: 'captures',    n: 400, text: 'Swallow {n} fragments',         reward: { tickets: 3 } },
+        { id: 'spins',       stat: 'spins',       n: 4,   text: 'Spin the Star Reel {n} times',  reward: { tickets: 4 } },
+        { id: 'lucky',       stat: 'lucky',       n: 8,   text: 'Land {n} Lucky Pulses',         reward: { tickets: 4 } },
+        { id: 'comets',      stat: 'comets',      n: 2,   text: 'Catch {n} comets',              reward: { tickets: 5 } },
+        { id: 'hatches',     stat: 'hatches',     n: 3,   text: 'Hatch {n} capsules',            reward: { tickets: 5 } },
+        { id: 'buys',        stat: 'buys',        n: 20,  text: 'Buy {n} upgrade levels',        reward: { tickets: 3 } },
+        { id: 'chain',       stat: 'chainToday',  n: 12,  text: 'Make a chain of {n}',           reward: { tickets: 4 }, best: true },
+        { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 3, mins: 5 } },
+        { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 3 } }
       ],
-      questBonus: { tickets: 25, shards: 5, keys: 2, capsule: [1] },
+      questBonus: { tickets: 10, shards: 2, keys: 2, capsule: [1] },
       playChests: [
-        { at: 120,  reward: { tickets: 5 } },
-        { at: 300,  reward: { tickets: 8 } },
-        { at: 600,  reward: { tickets: 10, mins: 5 } },
-        { at: 1200, reward: { tickets: 15, surge: 30 } },
-        { at: 1800, reward: { tickets: 20, shards: 5, capsule: [1] } }
+        { at: 120,  reward: { tickets: 2 } },
+        { at: 300,  reward: { tickets: 3 } },
+        { at: 600,  reward: { tickets: 4, mins: 5 } },
+        { at: 1200, reward: { tickets: 6, surge: 30 } },
+        { at: 1800, reward: { tickets: 8, shards: 2, capsule: [1] } }
       ],
       freeCapsuleMs: 4 * 60 * 60 * 1000
     },
@@ -2049,8 +2050,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   function claimAchievement(state, id) {
     if (state.ach[id] !== 1) return null;
     state.ach[id] = 2;
-    const r = { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
-    if (ACH[id] && ACH[id].tier >= 2) r.keys = CONFIG.keys.trophyGold;
+    const r = { tickets: CONFIG.tickets.ach };
+    if (ACH[id] && ACH[id].tier >= 2) { r.keys = CONFIG.keys.trophyGold; r.shards = CONFIG.shards.ach; }
     return r;
   }
 
@@ -2339,7 +2340,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     state.gens = {};
     state.bought = {};
     if (r.memory) state.gens.sweeper = 10;
-    state.shards += CONFIG.shards.collapse * gain;
+    state.shards += CONFIG.shards.collapse + Math.floor(gain / CONFIG.shards.collapsePer);
     state.skins.keys += CONFIG.keys.collapse;
     state.stats.runTime = 0;
     return gain;
@@ -5669,15 +5670,13 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const owned = Object.keys(state.skins.own).length;
     setText(el.skinCount, owned + '/' + CT.SKINS.length);
     setText(el.skinBonus, '+' + Math.round((stats.skin.global || 0) * 100) + '% Matter from skins');
-    const groups = [{ id: null, name: 'Starter' }].concat(CT.CRATES.map(function (c) { return { id: c.id, name: c.name }; }));
-    el.wardrobe.innerHTML = groups.map(function (g) {
-      const list = CT.SKINS.filter(function (k) { return k.crate === g.id; });
-      return '<div class="wr-head">' + g.name + '</div><div class="wr-grid">' + list.map(function (k) {
-        const own = state.skins.own[k.id];
-        return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
-          SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
-      }).join('') + '</div>';
-    }).join('');
+    // Every skin in one grid, common to mythic.
+    const list = CT.SKINS.slice().sort(function (a, b) { return a.rarity - b.rarity; });
+    el.wardrobe.innerHTML = '<div class="wr-grid">' + list.map(function (k) {
+      const own = state.skins.own[k.id];
+      return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
+        SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
+    }).join('') + '</div>';
   }
   el.crates.addEventListener('click', function (e) {
     const o = e.target.closest('[data-crate]');
@@ -5933,10 +5932,10 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     setText(el.achBonus, '×' + stats.achMult.toFixed(2) + ' Matter');
     const ready = CT.ACHIEVEMENTS.filter(function (a) { return state.ach[a.id] === 1; }).length;
     el.claimAll.hidden = ready === 0;
-    setText(el.claimAll, 'Claim all (' + ready + ') · +' + ready * C.tickets.ach + ' tickets · +' + ready * C.shards.ach + ' shards');
+    setText(el.claimAll, 'Claim all (' + ready + ')');
     const cats = {};
     CT.ACHIEVEMENTS.forEach(function (a) { (cats[a.cat] = cats[a.cat] || []).push(a); });
-    let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for tickets and a shard.') + '</div>';
+    let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for a ticket. Gold and spectral trophies also give a shard and a key.') + '</div>';
     Object.keys(cats).forEach(function (c) {
       const list = cats[c].slice().sort(function (x, y) { return x.tier - y.tier || x.n - y.n; });
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
@@ -5958,12 +5957,17 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   });
   el.claimAll.addEventListener('click', function () {
     let n = 0;
-    CT.ACHIEVEMENTS.forEach(function (a) { if (state.ach[a.id] === 1) { PS.grantReward(state, stats, world, PS.claimAchievement(state, a.id), Math.random); n++; } });
+    const got = { tickets: 0, shards: 0, keys: 0 };
+    CT.ACHIEVEMENTS.forEach(function (a) {
+      if (state.ach[a.id] !== 1) return;
+      const out = PS.grantReward(state, stats, world, PS.claimAchievement(state, a.id), Math.random);
+      got.tickets += out.tickets; got.shards += out.shards; got.keys += out.keys; n++;
+    });
     if (!n) return;
     refreshStats(); markDirty(); trophyKey = ''; save();
     Sound.achieve();
     Scene.onEvent({ t: 'buy' });
-    toast('<b>' + n + ' trophies claimed</b> · +' + n * C.tickets.ach + ' tickets · +' + n * C.shards.ach + ' shards', 'pink');
+    toast('<b>' + n + ' trophies claimed</b> · +' + got.tickets + ' tickets' + (got.shards ? ' · +' + got.shards + ' shards' : '') + (got.keys ? ' · +' + got.keys + ' keys' : ''), 'pink');
   });
 
   // ---------------------------------------------------------------------------

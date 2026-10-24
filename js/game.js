@@ -847,15 +847,13 @@
     const owned = Object.keys(state.skins.own).length;
     setText(el.skinCount, owned + '/' + CT.SKINS.length);
     setText(el.skinBonus, '+' + Math.round((stats.skin.global || 0) * 100) + '% Matter from skins');
-    const groups = [{ id: null, name: 'Starter' }].concat(CT.CRATES.map(function (c) { return { id: c.id, name: c.name }; }));
-    el.wardrobe.innerHTML = groups.map(function (g) {
-      const list = CT.SKINS.filter(function (k) { return k.crate === g.id; });
-      return '<div class="wr-head">' + g.name + '</div><div class="wr-grid">' + list.map(function (k) {
-        const own = state.skins.own[k.id];
-        return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
-          SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
-      }).join('') + '</div>';
-    }).join('');
+    // Every skin in one grid, common to mythic.
+    const list = CT.SKINS.slice().sort(function (a, b) { return a.rarity - b.rarity; });
+    el.wardrobe.innerHTML = '<div class="wr-grid">' + list.map(function (k) {
+      const own = state.skins.own[k.id];
+      return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
+        SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
+    }).join('') + '</div>';
   }
   el.crates.addEventListener('click', function (e) {
     const o = e.target.closest('[data-crate]');
@@ -1111,10 +1109,10 @@
     setText(el.achBonus, '×' + stats.achMult.toFixed(2) + ' Matter');
     const ready = CT.ACHIEVEMENTS.filter(function (a) { return state.ach[a.id] === 1; }).length;
     el.claimAll.hidden = ready === 0;
-    setText(el.claimAll, 'Claim all (' + ready + ') · +' + ready * C.tickets.ach + ' tickets · +' + ready * C.shards.ach + ' shards');
+    setText(el.claimAll, 'Claim all (' + ready + ')');
     const cats = {};
     CT.ACHIEVEMENTS.forEach(function (a) { (cats[a.cat] = cats[a.cat] || []).push(a); });
-    let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for tickets and a shard.') + '</div>';
+    let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for a ticket. Gold and spectral trophies also give a shard and a key.') + '</div>';
     Object.keys(cats).forEach(function (c) {
       const list = cats[c].slice().sort(function (x, y) { return x.tier - y.tier || x.n - y.n; });
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
@@ -1136,12 +1134,17 @@
   });
   el.claimAll.addEventListener('click', function () {
     let n = 0;
-    CT.ACHIEVEMENTS.forEach(function (a) { if (state.ach[a.id] === 1) { PS.grantReward(state, stats, world, PS.claimAchievement(state, a.id), Math.random); n++; } });
+    const got = { tickets: 0, shards: 0, keys: 0 };
+    CT.ACHIEVEMENTS.forEach(function (a) {
+      if (state.ach[a.id] !== 1) return;
+      const out = PS.grantReward(state, stats, world, PS.claimAchievement(state, a.id), Math.random);
+      got.tickets += out.tickets; got.shards += out.shards; got.keys += out.keys; n++;
+    });
     if (!n) return;
     refreshStats(); markDirty(); trophyKey = ''; save();
     Sound.achieve();
     Scene.onEvent({ t: 'buy' });
-    toast('<b>' + n + ' trophies claimed</b> · +' + n * C.tickets.ach + ' tickets · +' + n * C.shards.ach + ' shards', 'pink');
+    toast('<b>' + n + ' trophies claimed</b> · +' + got.tickets + ' tickets' + (got.shards ? ' · +' + got.shards + ' shards' : '') + (got.keys ? ' · +' + got.keys + ' keys' : ''), 'pink');
   });
 
   // ---------------------------------------------------------------------------

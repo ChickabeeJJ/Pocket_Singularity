@@ -82,12 +82,12 @@
       ],
       // Seconds of current income paid per result, plus tickets.
       prizes: {
-        singu3:   { secs: 120, tickets: 20, surge: true, name: 'SINGU JACKPOT' },
-        comet3:   { secs: 40,  tickets: 10, surge: true, name: 'Comet Triple' },
-        crystal3: { secs: 60,  tickets: 8,  name: 'Crystal Triple' },
-        triple:   { secs: 30,  tickets: 4,  name: 'Triple' },
-        pairRare: { secs: 12,  tickets: 2,  name: 'Lucky Pair' },
-        pair:     { secs: 8,   tickets: 1,  name: 'Pair' },
+        singu3:   { secs: 120, tickets: 8, surge: true, name: 'SINGU JACKPOT' },
+        comet3:   { secs: 40,  tickets: 4, surge: true, name: 'Comet Triple' },
+        crystal3: { secs: 60,  tickets: 3, name: 'Crystal Triple' },
+        triple:   { secs: 30,  tickets: 1, name: 'Triple' },
+        pairRare: { secs: 12,  tickets: 1, name: 'Lucky Pair' },
+        pair:     { secs: 8,   tickets: 0, name: 'Pair' },
         none:     { secs: 3,   tickets: 0,  name: 'Stardust Sparkle' }
       }
     },
@@ -96,16 +96,17 @@
     overcharge: { minChain: 10, window: 3.5, cooldown: 25, winChance: 0.5, win: 1, lose: 0.5 },
 
     tickets: {
-      chainMin: 4, chainBase: 0.18, chainPer: 0.015, chainMax: 0.35, chainCooldown: 12,
-      comet: 5, sector: 10, level: 3, discovery: 2, ach: 3
+      chainMin: 6, chainBase: 0.05, chainPer: 0.005, chainMax: 0.12, chainCooldown: 30,
+      comet: 2, sector: 4, level: 1, discovery: 1, ach: 1
     },
 
     // Relic shards (Relic Forge currency). Earned only by playing.
     // Cosmic Keys open skin crates. Earned only by playing.
     keys: { start: 3, comet: 1, sector: 1, form: 2, collapse: 3, levelEvery: 5, trophyGold: 1, questBonus: 2, login7: 5 },
     skinOwnBonus: 0.01,       // +1% Matter for every skin you own
-    skinRefund: [2, 4, 8, 16, 40],   // relic shards for a duplicate skin, by rarity
-    shards: { start: 10, comet: 1, sector: 3, reelBig: 2, jackpot: 10, collapse: 5, ach: 1, questBonus: 5, login7: 15 },
+    skinRefund: [1, 1, 2, 4, 10],   // relic shards for a duplicate skin, by rarity
+    // Shards are scarce: no comet drops, trophies only give them at gold and spectral, and Collapse pays 2 + 1 per 25 Stardust.
+    shards: { start: 10, comet: 0, sector: 1, reelBig: 1, jackpot: 3, collapse: 2, collapsePer: 25, ach: 1, questBonus: 2, login7: 5 },
     achStep: 0.015,           // +1.5% Matter per unlocked achievement
 
     gacha: {
@@ -133,35 +134,35 @@
     // capsule (list of minimum rarities for free hatches: 0 any, 1 Rare+, 2 Epic+).
     rewards: {
       login: [
-        { tickets: 20 },
-        { tickets: 20, mins: 10 },
-        { tickets: 30, surge: 30 },
-        { tickets: 20, capsule: [1] },
-        { tickets: 40, mins: 20 },
-        { tickets: 50, surge: 60 },
-        { tickets: 60, shards: 15, keys: 5, capsule: [2] }
+        { tickets: 5 },
+        { tickets: 5, mins: 10 },
+        { tickets: 8, surge: 30 },
+        { tickets: 5, capsule: [1] },
+        { tickets: 10, mins: 20 },
+        { tickets: 12, surge: 60 },
+        { tickets: 15, shards: 5, keys: 5, capsule: [2] }
       ],
       loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
       questsPerDay: 3,
       quests: [
-        { id: 'pulses',      stat: 'pulses',      n: 150, text: 'Pulse {n} times',               reward: { tickets: 10 } },
-        { id: 'captures',    stat: 'captures',    n: 400, text: 'Swallow {n} fragments',         reward: { tickets: 10 } },
-        { id: 'spins',       stat: 'spins',       n: 4,   text: 'Spin the Star Reel {n} times',  reward: { tickets: 12 } },
-        { id: 'lucky',       stat: 'lucky',       n: 8,   text: 'Land {n} Lucky Pulses',         reward: { tickets: 12 } },
-        { id: 'comets',      stat: 'comets',      n: 2,   text: 'Catch {n} comets',              reward: { tickets: 15 } },
-        { id: 'hatches',     stat: 'hatches',     n: 3,   text: 'Hatch {n} capsules',            reward: { tickets: 15 } },
-        { id: 'buys',        stat: 'buys',        n: 20,  text: 'Buy {n} upgrade levels',        reward: { tickets: 10 } },
-        { id: 'chain',       stat: 'chainToday',  n: 12,  text: 'Make a chain of {n}',           reward: { tickets: 12 }, best: true },
-        { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
-        { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
+        { id: 'pulses',      stat: 'pulses',      n: 150, text: 'Pulse {n} times',               reward: { tickets: 3 } },
+        { id: 'captures',    stat: 'captures',    n: 400, text: 'Swallow {n} fragments',         reward: { tickets: 3 } },
+        { id: 'spins',       stat: 'spins',       n: 4,   text: 'Spin the Star Reel {n} times',  reward: { tickets: 4 } },
+        { id: 'lucky',       stat: 'lucky',       n: 8,   text: 'Land {n} Lucky Pulses',         reward: { tickets: 4 } },
+        { id: 'comets',      stat: 'comets',      n: 2,   text: 'Catch {n} comets',              reward: { tickets: 5 } },
+        { id: 'hatches',     stat: 'hatches',     n: 3,   text: 'Hatch {n} capsules',            reward: { tickets: 5 } },
+        { id: 'buys',        stat: 'buys',        n: 20,  text: 'Buy {n} upgrade levels',        reward: { tickets: 3 } },
+        { id: 'chain',       stat: 'chainToday',  n: 12,  text: 'Make a chain of {n}',           reward: { tickets: 4 }, best: true },
+        { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 3, mins: 5 } },
+        { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 3 } }
       ],
-      questBonus: { tickets: 25, shards: 5, keys: 2, capsule: [1] },
+      questBonus: { tickets: 10, shards: 2, keys: 2, capsule: [1] },
       playChests: [
-        { at: 120,  reward: { tickets: 5 } },
-        { at: 300,  reward: { tickets: 8 } },
-        { at: 600,  reward: { tickets: 10, mins: 5 } },
-        { at: 1200, reward: { tickets: 15, surge: 30 } },
-        { at: 1800, reward: { tickets: 20, shards: 5, capsule: [1] } }
+        { at: 120,  reward: { tickets: 2 } },
+        { at: 300,  reward: { tickets: 3 } },
+        { at: 600,  reward: { tickets: 4, mins: 5 } },
+        { at: 1200, reward: { tickets: 6, surge: 30 } },
+        { at: 1800, reward: { tickets: 8, shards: 2, capsule: [1] } }
       ],
       freeCapsuleMs: 4 * 60 * 60 * 1000
     },
@@ -849,8 +850,8 @@
   function claimAchievement(state, id) {
     if (state.ach[id] !== 1) return null;
     state.ach[id] = 2;
-    const r = { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
-    if (ACH[id] && ACH[id].tier >= 2) r.keys = CONFIG.keys.trophyGold;
+    const r = { tickets: CONFIG.tickets.ach };
+    if (ACH[id] && ACH[id].tier >= 2) { r.keys = CONFIG.keys.trophyGold; r.shards = CONFIG.shards.ach; }
     return r;
   }
 
@@ -1139,7 +1140,7 @@
     state.gens = {};
     state.bought = {};
     if (r.memory) state.gens.sweeper = 10;
-    state.shards += CONFIG.shards.collapse * gain;
+    state.shards += CONFIG.shards.collapse + Math.floor(gain / CONFIG.shards.collapsePer);
     state.skins.keys += CONFIG.keys.collapse;
     state.stats.runTime = 0;
     return gain;

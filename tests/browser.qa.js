@@ -102,7 +102,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('[data-claim="login"]');
     await p.waitForTimeout(150);
     const st = await S(p, () => ({ t: __ps.state.tickets, login: __ps.state.login, today: __ps.today() }));
-    assert(st.t - t0 >= 20, 'day 1 pays 20 tickets, got ' + (st.t - t0));
+    assert(st.t - t0 >= 5, 'day 1 pays 5 tickets, got ' + (st.t - t0));
     assert(st.login.day === 1 && st.login.last === st.today, JSON.stringify(st.login));
     assert((await p.locator('[data-claim="login"]').count()) === 0, 'claim button gone');
     await p.click('.tab[data-tab="harvest"]');
@@ -454,7 +454,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('.tro.ready >> nth=0');
     await p.waitForTimeout(150);
     const n1 = await S(p, () => ({ t: __ps.state.tickets, s: __ps.state.shards }));
-    assert(n1.t - n0.t >= 3 && n1.s - n0.s >= 1, JSON.stringify([n0, n1]));
+    assert(n1.t - n0.t >= 1, JSON.stringify([n0, n1]));
     await shot(p, '907-trophies');
     if (await p.isVisible('#claim-all')) {
       await p.click('#claim-all');

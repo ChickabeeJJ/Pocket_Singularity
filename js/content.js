@@ -161,14 +161,14 @@
   const RELICS = {
     cost: 10,
     rarities: [
-      { name: 'Common',    w: 55,  affixes: 1, scale: 1,   salvage: 2 },
-      { name: 'Rare',      w: 28,  affixes: 2, scale: 1.6, salvage: 4 },
-      { name: 'Epic',      w: 12.5, affixes: 2, scale: 2.6, salvage: 8 },
-      { name: 'Legendary', w: 4,   affixes: 3, scale: 4.2, salvage: 16 },
-      { name: 'Mythic',    w: 0.5, affixes: 4, scale: 7,   salvage: 40 }
+      { name: 'Common',    w: 55,  affixes: 1, scale: 1,   salvage: 1 },
+      { name: 'Rare',      w: 28,  affixes: 2, scale: 1.6, salvage: 2 },
+      { name: 'Epic',      w: 12.5, affixes: 2, scale: 2.6, salvage: 3 },
+      { name: 'Legendary', w: 4,   affixes: 3, scale: 4.2, salvage: 6 },
+      { name: 'Mythic',    w: 0.5, affixes: 4, scale: 7,   salvage: 15 }
     ],
     push: [0.55, 0.4, 0.25, 0.12],   // chance to climb one rarity when you Push; a failed push shatters the relic
-    shatterRefund: 3,
+    shatterRefund: 1,
     fuseNeed: 3,
     invCap: 40,
     stats: [
@@ -250,11 +250,11 @@
   // ---------------------------------------------------------------------------
   const CRATES = [
     { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
-      weights: [64, 27, 7.5, 1.5, 0], pity: { rarity: 3, within: 30 } },
+      weights: [78, 19, 2.7, 0.3, 0], pity: { rarity: 3, within: 300 } },
     { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
-      weights: [0, 60, 30.5, 8, 1.5], pity: { rarity: 4, within: 45 } },
+      weights: [0, 82, 16, 1.8, 0.2], pity: { rarity: 4, within: 500 } },
     { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
-      weights: [0, 0, 67, 27.5, 5.5], pity: { rarity: 4, within: 20 } }
+      weights: [0, 0, 90, 9.9, 0.1], pity: { rarity: 4, within: 400 } }
   ];
   const SKINS = [
     // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
