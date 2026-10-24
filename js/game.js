@@ -990,7 +990,7 @@
 
   let hintMode = null;
   function updateHint() {
-    let mode = 'idle', text = 'Tap or hold Singu';
+    let mode = 'idle', text = 'Tap or hold';
     const c = world.comet;
     if (c && !c.caught && Math.abs(c.x) < 1.15 && Math.abs(c.y) < 1) {
       const inRange = Math.hypot(c.x, c.y / 0.82) <= stats.pulseRadius;
