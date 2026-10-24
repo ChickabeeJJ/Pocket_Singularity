@@ -18,7 +18,7 @@ Check these sizes against the current requirements in the Developer Portal befor
 
 ## Tags
 
-Clicker, Idle, Incremental, Tycoon, Pixel, Space, Cute, Pets, Upgrade, Casual, Relaxing, Mobile, 1 Player
+Clicker, Idle, Incremental, Tycoon, Space, Pixel, Cute, Pets, Collecting, Upgrade, Casual, Relaxing, Mobile, 1 Player
 
 ## Title
 
@@ -26,32 +26,35 @@ Pocket Singularity
 
 ## Short description
 
-Name your own tiny black hole and feed it the universe. Tap, build harvesters, hatch cute cosmic pets and grow from a Speck into an Omniverse Maw!
+Name your own tiny black hole and feed it the universe! Tap to pull in stardust, build harvesters, hatch cute cosmic pets and grow from a Speck into an Omniverse Maw.
 
-## Description
+## Description (plain text, ready to paste)
 
-Pocket Singularity is a cozy pixel-art idle clicker about a tiny, hungry black hole, and you get to name it!
+Pocket Singularity is a cozy pixel-art idle clicker about a tiny, hungry black hole, and it's yours to name.
 
-Tap or hold to pulse gravity and pull stardust, ice and star crystals into your black hole. Pulse quickly to build a combo, chain big catches together, and catch passing comets for a golden Surge.
+Tap or hold to pulse gravity and pull stardust, ice and star crystals into your black hole. Pulse quickly to build a combo, catch whole chains of fragments at once, and snag passing comets for a golden Surge that triples everything you earn.
 
-Then build your space empire:
-- **15 harvesters** that feed your black hole while you play and while you are away, each doubling at 25, 50, 100 and more owned
-- **260 upgrades**, from Gravity Gloves to Cosmic Catalysts
-- **48 cute pets** to hatch from Cosmo Capsules, in five rarities from Common to Mythic, each with its own bonus
-- **The Relic Forge**: forge relics and push your luck for a rarer one, or keep what you have
-- **18 black hole skins** in three crates, each with its own rarities, particle effects and bonuses
-- **12 forms** to evolve through, from a Speck to an Omniverse Maw
-- **171 trophies** in bronze, silver, gold and spectral, the Star Reel, Lucky Pulses, daily quests, a 7-day login calendar and free capsules
-- **Collapse** your universe for Stardust and start again stronger
+Then grow your cosmic empire:
+- 15 harvesters that feed your black hole while you play and while you're away, each doubling at 25, 50, 100 and more owned
+- 260 upgrades, from Gravity Gloves to Cosmic Catalysts
+- 48 adorable pets to hatch from Cosmo Capsules, from Common to Mythic, each with its own bonus. Choose up to six to orbit your black hole
+- The Relic Forge: forge a relic, then push your luck for a rarer one or keep what you've got
+- 18 black hole skins in three crates, each with its own colours, animations and buffs
+- 12 forms to evolve through, from a tiny Speck to an Omniverse Maw
+- 171 trophies in bronze, silver, gold and spectral
+- The Star Reel, Lucky Pulses, Overcharge, daily quests, a 7-day login calendar and free capsules
+- Collapse your universe into Stardust and start again stronger
 
-Every ticket, shard and key is earned by playing, and capsule, crate and forge odds are always shown. Climb the leaderboard by growing your black hole's level!
+Everything is earned by playing, and all capsule, crate and forge odds are shown in the game. Climb the leaderboard by raising your black hole's level!
 
-## Controls
+## Controls (plain text, ready to paste)
 
-- **Tap / click / hold** the universe (or **Space**): pulse gravity
-- **1–7**: switch tabs (Harvest, Upgrades, Pets, Relics, Rewards, Skins, Trophies)
-- **M**: mute · **Esc**: close a window
-- Works with touch on phones and tablets
+- Tap, click or hold the universe (or press Space): pulse gravity
+- Tap a harvester, upgrade, pet or skin to use it; hold an upgrade to read what it does
+- 1-7: switch tabs (Harvest, Upgrades, Pets, Relics, Rewards, Skins, Trophies)
+- M: mute
+- Esc: close a window
+- Fully playable with touch on phones and tablets
 
 ## Before you submit
 
