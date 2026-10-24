@@ -301,6 +301,7 @@
       relicSeq: 0,
       forge: null,             // relic waiting for Push or Keep
       skins: { own: { classic: 1 }, on: 'classic', keys: 3, pity: {} },
+      petShow: [],             // up to 6 pet ids chosen to orbit (empty = the six best)
       login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
       daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
       freeCapAt: 0,            // when the next free capsule is ready (ms)
@@ -423,6 +424,7 @@
     s.settings.music = set.music !== false;
     s.settings.reducedMotion = typeof set.reducedMotion === 'boolean' ? set.reducedMotion : null;
     s.settings.buyMode = [1, 10, 100, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
+    if (Array.isArray(raw.petShow)) s.petShow = raw.petShow.filter(function (id, i, a) { return typeof id === 'string' && s.critters[id] && a.indexOf(id) === i; }).slice(0, 6);
     s.name = cleanName(raw.name) || 'Singu';
     s.named = raw.named === true;
     s.lastSeen = nonNeg(raw.lastSeen) || (now || 0);

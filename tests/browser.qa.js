@@ -484,7 +484,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.click('[data-crate="stardust"]');
     await p.waitForSelector('#modal:not([hidden]) .crate-open');
     await p.click('#modal-actions .btn');   // Skip
-    await p.waitForSelector('.crate-open .won');
+    await p.waitForSelector('.crate-open .won-card');
     await shot(p, '907-crate');
     const st = await S(p, () => ({ keys: __ps.state.skins.keys, own: Object.keys(__ps.state.skins.own) }));
     assert(st.keys === 9 && st.own.length >= 2, JSON.stringify(st));

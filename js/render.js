@@ -173,8 +173,9 @@
   // ---------------------------------------------------------------------------
   function sync() {
     const st = G.state();
-    // Pets: the best six you own orbit Singu.
-    const owned = C.critters.filter(function (c) { return st.critters[c.id]; })
+    // Pets: the ones you picked, or else the best six you own.
+    const picked = (st.petShow || []).map(function (id) { return PS.CRIT[id]; }).filter(function (c) { return c && st.critters[c.id]; });
+    const owned = picked.length ? picked : C.critters.filter(function (c) { return st.critters[c.id]; })
       .sort(function (a, c) { return c.rarity - a.rarity || st.critters[c.id].stars - st.critters[a.id].stars; })
       .slice(0, 6);
     pets = owned.map(function (c, i) { return { id: c.id, phase: i / Math.max(1, owned.length) * Math.PI * 2, bob: i * 1.7 }; });
@@ -596,26 +597,103 @@
       if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = haloKey; b.fillRect(cx + dx, cy + dy, 1, 1); }
     }
     const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'dizzy' ? 'e' : look.fx === 'rainbow' ? 'hsl(' + Math.round(t * 120 % 360) + ',90%,75%)' : look.rim;
-    for (let dy = -ry; dy <= ry; dy++) {
-      const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
-      b.fillStyle = P.k; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
-    }
-    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2);
-    for (let arm = 0; arm < 3; arm++) {
+    drawCore(look, t, cx, cy, rx, ry);
+    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2) * (look.spin || 1);
+    const arms = look.arms4 ? 4 : 3;
+    for (let arm = 0; arm < arms; arm++) {
       for (let rr = R * 0.95; rr > R * 0.18; rr -= 0.5) {
         const fr = rr / R;
-        const a = arm * 2.094 + spin + fr * 3.2;
+        const a = arm * (Math.PI * 2 / arms) + spin + fr * 3.2;
         const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
         if (!dith(x, y, fr * 0.9)) continue;
         b.fillStyle = look.arms[fr > 0.7 ? 0 : fr > 0.45 ? 1 : 2];
         b.fillRect(x, y, 1, 1);
       }
     }
+    coreInner(look, t, cx, cy, rx, ry, R);
     if (mood.munch > 0) { const rr = R * (0.3 + mood.munch * 1.8); if (rr < R) ellipse(cx, cy, rr * rx / R, rr * ry / R, 'v', 2); }
     ellipse(cx, cy, rx, ry, rimKey, 0);
+    if (look.rimW === 2) ellipse(cx, cy, rx - 1, ry - 1, rimKey, 2, Math.floor(t * 8));
     b.fillStyle = P.c;
     for (let i = 0; i < 7; i++) { const a = t * 1.6 + i * 0.08; b.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1); }
     skinFx(look, t, dt, cx, cy, rx, ry);
+  }
+
+  // The hole itself: a dithered gradient from the skin's centre colour to its edge colour,
+  // optionally breathing (pulse), churning (lava) or cycling through the rainbow.
+  function corePalette(look) {
+    if (look._pal) return look._pal;
+    const c = look.core || ['#07070f', '#07070f'];
+    look._pal = [0, 1, 2, 3, 4].map(function (i) { return SPR.mix(c[0], c[1], i / 4); });
+    return look._pal;
+  }
+  function drawCore(look, t, cx, cy, rx, ry) {
+    const rainbow = look.core === 'rainbow';
+    const pal = rainbow ? null : corePalette(look);
+    const flat = !rainbow && pal[0] === pal[4];
+    const breathe = look.inner === 'pulse' ? (Math.sin(t * 3) + 1) * 0.12 : 0;
+    for (let dy = -ry; dy <= ry; dy++) {
+      const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
+      if (flat) { b.fillStyle = pal[0]; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1); continue; }
+      for (let dx = -hw; dx <= hw; dx++) {
+        const x = cx + dx, y = cy + dy;
+        let f = Math.hypot(dx / rx, dy / ry);
+        if (look.inner === 'lava') f += 0.2 * Math.sin(dx * 0.5 + t * 2.2) * Math.cos(dy * 0.45 - t * 1.6);
+        f = Math.max(0, Math.min(1, f + breathe));
+        if (rainbow) {
+          const ang = Math.atan2(dy, dx) * 57.3;
+          b.fillStyle = 'hsl(' + Math.round((ang + t * 70 + f * 140 + 720) % 360) + ',85%,' + Math.round(62 - f * 46) + '%)';
+        } else {
+          const v = f * 4 + (BAYER[((y & 3) << 2) | (x & 3)] / 16 - 0.5);
+          b.fillStyle = pal[Math.max(0, Math.min(4, Math.round(v)))];
+        }
+        b.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  // Animated details inside the hole.
+  const INNER_STARS = [[0.3, 0.2], [0.55, 1.4], [0.7, 2.6], [0.4, 3.7], [0.8, 4.6], [0.2, 5.5], [0.62, 0.9]];
+  function coreInner(look, t, cx, cy, rx, ry, R) {
+    switch (look.inner) {
+      case 'stars':
+        INNER_STARS.forEach(function (s, i) {
+          const a = s[1] + t * 0.35, tw = Math.sin(t * 4 + i * 1.7);
+          if (tw < -0.3) return;
+          const x = Math.round(cx + Math.cos(a) * s[0] * rx), y = Math.round(cy + Math.sin(a) * s[0] * ry);
+          b.fillStyle = tw > 0.6 ? '#ffffff' : look.rim;
+          b.fillRect(x, y, 1, 1);
+          if (tw > 0.85 && R > 10) { b.fillRect(x - 1, y, 3, 1); b.fillRect(x, y - 1, 1, 3); }
+        });
+        break;
+      case 'rings':
+        for (let k = 0; k < 2; k++) {
+          const p = 1 - ((t * 0.45 + k * 0.5) % 1);
+          if (p < 0.15) continue;
+          b.globalAlpha = Math.min(1, p * 1.4);
+          ellipse(cx, cy, rx * p, ry * p, look.arms[0], 2, Math.floor(t * 10));
+          b.globalAlpha = 1;
+        }
+        break;
+      case 'vortex': {
+        const sp = -t * 3;
+        for (let arm = 0; arm < 6; arm++) for (let rr = R * 0.9; rr > R * 0.1; rr -= 0.6) {
+          const fr = rr / R, a = arm * 1.047 + sp + fr * 4.5;
+          const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
+          if (!dith(x, y, (1 - fr) * 0.8)) continue;
+          b.fillStyle = look.rim; b.fillRect(x, y, 1, 1);
+        }
+        break;
+      }
+      case 'glitch':
+        if (Math.floor(t * 10) % 5 === 0) {
+          for (let k = 0; k < 3; k++) {
+            const y = Math.round(cy + (Math.random() - 0.5) * ry * 1.6), w = Math.round(rx * (0.6 + Math.random() * 0.8));
+            b.fillStyle = k % 2 ? look.arms[0] : look.rim;
+            b.fillRect(Math.round(cx - w / 2 + (Math.random() - 0.5) * 6), y, w, 1);
+          }
+        }
+        break;
+    }
   }
 
   // The equipped skin's look ({ halo, rim, arms, disk, fx }).

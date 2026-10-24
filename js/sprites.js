@@ -708,9 +708,15 @@
       }
     };
     disk(false);
-    P.ell(cx, cy, R, R, '#07070f');
-    for (let arm = 0; arm < 3; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
-      const f = rr / R, a = arm * 2.094 + f * 3.2;
+    const core = L.core || ['#07070f', '#07070f'];
+    P.ell(cx, cy, R, R, function (nx, ny, x, y) {
+      const f = Math.min(1, Math.hypot(nx, ny));
+      if (core === 'rainbow') return ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7', '#a884f3', '#ff8fd8'][Math.floor(((Math.atan2(ny, nx) + Math.PI) / (Math.PI * 2)) * 6) % 6];
+      return mix(core[0], core[1], Math.round(f * 4) / 4);
+    });
+    const arms = L.arms4 ? 4 : 3;
+    for (let arm = 0; arm < arms; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
+      const f = rr / R, a = arm * (Math.PI * 2 / arms) + f * 3.2;
       P.set(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, L.arms[f > 0.7 ? 0 : f > 0.45 ? 1 : 2]);
     }
     for (let a = 0; a < Math.PI * 2; a += 0.05) P.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, L.rim);

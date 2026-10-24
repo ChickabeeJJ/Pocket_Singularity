@@ -82,7 +82,7 @@ kbd { font: inherit; }
 .combo-bar i { display: block; height: 100%; width: 0; background: var(--peach); box-shadow: inset 0 2px 0 0 var(--butter); }
 .combo.full .combo-bar i { animation: fullFlash 200ms steps(2) infinite; }
 .combo b { color: var(--butter); min-width: 40px; }
-.purse { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 1px; }
+.purse { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-top: 1px; }
 .coin { pointer-events: auto; min-width: 0; height: 18px; display: flex; align-items: center; gap: 5px; padding: 0; font-size: 12px; white-space: nowrap; text-shadow: 2px 2px 0 var(--ink); }
 .coin:hover b { color: var(--butter); }
 .coin b { color: var(--cream); }
@@ -667,3 +667,28 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
 .cover-title .ct2 { font-size: 14vmin; font-weight: 700; color: var(--butter); text-shadow: 1vmin 1vmin 0 var(--berry), -.5vmin -.5vmin 0 var(--ink), .5vmin -.5vmin 0 var(--ink), -.5vmin .5vmin 0 var(--ink); }
 .shard-line { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 13px; color: var(--mist); background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
 .shard-line b { color: var(--lav); font-size: 15px; }
+.crit.orbit::after { content: "ORBIT"; position: absolute; top: 2px; left: 2px; font-size: 8px; padding: 0 2px; color: var(--ink); background: var(--lime); }
+#pet-bonus b { color: var(--cream); }
+.strip-win { position: relative; width: 100%; height: 104px; overflow: hidden; background: var(--ink); box-shadow: 0 0 0 2px var(--line);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
+.strip { position: absolute; left: 0; top: 8px; display: flex; will-change: transform; }
+.st-tile { flex: 0 0 68px; width: 68px; height: 88px; margin-right: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--card); box-shadow: inset 0 -4px 0 0 var(--dusk); }
+.st-tile img { width: 48px; height: 48px; }
+.st-tile span { font-size: 9px; line-height: 1.05; text-align: center; padding: 0 2px; }
+.st-tile.ra1 { box-shadow: inset 0 -4px 0 0 var(--sky); } .st-tile.ra2 { box-shadow: inset 0 -4px 0 0 var(--lav); }
+.st-tile.ra3 { box-shadow: inset 0 -4px 0 0 var(--gold); background: #2c2414; } .st-tile.ra4 { box-shadow: inset 0 -4px 0 0 var(--mythic); background: #2e1530; }
+.st-tile.win { outline: 3px solid var(--cream); outline-offset: -3px; animation: popIn 300ms steps(5); }
+.strip-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--butter); box-shadow: 0 0 8px var(--butter); }
+.strip-mark::before, .strip-mark::after { content: ""; position: absolute; left: -5px; border: 6px solid transparent; }
+.strip-mark::before { top: 0; border-top-color: var(--butter); }
+.strip-mark::after { bottom: 0; border-bottom-color: var(--butter); }
+.strip-win.done.r3 { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(255, 194, 61, .5); } .strip-win.done.r4 { box-shadow: 0 0 0 2px var(--mythic), 0 0 22px rgba(255, 111, 208, .6); }
+.won-card { display: flex; gap: 14px; align-items: center; margin-top: 12px; text-align: left; }
+.won-art { width: 104px; height: 104px; display: flex; align-items: center; justify-content: center; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.won-art img { width: 96px; height: 96px; }
+.won-art.ra3 { box-shadow: 0 0 0 2px var(--gold); } .won-art.ra4 { box-shadow: 0 0 0 2px var(--mythic); animation: mythicGlow 1.2s steps(4) infinite; }
+.won-card .rarity { font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+.won-card .cname { font-size: 22px; font-weight: 700; color: var(--cream); }
+.won-card .cbonus { color: var(--lime); font-size: 13px; margin: 2px 0 6px; }
+.won-card .tag { font-size: 12px; padding: 1px 6px; background: var(--berry); color: var(--cream); }
+.won-card .tag.up { background: var(--green); }

@@ -18,15 +18,26 @@ New and existing players start with 3.
 
 | Crate | Cost | Odds (C / R / E / L / M) | Pity | Skins |
 |---|---|---|---|---|
-| Stardust | 1 key | 60 / 28 / 10 / 2 / 0 | Legendary within 30 | Dusty, Mint Swirl, Peach Fizz · Frostbite, Ember · Candy Nebula · **Golden Hour** |
-| Nebula | 4 keys | 0 / 55 / 33 / 10 / 2 | Mythic within 45 | Bubblegum, Aurora · Supernova, Deep Sea · **Prism** · ***Starforge*** |
-| Event Horizon | 10 keys | 0 / 0 / 60 / 32 / 8 | Mythic within 20 | Void Walker, Solar Flare · **Quasar**, **Glitch** · ***Singularity Prime*** |
+| Stardust | 1 key | 64 / 27 / 7.5 / 1.5 / 0 | Legendary within 30 | Dusty, Mint Swirl, Peach Fizz · Frostbite, Ember · Candy Nebula · **Golden Hour** |
+| Nebula | 4 keys | 0 / 60 / 30.5 / 8 / 1.5 | Mythic within 45 | Bubblegum, Aurora · Supernova, Deep Sea · **Prism** · ***Starforge*** |
+| Event Horizon | 10 keys | 0 / 0 / 67 / 27.5 / 5.5 | Mythic within 20 | Void Walker, Solar Flare · **Quasar**, **Glitch** · ***Singularity Prime*** |
 
 - **Unique pools:** each crate has its own skins, so every crate has different commons, rares and so on.
 - **Look:** a skin recolours the halo, rim, swirl and accretion disk, and many add particles (snow, flames, hearts, bubbles, sparkles, orbiting stars, an inward void pull, a rainbow cycle, glitch flicker).
 - **Buffs:** the equipped skin gives its buff (from +5% pulse value up to +100% all Matter for Singularity Prime). Every skin owned adds +1% Matter.
 - **Duplicates:** they refund relic shards (2/4/8/16/40).
 - **Transparency:** odds, per-skin chances and pity are always shown.
+
+**Skin looks:** each skin colours the hole itself, not only the rim and rings:
+- **Hole colour:** a dithered gradient from centre to edge, or a rainbow cycle for Prism and Singularity Prime.
+- **Inner animations:** some skins add one, such as breathing light, churning lava, ripples falling inward, twinkling stars, a counter-spinning vortex or glitch lines.
+- **Other details:** skins can change the number and speed of the swirl arms and use a double rim.
+
+**Opening a crate:**
+- A horizontal strip of skins from that crate spins past a marker and eases to a stop on the prize, with a tick for each skin that passes. Skip jumps to the result.
+- The filler skins are random draws from the crate's own odds. There is no staged near miss.
+
+**Pets:** players choose up to six pets to orbit (tap a pet, then *Orbit*). With none chosen, the best six orbit.
 
 The tab bar now has seven tabs, the top-left counters are a 2×2 grid (tickets, shards, keys, Stardust) so numbers never clip, and trophies are listed bronze to spectral within each group. Eight new trophies cover crates opened and skins owned.
 

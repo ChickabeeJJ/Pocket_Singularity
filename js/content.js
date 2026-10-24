@@ -248,36 +248,36 @@
   // ---------------------------------------------------------------------------
   const CRATES = [
     { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
-      weights: [60, 28, 10, 2, 0], pity: { rarity: 3, within: 30 } },
+      weights: [64, 27, 7.5, 1.5, 0], pity: { rarity: 3, within: 30 } },
     { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
-      weights: [0, 55, 33, 10, 2], pity: { rarity: 4, within: 45 } },
+      weights: [0, 60, 30.5, 8, 1.5], pity: { rarity: 4, within: 45 } },
     { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
-      weights: [0, 0, 60, 32, 8], pity: { rarity: 4, within: 20 } }
+      weights: [0, 0, 67, 27.5, 5.5], pity: { rarity: 4, within: 20 } }
   ];
   const SKINS = [
     // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
-    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'] }, {}],
+    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'], core: ['#07070f', '#07070f'] }, {}],
     // Stardust Crate
-    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'] }, { pulse: 0.05 }],
-    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'] }, { gen: 0.05 }],
-    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'] }, { combo: 0.05 }],
-    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow' }, { gen: 0.12 }],
-    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame' }, { pulse: 0.12 }],
-    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts' }, { global: 0.12 }],
-    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle' }, { global: 0.2, combo: 0.1 }],
+    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'], core: ['#2c2c3a', '#07070f'], inner: 'pulse' }, { pulse: 0.05 }],
+    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'], core: ['#16503f', '#04100c'], arms4: true, inner: 'rings' }, { gen: 0.05 }],
+    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'], core: ['#4a1a28', '#0b0408'], inner: 'pulse' }, { combo: 0.05 }],
+    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow', core: ['#bfe8ff', '#0a1530'], inner: 'stars', rimW: 2 }, { gen: 0.12 }],
+    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame', core: ['#ff7a3d', '#2a0808'], inner: 'lava' }, { pulse: 0.12 }],
+    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts', core: ['#ff8fd8', '#2a0f3a'], inner: 'rings', arms4: true }, { global: 0.12 }],
+    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle', core: ['#ffe9a0', '#3a2808'], inner: 'stars', spin: 1.4, rimW: 2 }, { global: 0.2, combo: 0.1 }],
     // Nebula Crate
-    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles' }, { combo: 0.15 }],
-    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'] }, { comet: 0.15 }],
-    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame' }, { pulse: 0.25, crystal: 0.2 }],
-    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles' }, { gen: 0.25, offline: 0.1 }],
-    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow' }, { global: 0.35 }],
-    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars' }, { global: 0.6, luck: 0.02 }],
+    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles', core: ['#ffb3d0', '#3a0f25'], inner: 'rings' }, { combo: 0.15 }],
+    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'], core: ['#38b764', '#05101e'], inner: 'lava', arms4: true }, { comet: 0.15 }],
+    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame', core: ['#ffffff', '#ff7a3d'], inner: 'pulse', spin: 2, rimW: 2 }, { pulse: 0.25, crystal: 0.2 }],
+    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles', core: ['#2a5aa8', '#030818'], inner: 'rings' }, { gen: 0.25, offline: 0.1 }],
+    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow', core: 'rainbow', arms4: true, spin: 1.3 }, { global: 0.35 }],
+    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars', core: ['#4a2a88', '#07070f'], inner: 'stars', arms4: true, rimW: 2 }, { global: 0.6, luck: 0.02 }],
     // Event Horizon Crate
-    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void' }, { gen: 0.35 }],
-    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame' }, { pulse: 0.35, combo: 0.1 }],
-    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle' }, { global: 0.45, shards: 0.15 }],
-    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch' }, { global: 0.45, luck: 0.03 }],
-    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow' }, { global: 1, combo: 0.25 }]
+    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void', core: ['#000000', '#5d275d'], inner: 'vortex', spin: 2.4 }, { gen: 0.35 }],
+    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame', core: ['#fff3b0', '#b13e53'], inner: 'lava', spin: 1.6, rimW: 2 }, { pulse: 0.35, combo: 0.1 }],
+    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle', core: ['#ffffff', '#1a3a6a'], inner: 'rings', spin: 1.5, rimW: 2 }, { global: 0.45, shards: 0.15 }],
+    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch', core: ['#0a2a14', '#2a0a2a'], inner: 'glitch' }, { global: 0.45, luck: 0.03 }],
+    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow', core: 'rainbow', inner: 'stars', arms4: true, spin: 1.8, rimW: 2 }, { global: 1, combo: 0.25 }]
   ].map(function (x) { return { id: x[0], name: x[1], crate: x[2], rarity: x[3], look: x[4], buff: x[5] }; });
 
   // Old pet ids from version 2 saves.

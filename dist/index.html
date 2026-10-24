@@ -91,7 +91,7 @@ kbd { font: inherit; }
 .combo-bar i { display: block; height: 100%; width: 0; background: var(--peach); box-shadow: inset 0 2px 0 0 var(--butter); }
 .combo.full .combo-bar i { animation: fullFlash 200ms steps(2) infinite; }
 .combo b { color: var(--butter); min-width: 40px; }
-.purse { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 1px; }
+.purse { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-top: 1px; }
 .coin { pointer-events: auto; min-width: 0; height: 18px; display: flex; align-items: center; gap: 5px; padding: 0; font-size: 12px; white-space: nowrap; text-shadow: 2px 2px 0 var(--ink); }
 .coin:hover b { color: var(--butter); }
 .coin b { color: var(--cream); }
@@ -676,6 +676,31 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
 .cover-title .ct2 { font-size: 14vmin; font-weight: 700; color: var(--butter); text-shadow: 1vmin 1vmin 0 var(--berry), -.5vmin -.5vmin 0 var(--ink), .5vmin -.5vmin 0 var(--ink), -.5vmin .5vmin 0 var(--ink); }
 .shard-line { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 13px; color: var(--mist); background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
 .shard-line b { color: var(--lav); font-size: 15px; }
+.crit.orbit::after { content: "ORBIT"; position: absolute; top: 2px; left: 2px; font-size: 8px; padding: 0 2px; color: var(--ink); background: var(--lime); }
+#pet-bonus b { color: var(--cream); }
+.strip-win { position: relative; width: 100%; height: 104px; overflow: hidden; background: var(--ink); box-shadow: 0 0 0 2px var(--line);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
+.strip { position: absolute; left: 0; top: 8px; display: flex; will-change: transform; }
+.st-tile { flex: 0 0 68px; width: 68px; height: 88px; margin-right: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--card); box-shadow: inset 0 -4px 0 0 var(--dusk); }
+.st-tile img { width: 48px; height: 48px; }
+.st-tile span { font-size: 9px; line-height: 1.05; text-align: center; padding: 0 2px; }
+.st-tile.ra1 { box-shadow: inset 0 -4px 0 0 var(--sky); } .st-tile.ra2 { box-shadow: inset 0 -4px 0 0 var(--lav); }
+.st-tile.ra3 { box-shadow: inset 0 -4px 0 0 var(--gold); background: #2c2414; } .st-tile.ra4 { box-shadow: inset 0 -4px 0 0 var(--mythic); background: #2e1530; }
+.st-tile.win { outline: 3px solid var(--cream); outline-offset: -3px; animation: popIn 300ms steps(5); }
+.strip-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--butter); box-shadow: 0 0 8px var(--butter); }
+.strip-mark::before, .strip-mark::after { content: ""; position: absolute; left: -5px; border: 6px solid transparent; }
+.strip-mark::before { top: 0; border-top-color: var(--butter); }
+.strip-mark::after { bottom: 0; border-bottom-color: var(--butter); }
+.strip-win.done.r3 { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(255, 194, 61, .5); } .strip-win.done.r4 { box-shadow: 0 0 0 2px var(--mythic), 0 0 22px rgba(255, 111, 208, .6); }
+.won-card { display: flex; gap: 14px; align-items: center; margin-top: 12px; text-align: left; }
+.won-art { width: 104px; height: 104px; display: flex; align-items: center; justify-content: center; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.won-art img { width: 96px; height: 96px; }
+.won-art.ra3 { box-shadow: 0 0 0 2px var(--gold); } .won-art.ra4 { box-shadow: 0 0 0 2px var(--mythic); animation: mythicGlow 1.2s steps(4) infinite; }
+.won-card .rarity { font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+.won-card .cname { font-size: 22px; font-weight: 700; color: var(--cream); }
+.won-card .cbonus { color: var(--lime); font-size: 13px; margin: 2px 0 6px; }
+.won-card .tag { font-size: 12px; padding: 1px 6px; background: var(--berry); color: var(--cream); }
+.won-card .tag.up { background: var(--green); }
 </style>
 </head>
 <body>
@@ -698,8 +723,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       </div>
       <div class="purse">
         <button id="btn-tickets" class="coin" type="button" title="Capsule tickets (Pets tab)"><span id="ticket-icon"></span><b id="ticket-count" class="num">0</b><small>tickets</small></button>
-        <button id="btn-shards" class="coin" type="button" title="Relic shards (Relics tab)"><span id="shard-icon"></span><b id="shard-count" class="num">0</b><small>shards</small></button>
         <button id="btn-keys" class="coin" type="button" title="Cosmic Keys (Skins tab)"><span id="key-icon"></span><b id="key-count" class="num">0</b><small>keys</small></button>
+        <button id="btn-shards" class="coin" type="button" title="Relic shards (Relics tab)"><span id="shard-icon"></span><b id="shard-count" class="num">0</b><small>shards</small></button>
         <button id="btn-stardust" class="coin" type="button" title="Stardust"><span id="sd-icon"></span><b id="sd-count" class="num">0</b><small>Stardust</small></button>
       </div>
     </div>
@@ -1084,36 +1109,36 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   // ---------------------------------------------------------------------------
   const CRATES = [
     { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
-      weights: [60, 28, 10, 2, 0], pity: { rarity: 3, within: 30 } },
+      weights: [64, 27, 7.5, 1.5, 0], pity: { rarity: 3, within: 30 } },
     { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
-      weights: [0, 55, 33, 10, 2], pity: { rarity: 4, within: 45 } },
+      weights: [0, 60, 30.5, 8, 1.5], pity: { rarity: 4, within: 45 } },
     { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
-      weights: [0, 0, 60, 32, 8], pity: { rarity: 4, within: 20 } }
+      weights: [0, 0, 67, 27.5, 5.5], pity: { rarity: 4, within: 20 } }
   ];
   const SKINS = [
     // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
-    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'] }, {}],
+    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'], core: ['#07070f', '#07070f'] }, {}],
     // Stardust Crate
-    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'] }, { pulse: 0.05 }],
-    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'] }, { gen: 0.05 }],
-    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'] }, { combo: 0.05 }],
-    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow' }, { gen: 0.12 }],
-    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame' }, { pulse: 0.12 }],
-    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts' }, { global: 0.12 }],
-    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle' }, { global: 0.2, combo: 0.1 }],
+    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'], core: ['#2c2c3a', '#07070f'], inner: 'pulse' }, { pulse: 0.05 }],
+    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'], core: ['#16503f', '#04100c'], arms4: true, inner: 'rings' }, { gen: 0.05 }],
+    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'], core: ['#4a1a28', '#0b0408'], inner: 'pulse' }, { combo: 0.05 }],
+    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow', core: ['#bfe8ff', '#0a1530'], inner: 'stars', rimW: 2 }, { gen: 0.12 }],
+    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame', core: ['#ff7a3d', '#2a0808'], inner: 'lava' }, { pulse: 0.12 }],
+    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts', core: ['#ff8fd8', '#2a0f3a'], inner: 'rings', arms4: true }, { global: 0.12 }],
+    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle', core: ['#ffe9a0', '#3a2808'], inner: 'stars', spin: 1.4, rimW: 2 }, { global: 0.2, combo: 0.1 }],
     // Nebula Crate
-    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles' }, { combo: 0.15 }],
-    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'] }, { comet: 0.15 }],
-    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame' }, { pulse: 0.25, crystal: 0.2 }],
-    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles' }, { gen: 0.25, offline: 0.1 }],
-    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow' }, { global: 0.35 }],
-    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars' }, { global: 0.6, luck: 0.02 }],
+    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles', core: ['#ffb3d0', '#3a0f25'], inner: 'rings' }, { combo: 0.15 }],
+    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'], core: ['#38b764', '#05101e'], inner: 'lava', arms4: true }, { comet: 0.15 }],
+    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame', core: ['#ffffff', '#ff7a3d'], inner: 'pulse', spin: 2, rimW: 2 }, { pulse: 0.25, crystal: 0.2 }],
+    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles', core: ['#2a5aa8', '#030818'], inner: 'rings' }, { gen: 0.25, offline: 0.1 }],
+    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow', core: 'rainbow', arms4: true, spin: 1.3 }, { global: 0.35 }],
+    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars', core: ['#4a2a88', '#07070f'], inner: 'stars', arms4: true, rimW: 2 }, { global: 0.6, luck: 0.02 }],
     // Event Horizon Crate
-    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void' }, { gen: 0.35 }],
-    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame' }, { pulse: 0.35, combo: 0.1 }],
-    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle' }, { global: 0.45, shards: 0.15 }],
-    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch' }, { global: 0.45, luck: 0.03 }],
-    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow' }, { global: 1, combo: 0.25 }]
+    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void', core: ['#000000', '#5d275d'], inner: 'vortex', spin: 2.4 }, { gen: 0.35 }],
+    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame', core: ['#fff3b0', '#b13e53'], inner: 'lava', spin: 1.6, rimW: 2 }, { pulse: 0.35, combo: 0.1 }],
+    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle', core: ['#ffffff', '#1a3a6a'], inner: 'rings', spin: 1.5, rimW: 2 }, { global: 0.45, shards: 0.15 }],
+    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch', core: ['#0a2a14', '#2a0a2a'], inner: 'glitch' }, { global: 0.45, luck: 0.03 }],
+    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow', core: 'rainbow', inner: 'stars', arms4: true, spin: 1.8, rimW: 2 }, { global: 1, combo: 0.25 }]
   ].map(function (x) { return { id: x[0], name: x[1], crate: x[2], rarity: x[3], look: x[4], buff: x[5] }; });
 
   // Old pet ids from version 2 saves.
@@ -1439,6 +1464,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       relicSeq: 0,
       forge: null,             // relic waiting for Push or Keep
       skins: { own: { classic: 1 }, on: 'classic', keys: 3, pity: {} },
+      petShow: [],             // up to 6 pet ids chosen to orbit (empty = the six best)
       login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
       daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
       freeCapAt: 0,            // when the next free capsule is ready (ms)
@@ -1561,6 +1587,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     s.settings.music = set.music !== false;
     s.settings.reducedMotion = typeof set.reducedMotion === 'boolean' ? set.reducedMotion : null;
     s.settings.buyMode = [1, 10, 100, 0].indexOf(set.buyMode) >= 0 ? set.buyMode : 1;
+    if (Array.isArray(raw.petShow)) s.petShow = raw.petShow.filter(function (id, i, a) { return typeof id === 'string' && s.critters[id] && a.indexOf(id) === i; }).slice(0, 6);
     s.name = cleanName(raw.name) || 'Singu';
     s.named = raw.named === true;
     s.lastSeen = nonNeg(raw.lastSeen) || (now || 0);
@@ -3486,9 +3513,15 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       }
     };
     disk(false);
-    P.ell(cx, cy, R, R, '#07070f');
-    for (let arm = 0; arm < 3; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
-      const f = rr / R, a = arm * 2.094 + f * 3.2;
+    const core = L.core || ['#07070f', '#07070f'];
+    P.ell(cx, cy, R, R, function (nx, ny, x, y) {
+      const f = Math.min(1, Math.hypot(nx, ny));
+      if (core === 'rainbow') return ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7', '#a884f3', '#ff8fd8'][Math.floor(((Math.atan2(ny, nx) + Math.PI) / (Math.PI * 2)) * 6) % 6];
+      return mix(core[0], core[1], Math.round(f * 4) / 4);
+    });
+    const arms = L.arms4 ? 4 : 3;
+    for (let arm = 0; arm < arms; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
+      const f = rr / R, a = arm * (Math.PI * 2 / arms) + f * 3.2;
       P.set(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, L.arms[f > 0.7 ? 0 : f > 0.45 ? 1 : 2]);
     }
     for (let a = 0; a < Math.PI * 2; a += 0.05) P.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, L.rim);
@@ -4105,8 +4138,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   // ---------------------------------------------------------------------------
   function sync() {
     const st = G.state();
-    // Pets: the best six you own orbit Singu.
-    const owned = C.critters.filter(function (c) { return st.critters[c.id]; })
+    // Pets: the ones you picked, or else the best six you own.
+    const picked = (st.petShow || []).map(function (id) { return PS.CRIT[id]; }).filter(function (c) { return c && st.critters[c.id]; });
+    const owned = picked.length ? picked : C.critters.filter(function (c) { return st.critters[c.id]; })
       .sort(function (a, c) { return c.rarity - a.rarity || st.critters[c.id].stars - st.critters[a.id].stars; })
       .slice(0, 6);
     pets = owned.map(function (c, i) { return { id: c.id, phase: i / Math.max(1, owned.length) * Math.PI * 2, bob: i * 1.7 }; });
@@ -4528,26 +4562,103 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = haloKey; b.fillRect(cx + dx, cy + dy, 1, 1); }
     }
     const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'dizzy' ? 'e' : look.fx === 'rainbow' ? 'hsl(' + Math.round(t * 120 % 360) + ',90%,75%)' : look.rim;
-    for (let dy = -ry; dy <= ry; dy++) {
-      const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
-      b.fillStyle = P.k; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
-    }
-    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2);
-    for (let arm = 0; arm < 3; arm++) {
+    drawCore(look, t, cx, cy, rx, ry);
+    const spin = t * (1.1 + Math.min(1, fx.gulp) * 2) * (look.spin || 1);
+    const arms = look.arms4 ? 4 : 3;
+    for (let arm = 0; arm < arms; arm++) {
       for (let rr = R * 0.95; rr > R * 0.18; rr -= 0.5) {
         const fr = rr / R;
-        const a = arm * 2.094 + spin + fr * 3.2;
+        const a = arm * (Math.PI * 2 / arms) + spin + fr * 3.2;
         const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
         if (!dith(x, y, fr * 0.9)) continue;
         b.fillStyle = look.arms[fr > 0.7 ? 0 : fr > 0.45 ? 1 : 2];
         b.fillRect(x, y, 1, 1);
       }
     }
+    coreInner(look, t, cx, cy, rx, ry, R);
     if (mood.munch > 0) { const rr = R * (0.3 + mood.munch * 1.8); if (rr < R) ellipse(cx, cy, rr * rx / R, rr * ry / R, 'v', 2); }
     ellipse(cx, cy, rx, ry, rimKey, 0);
+    if (look.rimW === 2) ellipse(cx, cy, rx - 1, ry - 1, rimKey, 2, Math.floor(t * 8));
     b.fillStyle = P.c;
     for (let i = 0; i < 7; i++) { const a = t * 1.6 + i * 0.08; b.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1); }
     skinFx(look, t, dt, cx, cy, rx, ry);
+  }
+
+  // The hole itself: a dithered gradient from the skin's centre colour to its edge colour,
+  // optionally breathing (pulse), churning (lava) or cycling through the rainbow.
+  function corePalette(look) {
+    if (look._pal) return look._pal;
+    const c = look.core || ['#07070f', '#07070f'];
+    look._pal = [0, 1, 2, 3, 4].map(function (i) { return SPR.mix(c[0], c[1], i / 4); });
+    return look._pal;
+  }
+  function drawCore(look, t, cx, cy, rx, ry) {
+    const rainbow = look.core === 'rainbow';
+    const pal = rainbow ? null : corePalette(look);
+    const flat = !rainbow && pal[0] === pal[4];
+    const breathe = look.inner === 'pulse' ? (Math.sin(t * 3) + 1) * 0.12 : 0;
+    for (let dy = -ry; dy <= ry; dy++) {
+      const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
+      if (flat) { b.fillStyle = pal[0]; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1); continue; }
+      for (let dx = -hw; dx <= hw; dx++) {
+        const x = cx + dx, y = cy + dy;
+        let f = Math.hypot(dx / rx, dy / ry);
+        if (look.inner === 'lava') f += 0.2 * Math.sin(dx * 0.5 + t * 2.2) * Math.cos(dy * 0.45 - t * 1.6);
+        f = Math.max(0, Math.min(1, f + breathe));
+        if (rainbow) {
+          const ang = Math.atan2(dy, dx) * 57.3;
+          b.fillStyle = 'hsl(' + Math.round((ang + t * 70 + f * 140 + 720) % 360) + ',85%,' + Math.round(62 - f * 46) + '%)';
+        } else {
+          const v = f * 4 + (BAYER[((y & 3) << 2) | (x & 3)] / 16 - 0.5);
+          b.fillStyle = pal[Math.max(0, Math.min(4, Math.round(v)))];
+        }
+        b.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  // Animated details inside the hole.
+  const INNER_STARS = [[0.3, 0.2], [0.55, 1.4], [0.7, 2.6], [0.4, 3.7], [0.8, 4.6], [0.2, 5.5], [0.62, 0.9]];
+  function coreInner(look, t, cx, cy, rx, ry, R) {
+    switch (look.inner) {
+      case 'stars':
+        INNER_STARS.forEach(function (s, i) {
+          const a = s[1] + t * 0.35, tw = Math.sin(t * 4 + i * 1.7);
+          if (tw < -0.3) return;
+          const x = Math.round(cx + Math.cos(a) * s[0] * rx), y = Math.round(cy + Math.sin(a) * s[0] * ry);
+          b.fillStyle = tw > 0.6 ? '#ffffff' : look.rim;
+          b.fillRect(x, y, 1, 1);
+          if (tw > 0.85 && R > 10) { b.fillRect(x - 1, y, 3, 1); b.fillRect(x, y - 1, 1, 3); }
+        });
+        break;
+      case 'rings':
+        for (let k = 0; k < 2; k++) {
+          const p = 1 - ((t * 0.45 + k * 0.5) % 1);
+          if (p < 0.15) continue;
+          b.globalAlpha = Math.min(1, p * 1.4);
+          ellipse(cx, cy, rx * p, ry * p, look.arms[0], 2, Math.floor(t * 10));
+          b.globalAlpha = 1;
+        }
+        break;
+      case 'vortex': {
+        const sp = -t * 3;
+        for (let arm = 0; arm < 6; arm++) for (let rr = R * 0.9; rr > R * 0.1; rr -= 0.6) {
+          const fr = rr / R, a = arm * 1.047 + sp + fr * 4.5;
+          const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
+          if (!dith(x, y, (1 - fr) * 0.8)) continue;
+          b.fillStyle = look.rim; b.fillRect(x, y, 1, 1);
+        }
+        break;
+      }
+      case 'glitch':
+        if (Math.floor(t * 10) % 5 === 0) {
+          for (let k = 0; k < 3; k++) {
+            const y = Math.round(cy + (Math.random() - 0.5) * ry * 1.6), w = Math.round(rx * (0.6 + Math.random() * 0.8));
+            b.fillStyle = k % 2 ? look.arms[0] : look.rim;
+            b.fillRect(Math.round(cx - w / 2 + (Math.random() - 0.5) * 6), y, w, 1);
+          }
+        }
+        break;
+    }
   }
 
   // The equipped skin's look ({ halo, rim, arms, disk, fx }).
@@ -5201,11 +5312,11 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const pctTxt = (p) => p >= 0.995 ? '100%' : p < 0.0005 ? '0%' : (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%';
     setHTML(el.odds, 'Next hatch: ' + G.rarities.map(function (r, i) { return '<b class="r' + i + '">' + r.name + ' ' + pctTxt(odds[i]) + '</b>'; }).join(' · ') +
       '<br>Epic+ within <b>' + (G.pityEpic - g.sinceEpic) + '</b> · Legendary within <b>' + (G.pityLegend - g.sinceLegend) + '</b> · Mythic within <b>' + (G.pityMythic - g.sinceMythic) + '</b> · ×10 always has a Rare+');
-    const key = JSON.stringify(state.critters);
+    const key = JSON.stringify(state.critters) + state.petShow.join();
     if (key !== collectionKey) {
       collectionKey = key;
       setText(el.colCount, Object.keys(state.critters).length + '/' + C.critters.length);
-      setText(el.petBonus, 'Pets: ×' + fmtMult(stats.critterMult * stats.petMult) + ' Matter');
+      setHTML(el.petBonus, 'Orbiting: <b>' + (state.petShow.length ? state.petShow.length + '/6 chosen' : 'best 6 (auto)') + '</b> · tap a pet to choose');
       // Owned pets first (rarest first), then the ones still to find (most likely first).
       const sorted = C.critters.slice().sort(function (a, b) {
         const oa = state.critters[a.id] ? 1 : 0, ob = state.critters[b.id] ? 1 : 0;
@@ -5213,7 +5324,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       });
       el.collection.innerHTML = sorted.map(function (c) {
         const own = state.critters[c.id];
-        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + '" data-pet="' + c.id + '" role="button" tabindex="0" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : RARITY_NAMES[c.rarity] + ' pet, not hatched yet') + '">' +
+        return '<div class="crit ra' + c.rarity + (own ? '' : ' locked') + (state.petShow.indexOf(c.id) >= 0 ? ' orbit' : '') + '" data-pet="' + c.id + '" role="button" tabindex="0" title="' + (own ? c.name + ': ' + PS.critterText(c, own.stars) : RARITY_NAMES[c.rarity] + ' pet, not hatched yet') + '">' +
           SPR.img('pet_' + c.id, 2) + '<span class="cn">' + (own ? c.name : '???') + '</span><span class="st r' + c.rarity + '">' + (own ? '★'.repeat(own.stars) : RARITY_NAMES[c.rarity]) + '</span></div>';
       }).join('');
       Scene.sync();
@@ -5221,6 +5332,17 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   }
   // Tap a pet to see what it does.
   el.collection.addEventListener('click', function (e) { const n = e.target.closest('[data-pet]'); if (n) openPet(n.dataset.pet); });
+  // Players choose up to six pets to orbit their black hole; with none chosen, the best six do.
+  function togglePetShow(id) {
+    const i = state.petShow.indexOf(id);
+    if (i >= 0) state.petShow.splice(i, 1);
+    else if (state.petShow.length >= 6) { toast('Up to 6 pets can orbit at once. Remove one first.'); Sound.deny(); return; }
+    else state.petShow.push(id);
+    Sound.buy();
+    collectionKey = '';
+    Scene.sync();
+    save();
+  }
   function openPet(id) {
     const c = PS.CRIT[id], own = state.critters[id], G = C.gacha;
     Sound.unlock(); Sound.wobble();
@@ -5240,7 +5362,13 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         '<div class="rarity r' + c.rarity + '">' + RARITY_NAMES[c.rarity] + '</div><p>Not hatched yet. Hatch capsules on this tab to find it.</p>' +
         '<p class="small">Odds of a ' + RARITY_NAMES[c.rarity] + ' pet: ' + (G.rarities[c.rarity].w) + '% per hatch, shared by ' + C.critters.filter(function (x) { return x.rarity === c.rarity; }).length + ' pets.</p></div></div>';
     }
-    openModal('pet', own ? c.name : '???', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+    const acts = [];
+    if (own) {
+      const shown = state.petShow.indexOf(id) >= 0;
+      acts.push({ label: shown ? 'Stop orbiting' : 'Orbit ' + state.name + ' (' + state.petShow.length + '/6)', cls: shown ? '' : 'gold', fn: function () { togglePetShow(id); openPet(id); } });
+    }
+    acts.push({ label: 'Close', cls: 'primary', fn: closeModal });
+    openModal('pet', own ? c.name : '???', body, acts);
   }
   el.pull1.addEventListener('click', function () { doPull(1); });
   el.pull10.addEventListener('click', function () { doPull(10); });
@@ -5529,6 +5657,18 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     openModal('crate-info', c.name, body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
 
+  // Opening a crate: a horizontal strip of skins spins past a marker and slows to a stop on the prize.
+  const STRIP_TILE = 76, STRIP_LEN = 46, STRIP_WIN = 39;
+  function stripFiller(id) {
+    const c = PS.CRATE[id];
+    const pool = CT.SKINS.filter(function (k) { return k.crate === id; });
+    const w = c.weights.map(function (x, r) { return pool.some(function (k) { return k.rarity === r; }) ? x : 0; });
+    const total = w.reduce(function (a, x) { return a + x; }, 0);
+    let roll = Math.random() * total, r = 0;
+    while (r < w.length - 1 && roll >= w[r]) { roll -= w[r]; r++; }
+    const xs = pool.filter(function (k) { return k.rarity === r; });
+    return xs[Math.floor(Math.random() * xs.length)];
+  }
   function openCrateFlow(id) {
     if (opening) return;
     Sound.unlock();
@@ -5538,20 +5678,37 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     PS.checkProgress(state, ev);
     refreshStats(); markDirty(); skinKey = ''; save();
     const k = res.skin;
-    const body = '<div class="crate-open"><div class="stage"><div class="rays"></div><div class="box">' + SPR.img('crate_' + id, 4) + '</div></div><div class="reveal-text"></div></div>';
-    openModal('crate', PS.CRATE[id].name, body, []);
-    const stage = el.modalBody.querySelector('.stage'), box = el.modalBody.querySelector('.box'), rays = el.modalBody.querySelector('.rays'), text = el.modalBody.querySelector('.reveal-text');
-    let done = false;
-    const timers = [];
+    const tiles = [];
+    for (let i = 0; i < STRIP_LEN; i++) tiles.push(i === STRIP_WIN ? k : stripFiller(id));
+    const body = '<div class="crate-open">' +
+      '<div class="strip-win"><div class="strip">' + tiles.map(function (t, i) {
+        return '<div class="st-tile ra' + t.rarity + '" data-i="' + i + '">' + SPR.img('skin_' + t.id, 1.5) + '<span class="r' + t.rarity + '">' + t.name + '</span></div>';
+      }).join('') + '</div><i class="strip-mark"></i></div>' +
+      '<div class="reveal-text"></div></div>';
+    openModal('crate', 'Opening ' + PS.CRATE[id].name + '…', body, []);
+    const win = el.modalBody.querySelector('.strip-win'), strip = el.modalBody.querySelector('.strip'), text = el.modalBody.querySelector('.reveal-text');
+    const W = win.clientWidth;
+    const target = -(STRIP_WIN * STRIP_TILE + STRIP_TILE / 2 - W / 2) + Math.round((Math.random() - 0.5) * (STRIP_TILE - 16));
+    const dur = reduced ? 1200 : 4600;
+    let done = false, raf = 0, lastTile = -1;
+    function tick() {
+      const m = new DOMMatrix(getComputedStyle(strip).transform);
+      const idx = Math.floor((W / 2 - m.m41) / STRIP_TILE);
+      if (idx !== lastTile) { lastTile = idx; Sound.reelTick(); }
+      if (!done) raf = requestAnimationFrame(tick);
+    }
     function reveal() {
       if (done) return;
       done = true;
-      timers.forEach(clearTimeout);
-      box.remove();
-      rays.className = 'rays on r' + k.rarity;
-      stage.insertAdjacentHTML('beforeend', '<div class="won">' + SPR.img('skin_' + k.id, 4) + '</div>');
-      text.innerHTML = '<div class="hatch"><div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
-        (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div>';
+      cancelAnimationFrame(raf);
+      strip.style.transition = 'none';
+      strip.style.transform = 'translateX(' + target + 'px)';
+      const tile = strip.querySelector('[data-i="' + STRIP_WIN + '"]');
+      tile.classList.add('win');
+      win.classList.add('done', 'r' + k.rarity);
+      text.innerHTML = '<div class="won-card"><div class="won-art ra' + k.rarity + '">' + SPR.img('skin_' + k.id, 3) + '</div><div>' +
+        '<div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
+        (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div></div>';
       el.modalTitle.textContent = res.isNew ? 'New skin!' : 'Skin found';
       Sound.reveal(k.rarity);
       if (k.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
@@ -5563,10 +5720,13 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       opening = false;
     }
     Sound.crank();
-    timers.push(setTimeout(function () { box.classList.add('shake'); Sound.wobble(); }, 200));
-    timers.push(setTimeout(function () { Sound.wobble(); }, 600));
-    timers.push(setTimeout(function () { Sound.forge(); }, 1000));
-    timers.push(setTimeout(reveal, k.rarity >= 3 ? 1500 : 1200));
+    requestAnimationFrame(function () {
+      strip.style.transition = 'transform ' + dur + 'ms cubic-bezier(.08,.6,.12,1)';
+      strip.style.transform = 'translateX(' + target + 'px)';
+      raf = requestAnimationFrame(tick);
+    });
+    strip.addEventListener('transitionend', reveal);
+    setTimeout(reveal, dur + 300);
     setActions([{ label: 'Skip', fn: reveal }]);
     hatchCleanup = reveal;
   }
