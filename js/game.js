@@ -774,7 +774,7 @@
     }
     el.fuseRow.innerHTML = fuse.join('');
   }
-  function relicAction(act, arg) {
+  function relicAction(act, arg, opts) {
     Sound.unlock();
     let ok = false;
     if (act === 'forge') {
@@ -797,7 +797,18 @@
       ok = PS.equipRelic(state, Number(arg));
       if (!ok) toast('All relic slots are full. Remove one first.');
     } else if (act === 'unequip') ok = PS.unequipRelic(state, Number(arg));
-    else if (act === 'salvage') { const g = PS.salvageRelic(state, Number(arg)); ok = g > 0; if (ok) toast('Salvaged for <b>+' + g + ' shards</b>', 'violet'); }
+    else if (act === 'salvage') {
+      // Rare or better relics ask first: salvaging cannot be undone.
+      const rel = state.relics.find(function (x) { return x.uid === Number(arg); });
+      if (rel && rel.r >= 1 && !opts) {
+        openModal('salvage', 'Salvage this relic?',
+          '<div class="relic-grid" style="max-width:150px;margin:0 auto 10px">' + relicCard(rel, false).replace(/<span class="rb">[\s\S]*<\/span><\/div>$/, '</div>') + '</div>' +
+          '<p>This <span class="r' + rel.r + '" style="font-weight:700">' + RL.rarities[rel.r].name + '</span> relic will be destroyed for <b>+' + RL.rarities[rel.r].salvage + ' shards</b>. This cannot be undone.</p>',
+          [{ label: 'Keep it', cls: 'primary', fn: closeModal }, { label: 'Salvage', cls: 'danger', fn: function () { closeModal(); relicAction('salvage', arg, { confirmed: true }); } }]);
+        return;
+      }
+      const g = PS.salvageRelic(state, Number(arg)); ok = g > 0; if (ok) toast('Salvaged for <b>+' + g + ' shards</b>', 'violet');
+    }
     else if (act === 'fuse') {
       const r = Number(arg);
       const uids = state.relics.filter(function (x) { return x.r === r && state.equipped.indexOf(x.uid) < 0; }).slice(0, RL.fuseNeed).map(function (x) { return x.uid; });

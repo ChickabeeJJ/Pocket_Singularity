@@ -443,6 +443,7 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await p.waitForSelector('#inventory .relic');
     const sh = await S(p, () => __ps.state.shards);
     await p.click('#inventory [data-rel^="salvage"] >> nth=0');
+    if (await p.isVisible('#modal-actions .btn.danger')) await p.click('#modal-actions .btn.danger');   // Rare+ asks first
     assert((await S(p, () => __ps.state.shards)) > sh, 'salvage pays shards');
     await shot(p, '907-relics');
   });

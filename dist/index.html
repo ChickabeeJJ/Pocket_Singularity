@@ -411,7 +411,7 @@ kbd { font: inherit; }
 .rw img { display: inline-block; vertical-align: middle; }
 .rw b { margin-right: 4px; }
 .login-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.lcell { background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); padding: 3px 1px; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; font-size: 10px; color: var(--mist); }
+.lcell { background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); padding: 3px 1px; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; text-align: center; font-size: 10px; color: var(--mist); }
 .lcell .rw { flex-direction: column; gap: 1px; font-size: 10px; }
 .lcell .rw b { margin: 0; }
 .lcell.got { opacity: .45; }
@@ -5597,7 +5597,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     }
     el.fuseRow.innerHTML = fuse.join('');
   }
-  function relicAction(act, arg) {
+  function relicAction(act, arg, opts) {
     Sound.unlock();
     let ok = false;
     if (act === 'forge') {
@@ -5620,7 +5620,18 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       ok = PS.equipRelic(state, Number(arg));
       if (!ok) toast('All relic slots are full. Remove one first.');
     } else if (act === 'unequip') ok = PS.unequipRelic(state, Number(arg));
-    else if (act === 'salvage') { const g = PS.salvageRelic(state, Number(arg)); ok = g > 0; if (ok) toast('Salvaged for <b>+' + g + ' shards</b>', 'violet'); }
+    else if (act === 'salvage') {
+      // Rare or better relics ask first: salvaging cannot be undone.
+      const rel = state.relics.find(function (x) { return x.uid === Number(arg); });
+      if (rel && rel.r >= 1 && !opts) {
+        openModal('salvage', 'Salvage this relic?',
+          '<div class="relic-grid" style="max-width:150px;margin:0 auto 10px">' + relicCard(rel, false).replace(/<span class="rb">[\s\S]*<\/span><\/div>$/, '</div>') + '</div>' +
+          '<p>This <span class="r' + rel.r + '" style="font-weight:700">' + RL.rarities[rel.r].name + '</span> relic will be destroyed for <b>+' + RL.rarities[rel.r].salvage + ' shards</b>. This cannot be undone.</p>',
+          [{ label: 'Keep it', cls: 'primary', fn: closeModal }, { label: 'Salvage', cls: 'danger', fn: function () { closeModal(); relicAction('salvage', arg, { confirmed: true }); } }]);
+        return;
+      }
+      const g = PS.salvageRelic(state, Number(arg)); ok = g > 0; if (ok) toast('Salvaged for <b>+' + g + ' shards</b>', 'violet');
+    }
     else if (act === 'fuse') {
       const r = Number(arg);
       const uids = state.relics.filter(function (x) { return x.r === r && state.equipped.indexOf(x.uid) < 0; }).slice(0, RL.fuseNeed).map(function (x) { return x.uid; });

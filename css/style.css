@@ -402,7 +402,7 @@ kbd { font: inherit; }
 .rw img { display: inline-block; vertical-align: middle; }
 .rw b { margin-right: 4px; }
 .login-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.lcell { background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); padding: 3px 1px; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; font-size: 10px; color: var(--mist); }
+.lcell { background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); padding: 3px 1px; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; text-align: center; font-size: 10px; color: var(--mist); }
 .lcell .rw { flex-direction: column; gap: 1px; font-size: 10px; }
 .lcell .rw b { margin: 0; }
 .lcell.got { opacity: .45; }
