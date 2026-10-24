@@ -3,32 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#080B16">
+<meta name="theme-color" content="#1a1c2c">
 <title>Pocket Singularity</title>
-<meta name="description" content="Pulse gravity through a tiny universe and grow a black hole into a universe-eating machine.">
+<meta name="description" content="Feed Singu, a tiny hungry black hole. Pulse gravity, spin the Star Reel, hatch cosmic critters and grow a universe-eater.">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
   <header class="top">
     <div class="brand">
-      <svg class="emblem" viewBox="0 0 32 32" aria-hidden="true">
-        <ellipse cx="16" cy="16" rx="14" ry="5.5" fill="none" stroke="#6CE8FF" stroke-width="1.6" opacity=".7"/>
-        <circle cx="16" cy="16" r="7" fill="#05070E" stroke="#6CE8FF" stroke-width="1.4"/>
-        <path d="M2 16a14 5.5 0 0 0 28 0" fill="none" stroke="#A78BFA" stroke-width="1.6"/>
-      </svg>
+      <img id="brand-icon" class="px" width="24" height="24" alt="">
       <span class="title">Pocket Singularity</span>
     </div>
     <div class="top-actions">
-      <button id="btn-atlas" class="chip" type="button" title="Discovery Atlas">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 14.5 8 8 14.5 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>
-        <span>Atlas</span><span id="atlas-count" class="num">0/16</span>
-      </button>
+      <button id="btn-tickets" class="chip" type="button" title="Capsule tickets"><span id="ticket-icon"></span><span id="ticket-count" class="num">0</span></button>
+      <button id="btn-atlas" class="chip" type="button" title="Discovery Atlas"><span id="atlas-icon"></span><span class="chip-label">Atlas</span><span id="atlas-count" class="num">0/18</span></button>
       <button id="btn-sound" class="icon-btn" type="button" aria-label="Mute sound" title="Sound (M)">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6h2.5L8.5 3v10L5 10H2.5z" fill="currentColor"/><path class="snd-on" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.3 3.6a6 6 0 0 1 0 8.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path class="snd-off" d="M10.5 5.5l4 5m0-5-4 5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path d="M2 6h3l3-3h2v10H8l-3-3H2z" fill="currentColor"/><path class="snd-on" d="M12 5h1v6h-1zM14 3h1v10h-1z" fill="currentColor"/><path class="snd-off" d="M11 5h1v1h1v1h1V6h1v1h-1v1h-1v1h1v1h1v1h-1v-1h-1V9h-1v1h-1V9h1V8h-1V7h-1z" fill="currentColor"/></svg>
       </button>
       <button id="btn-settings" class="icon-btn" type="button" aria-label="Settings" title="Settings">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12M2 11.5h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="10.5" cy="4.5" r="1.9" fill="#10162A" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="11.5" r="1.9" fill="#10162A" stroke="currentColor" stroke-width="1.3"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path d="M7 1h2v2h2V2h1v1h1v1h-1v2h2v2h-2v2h1v1h-1v1h-1v-1H9v2H7v-2H5v1H4v-1H3v-1h1V8H2V6h2V4H3V3h1V2h1v1h2zM7 6v2h2V6z" fill="currentColor"/></svg>
       </button>
     </div>
   </header>
@@ -41,47 +35,89 @@
           <div class="label">Matter</div>
           <div id="matter" class="matter num">0</div>
           <div id="rate" class="rate num"></div>
+          <div class="singu-lv" title="Singu grows a level each time it eats twice as much. Each level: +3% Matter and 3 tickets.">
+            <span>Singu <b>Lv <span id="singu-lv" class="num">0</span></b></span>
+            <div class="xp"><i id="xp-fill"></i></div>
+          </div>
         </div>
         <div class="hud-right">
           <div class="label">Sector <span id="sector-num" class="num">1</span></div>
           <div id="sector-name" class="sector-name">Dust Cloud</div>
           <button id="mutation-chip" class="mut-chip" type="button" title="Today's Cosmic Mutation"></button>
         </div>
+        <div id="reel" class="reel" hidden>
+          <div class="reel-title">Star Reel</div>
+          <div class="reel-row"><span class="slot"><img class="px"></span><span class="slot"><img class="px"></span><span class="slot"><img class="px"></span></div>
+          <div id="reel-result" class="reel-result"></div>
+        </div>
         <div id="surge" class="surge-pill num" hidden></div>
         <div id="banner" class="banner" aria-live="polite"></div>
         <div id="toasts" class="toasts" aria-live="polite"></div>
+        <button id="overcharge" class="overcharge" type="button" hidden>
+          <span class="oc-title">Overcharge?</span>
+          <span class="oc-odds"><b class="win">50%: ×2</b> · <b class="lose">50%: lose half</b></span>
+          <i id="oc-timer"></i>
+        </button>
         <div id="hint" class="hint">Tap anywhere to pulse gravity</div>
       </div>
       <div class="controls">
         <button id="btn-pulse" class="pulse-btn" type="button">
-          <span class="pulse-label">Pulse Gravity</span>
+          <span class="pulse-label">Pulse</span>
           <span class="pulse-key">Space</span>
           <i id="pulse-cd" class="pulse-cd"></i>
         </button>
-        <div class="milestone">
-          <div class="ms-row"><span id="ms-text" class="ms-text">Next sector</span><span id="ms-val" class="ms-val num"></span></div>
-          <div class="bar"><i id="ms-fill"></i></div>
+        <div class="meters">
+          <div class="meter">
+            <div class="ms-row"><span id="ms-text" class="ms-text">Next sector</span><span id="ms-val" class="ms-val num"></span></div>
+            <div class="bar"><i id="ms-fill"></i></div>
+          </div>
+          <div class="meter">
+            <div class="ms-row"><span class="ms-text"><b class="reel-label">Star Reel</b> · spins when full</span><span id="reel-val" class="ms-val num"></span></div>
+            <div class="bar bar-reel"><i id="reel-fill"></i></div>
+          </div>
         </div>
       </div>
     </section>
 
     <aside class="side">
-      <div class="shop-head">
-        <span class="label">Upgrades</span>
-        <div class="buy-mode" role="group" aria-label="Buy amount">
-          <button type="button" data-mode="1">×1</button><button type="button" data-mode="10">×10</button><button type="button" data-mode="0">Max</button>
-        </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab on" data-tab="upgrades" role="tab">Upgrades</button>
+        <button type="button" class="tab" data-tab="capsules" role="tab">Capsules <span id="cap-badge" class="badge" hidden>!</span></button>
       </div>
-      <div id="shop" class="shop"></div>
-      <div id="collapse-card" class="collapse-card"></div>
+      <div id="tab-upgrades" class="tab-body">
+        <div class="shop-head">
+          <span class="label">Buy</span>
+          <div class="buy-mode" role="group" aria-label="Buy amount">
+            <button type="button" data-mode="1">×1</button><button type="button" data-mode="10">×10</button><button type="button" data-mode="0">Max</button>
+          </div>
+        </div>
+        <div id="shop" class="shop"></div>
+        <div id="collapse-card" class="collapse-card"></div>
+      </div>
+      <div id="tab-capsules" class="tab-body" hidden>
+        <div class="machine-card">
+          <div id="machine-art" class="machine-art"></div>
+          <div class="machine-info">
+            <div class="m-title">Cosmo Capsules</div>
+            <div class="m-tickets"><span id="m-ticket-icon"></span> <b id="m-tickets" class="num">0</b> tickets</div>
+            <div class="m-buttons">
+              <button id="pull1" type="button" class="btn pink">Hatch ×1 <small class="num"></small></button>
+              <button id="pull10" type="button" class="btn gold">Hatch ×10 <small class="num"></small></button>
+            </div>
+            <button id="daily" type="button" class="btn green daily" hidden>Daily gift: +30 tickets</button>
+          </div>
+        </div>
+        <div id="odds" class="odds"></div>
+        <div class="label col-head">Critters <span id="col-count" class="num"></span></div>
+        <div id="collection" class="collection"></div>
+        <p class="small earn-help">Earn tickets from big chains, comets, the Star Reel, new sectors, Singu levels and discoveries. Tickets are only ever earned by playing.</p>
+      </div>
     </aside>
   </main>
 
   <div id="modal" class="modal" hidden>
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button id="modal-x" class="modal-x" type="button" aria-label="Close">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8m0-8-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
+      <button id="modal-x" class="modal-x" type="button" aria-label="Close">×</button>
       <h2 id="modal-title"></h2>
       <div id="modal-body"></div>
       <div id="modal-actions" class="modal-actions"></div>
@@ -90,6 +126,7 @@
 </div>
 
 <script src="js/core.js"></script>
+<script src="js/sprites.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/platform.js"></script>
 <script src="js/game.js"></script>

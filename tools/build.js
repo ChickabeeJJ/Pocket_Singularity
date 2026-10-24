@@ -12,10 +12,18 @@ const DIST = path.join(ROOT, 'dist');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 let html = read('index.html');
-html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) => '<style>\n' + read(href) + '</style>');
+// Fonts referenced from CSS are embedded as data URIs so the build is one self-contained file.
+function inlineCss(href) {
+  const dir = path.dirname(href);
+  return read(href).replace(/url\((['"]?)([^'")]+\.woff2)\1\)/g, (_, q, rel) => {
+    const data = fs.readFileSync(path.join(ROOT, dir, rel)).toString('base64');
+    return 'url(data:font/woff2;base64,' + data + ')';
+  });
+}
+html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) => '<style>\n' + inlineCss(href) + '</style>');
 html = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, (_, src) => '<script>\n' + read(src).replace(/<\/script/gi, '<\\/script') + '</script>');
 
-if (/href="css\/|src="js\//.test(html)) throw new Error('an asset was not inlined');
+if (/href="css\/|src="js\/|url\(['"]?\.\.\/fonts/.test(html)) throw new Error('an asset was not inlined');
 
 fs.mkdirSync(DIST, { recursive: true });
 fs.writeFileSync(path.join(DIST, 'index.html'), html);

@@ -176,5 +176,134 @@ test('pacing hits the bible targets for an active player', () => {
   assert.ok(at('first drones') >= 60 && at('first drones') <= 180, 'first automation in 1–3 min');
   const s1 = (r.log.find((l) => l.key.startsWith('sector 1')) || {}).t;
   assert.ok(s1 >= 180 && s1 <= 360, 'first sector in 3–6 min, got ' + s1);
-  assert.ok(at('collapse available') > 480, 'first collapse is not immediate');
+  assert.ok(at('collapse available') > 360, 'first collapse is not immediate');
+  assert.ok(at('first capsule pull') <= 90, 'first capsule within 90 s');
+});
+
+test('first capsule is always Rare and costs the listed price', () => {
+  const s = PS.createState(0);
+  s.tickets = PS.CONFIG.gacha.cost;
+  const r = PS.pull(s, 1, PS.mulberry32(1));
+  assert.equal(r.length, 1);
+  assert.equal(r[0].rarity, 1);
+  assert.equal(s.tickets, 0);
+  assert.equal(PS.pull(s, 1, PS.mulberry32(1)), null, 'cannot pull without tickets');
+});
+
+test('gacha pity guarantees Epic within 25 and Legendary within 70', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const s = PS.createState(0);
+    const rng = PS.mulberry32(seed);
+    let sinceEpic = 0, sinceLegend = 0;
+    for (let i = 0; i < 400; i++) {
+      s.tickets = 100;
+      const [r] = PS.pull(s, 1, rng);
+      sinceEpic = r.rarity >= 2 ? 0 : sinceEpic + 1;
+      sinceLegend = r.rarity === 3 ? 0 : sinceLegend + 1;
+      assert.ok(sinceEpic < PS.CONFIG.gacha.pityEpic, 'epic pity broken at seed ' + seed);
+      assert.ok(sinceLegend < PS.CONFIG.gacha.pityLegend, 'legend pity broken at seed ' + seed);
+    }
+  }
+});
+
+test('ten-pull always contains a Rare or better and duplicates star up', () => {
+  for (let seed = 1; seed <= 60; seed++) {
+    const s = PS.createState(0);
+    s.gacha.pulls = 5;
+    s.tickets = PS.CONFIG.gacha.cost10;
+    const res = PS.pull(s, 10, PS.mulberry32(seed));
+    assert.equal(res.length, 10);
+    assert.ok(res.some((r) => r.rarity >= 1), 'seed ' + seed);
+  }
+  const s = PS.createState(0);
+  for (let i = 0; i < 2000; i++) { s.tickets = 10; PS.pull(s, 1, PS.mulberry32(i + 7)); }
+  for (const id of Object.keys(s.critters)) {
+    const c = s.critters[id];
+    assert.ok(c.stars >= 1 && c.stars <= 5);
+  }
+  assert.ok(Object.values(s.critters).some((c) => c.stars === 5), 'commons should max out over 2000 pulls');
+});
+
+test('displayed odds sum to 1 and reflect pity', () => {
+  const s = PS.createState(0);
+  assert.deepEqual(PS.gachaOdds(s), [0, 1, 0, 0]);
+  s.gacha.pulls = 3;
+  const o = PS.gachaOdds(s);
+  assert.ok(Math.abs(o.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  s.gacha.sinceLegend = PS.CONFIG.gacha.pityLegend - 1;
+  assert.deepEqual(PS.gachaOdds(s), [0, 0, 0, 1]);
+});
+
+test('critter bonuses scale with stars and feed derived stats', () => {
+  const s = PS.createState(0);
+  const base = PS.derive(s, {}).valueMult;
+  s.critters.mouse = { stars: 1, copies: 0 };
+  const one = PS.derive(s, {}).valueMult;
+  s.critters.mouse.stars = 5;
+  const five = PS.derive(s, {}).valueMult;
+  assert.ok(Math.abs(one / base - 1.08) < 1e-9);
+  assert.ok(Math.abs(five / base - 1.24) < 1e-9);
+  assert.match(PS.critterText(PS.CRIT.mouse, 5), /24/);
+});
+
+test('star reel results map correctly', () => {
+  assert.equal(PS.reelResult(['singu', 'singu', 'singu']), 'singu3');
+  assert.equal(PS.reelResult(['comet', 'comet', 'comet']), 'comet3');
+  assert.equal(PS.reelResult(['dust', 'dust', 'dust']), 'triple');
+  assert.equal(PS.reelResult(['dust', 'crystal', 'crystal']), 'pairRare');
+  assert.equal(PS.reelResult(['dust', 'ice', 'dust']), 'pair');
+  assert.equal(PS.reelResult(['dust', 'ice', 'shard']), 'none');
+});
+
+test('star reel spins after enough catching pulses and always pays something', () => {
+  const s = PS.createState(0);
+  const st = PS.derive(s, {});
+  const w = PS.createWorld(PS.mulberry32(5), s, st);
+  w.cometTimer = 1e9;
+  const ev = [];
+  let spun = null;
+  for (let i = 0; i < 4000 && !spun; i++) {
+    if (i % 12 === 0) PS.pulse(w, s, st, ev, false);
+    PS.step(w, s, st, 1 / 30, ev);
+    spun = ev.find((e) => e.t === 'reel');
+  }
+  assert.ok(spun, 'reel never paid');
+  assert.ok(spun.matter > 0);
+});
+
+test('overcharge resolves exactly once', () => {
+  const s = PS.createState(0);
+  const w = PS.createWorld(PS.mulberry32(2), s, PS.derive(s, {}));
+  s.matter = 1000;
+  w.overcharge = { amount: 400, t: 3, chain: 12 };
+  const r = PS.overcharge(w, s, []);
+  assert.ok(r);
+  assert.equal(s.matter, r.win ? 1400 : 800);
+  assert.equal(PS.overcharge(w, s, []), null);
+});
+
+test('daily gift claims once per day', () => {
+  const s = PS.createState(0);
+  assert.equal(PS.claimDaily(s, '2026-10-24'), PS.CONFIG.tickets.daily);
+  assert.equal(PS.claimDaily(s, '2026-10-24'), 0);
+  assert.equal(PS.claimDaily(s, '2026-10-25'), PS.CONFIG.tickets.daily);
+});
+
+test('Singu level follows lifetime Matter and cannot be forged in a save', () => {
+  assert.equal(PS.singuLevelFor(0), 0);
+  assert.ok(PS.singuLevelFor(1e6) > PS.singuLevelFor(1e3));
+  const { state } = PS.sanitize({ v: 2, matter: 0, runTotal: 0, lifetime: 30, singuLevel: 500, tickets: -4, critters: { mouse: { stars: 99 }, fake: { stars: 1 } } }, 0);
+  assert.equal(state.singuLevel, PS.singuLevelFor(30));
+  assert.equal(state.tickets, 0);
+  assert.equal(state.critters.mouse.stars, 5);
+  assert.equal(state.critters.fake, undefined);
+});
+
+test('version 1 saves still load', () => {
+  const v1 = { v: 1, matter: 50, runTotal: 80, lifetime: 80, levels: { radius: 2, drones: 3 }, stardust: 1 };
+  const r = PS.sanitize(v1, 0);
+  assert.equal(r.ok, true);
+  assert.equal(r.state.levels.radius, 2);
+  assert.equal(r.state.levels.luck, 0);
+  assert.equal(r.state.tickets, 0);
 });

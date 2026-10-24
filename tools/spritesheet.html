@@ -1,0 +1,15 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Sprite sheet</title>
+<style>body{background:#1a1c2c;color:#f4f4f4;font:14px monospace;margin:12px}.g{display:flex;flex-wrap:wrap;gap:14px}.c{display:flex;flex-direction:column;align-items:center;gap:4px}img{image-rendering:pixelated}</style>
+</head><body><div class="g" id="g"></div>
+<script src="../js/sprites.js"></script>
+<script>
+// Dev aid: every sprite at 6× for review. Open tools/spritesheet.html in a browser.
+const S = PSSprites, g = document.getElementById('g');
+const names = Object.keys(S.ART).concat(Object.keys(S.LOOKS).map((k) => 'critter_' + k));
+for (const n of names) {
+  const d = document.createElement('div'); d.className = 'c';
+  d.innerHTML = S.img(n, 6) + '<span>' + n + '</span>';
+  g.appendChild(d);
+}
+</script></body></html>

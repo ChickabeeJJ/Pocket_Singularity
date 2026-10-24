@@ -266,13 +266,88 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(await S(p, () => document.getElementById('btn-sound').classList.contains('muted')), 'muted icon');
   });
 
-  await check('Escape closes dialogs; Atlas lists 16 entries', async () => {
+  await check('Escape closes dialogs; Atlas lists every discovery', async () => {
     await p.click('#btn-atlas');
     await p.waitForSelector('#modal:not([hidden])');
-    assert((await p.locator('.atlas .ae').count()) === 16);
+    assert((await p.locator('.atlas .ae').count()) === (await S(p, () => __ps.PS.CONFIG.discoveries.length)));
     await shot(p, '907-atlas');
     await p.keyboard.press('Escape');
     assert(await p.isHidden('#modal'));
+  });
+
+  await check('capsules: hatch ×1 spends tickets, reveals a critter, adds it to the collection', async () => {
+    await S(p, () => { __ps.state.tickets = 200; });
+    await p.click('.tab[data-tab="capsules"]');
+    await p.waitForSelector('#tab-capsules:not([hidden])');
+    assert(/Common/.test(await p.textContent('#odds')) && /Legendary/.test(await p.textContent('#odds')), 'odds shown');
+    const before = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls }));
+    await p.click('#pull1');
+    await p.waitForSelector('#modal:not([hidden]) .hatch');
+    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    await shot(p, '907-hatch');
+    const after = await S(p, () => ({ t: __ps.state.tickets, n: __ps.state.gacha.pulls, owned: Object.keys(__ps.state.critters).length }));
+    // Costs 10; a Legendary discovery can hand 2 straight back.
+    assert(before.t - after.t <= 10 && before.t - after.t >= 8, 'ticket cost ' + (before.t - after.t));
+    assert(after.n === before.n + 1 && after.owned >= 1, JSON.stringify(after));
+    await p.click('#modal-actions .btn.primary');
+    assert(await p.isHidden('#modal'));
+    assert((await p.locator('.crit:not(.locked)').count()) >= 1, 'collection shows the critter');
+  });
+
+  await check('capsules: hatch ×10 can be skipped and gives ten results with a Rare+', async () => {
+    await S(p, () => { __ps.state.tickets = 200; });
+    const n0 = await S(p, () => __ps.state.gacha.pulls);
+    await p.click('#pull10');
+    await p.waitForSelector('#modal:not([hidden]) .multi');
+    await p.click('#modal-actions .btn');   // Skip
+    await p.waitForSelector('#modal-actions .btn.primary');
+    assert((await p.locator('.multi .cell img').count()) === 10, 'ten reveals');
+    assert((await p.locator('.multi .cell.ra1, .multi .cell.ra2, .multi .cell.ra3').count()) >= 1, 'a Rare or better');
+    assert((await S(p, () => __ps.state.gacha.pulls)) === n0 + 10);
+    await shot(p, '907-hatch10');
+    await p.keyboard.press('Escape');
+  });
+
+  await check('capsules: daily gift pays once per day and survives reload', async () => {
+    await S(p, () => { __ps.state.dailyGift = ''; __ps.setTab('capsules'); });
+    await p.waitForSelector('#daily:not([hidden])');
+    const t0 = await S(p, () => __ps.state.tickets);
+    await p.click('#daily');
+    assert((await S(p, () => __ps.state.tickets)) - t0 === 30, 'daily amount');
+    assert(await p.isHidden('#daily'), 'button hides after claiming');
+    await S(p, () => __ps.save());
+    await p.reload(); await p.waitForTimeout(300);
+    await S(p, () => __ps.setTab('capsules'));
+    assert(await p.isHidden('#daily'), 'still claimed after reload');
+    await S(p, () => __ps.setTab('upgrades'));
+  });
+
+  await check('Star Reel spins after enough pulses and pays out', async () => {
+    await S(p, () => { __ps.state.reelCharge = __ps.stats.reelNeed - 1; });
+    const m0 = await S(p, () => __ps.state.stats.spins);
+    for (let i = 0; i < 6 && (await S(p, () => __ps.state.stats.spins)) === m0; i++) { await p.keyboard.press('Space'); await p.waitForTimeout(420); }
+    await p.waitForSelector('#reel:not([hidden])', { timeout: 3000 });
+    await p.waitForFunction(() => document.getElementById('reel-result').textContent.length > 3, null, { timeout: 4000 });
+    assert(/Matter/.test(await p.textContent('#reel-result')), 'reel prize text');
+    await shot(p, '907-reel');
+  });
+
+  await check('Overcharge offer resolves once and moves Matter by the stated odds', async () => {
+    await S(p, () => { __ps.state.matter = 10000; __ps.world.overcharge = { amount: 1000, t: 3, chain: 12 }; });
+    await p.waitForSelector('#overcharge:not([hidden])');
+    await shot(p, '907-overcharge');
+    const m0 = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime }));
+    await p.click('#overcharge');
+    const m1 = await S(p, () => ({ m: __ps.state.matter, life: __ps.state.lifetime, n: __ps.state.stats.overcharges }));
+    assert(Math.abs(m1.m - m0.m - 1000) < 200 || Math.abs(m1.m - m0.m + 500) < 200, 'delta ' + (m1.m - m0.m));
+    assert(await p.isHidden('#overcharge'), 'button hides');
+    assert((await S(p, () => __ps.world.overcharge)) === null, 'offer consumed');
+  });
+
+  await check('owned critters orbit Singu', async () => {
+    const n = await S(p, () => Object.keys(__ps.state.critters).length);
+    assert(n >= 1, 'no critters');
+    await shot(p, '907-pets');
   });
 
   await check('object counts stay bounded during a long busy session', async () => {
@@ -331,6 +406,17 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     await S(p, () => { __ps.state.matter = 100; });
     await p.tap('.card >> nth=0');
     assert((await S(p, () => __ps.state.levels.radius)) === 1);
+  });
+  await check('phone portrait: capsules tab works by touch', async () => {
+    await S(p, () => { __ps.state.tickets = 50; });
+    await p.tap('.tab[data-tab="capsules"]');
+    await p.waitForSelector('#tab-capsules:not([hidden])');
+    await p.tap('#pull1');
+    await p.waitForSelector('.crit-big', { timeout: 4000 });
+    await shot(p, '390-hatch');
+    await p.tap('#modal-actions .btn.primary');
+    assert(await p.isHidden('#modal'));
+    await shot(p, '390-capsules');
   });
   await p.context().close();
 

@@ -21,6 +21,7 @@ function run(opts) {
   const seen = {};
   let lastPulse = -99, lastShop = 0, lastCollapseCheck = 0;
   let t = 0;
+  let pulls = 0;
   const firstBuy = {};
   function note(key, extra) {
     if (seen[key]) return;
@@ -33,6 +34,8 @@ function run(opts) {
     ev.length = 0;
     PS.step(world, state, stats, dt, ev);
     t += dt;
+    for (const e of ev) if (e.t === 'level') { stats = PS.derive(state, mut); if (e.level % 5 === 0) note('Singu Lv ' + e.level); }
+    for (const e of ev) if (e.t === 'reel' && e.result !== 'none' && e.result !== 'pair') note('reel ' + e.result);
     for (const e of ev) if (e.t === 'sector') { note('sector ' + e.index + ' ' + PS.sectorInfo(e.index).name, PS.fmt(state.runTotal)); stats = PS.derive(state, mut); }
     // Pulse policy
     let inRange = 0;
@@ -62,6 +65,15 @@ function run(opts) {
         stats = PS.derive(state, mut);
       }
     }
+    // Capsules: pull whenever affordable; take every Overcharge offer.
+    if (state.tickets >= PS.CONFIG.gacha.cost) {
+      const res = PS.pull(state, 1, rng);
+      pulls++;
+      note('first capsule pull', PS.CONFIG.critters.find((c) => c.id === res[0].id).name);
+      if (res[0].rarity === 3) note('first legendary', 'pull #' + state.gacha.pulls);
+      stats = PS.derive(state, mut);
+    }
+    if (world.overcharge && opts.overcharge !== false) PS.overcharge(world, state, ev);
     if (PS.canCollapse(state)) note('collapse available', PS.stardustFor(state) + ' SD');
     if (opts.collapseAt && t - lastCollapseCheck > 5) {
       lastCollapseCheck = t;
@@ -77,7 +89,7 @@ function run(opts) {
     }
     for (const e of ev) if (e.t === 'discover') note('discover ' + e.id);
   }
-  return { state, log, stats };
+  return { state, log, stats, pulls };
 }
 
 function mmss(t) { const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); }
@@ -93,6 +105,7 @@ if (require.main === module) {
   console.log('---');
   console.log('levels', JSON.stringify(s.levels), 'matter', PS.fmt(s.matter), 'run', PS.fmt(s.runTotal), 'SD avail', PS.stardustFor(s), 'SD', s.stardust);
   console.log('drone/s', PS.fmt(r.stats.dronePerSec), 'discoveries', PS.discoveryCount(s) + '/' + PS.CONFIG.discoveries.length, 'bestChain', s.stats.bestChain);
+  console.log('Singu Lv', s.singuLevel, 'pulls', r.pulls, 'tickets left', s.tickets, 'spins', s.stats.spins, 'lucky', s.stats.lucky, 'critters', Object.keys(s.critters).map((k) => k + '★' + s.critters[k].stars).join(' '));
 }
 
 module.exports = { run };
