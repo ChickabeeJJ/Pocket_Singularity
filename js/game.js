@@ -1518,15 +1518,35 @@
     if (changed) { Sound.unlock(); Sound.level(); toast('Say hi to <b>' + v + '</b>! Tap or hold to feed it.', 'pink'); }
   }
 
-  function openMults() {
-    const rows = [
+  // Every multiplier and buff the player has, grouped, for the multiplier chip and Settings.
+  function buffsHTML() {
+    const pc = function (v) { return '+' + (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%'; };
+    const sum = function (k) { return (stats.critters[k] || 0) + (stats.relics[k] || 0) + (stats.skin[k] || 0); };
+    const mults = [
       ['Form · ' + CT.FORMS[state.form].name, stats.formMult], ['Stardust', stats.sdMult], ['Pets', stats.critterMult * stats.petMult],
       ['Trophies', stats.achMult], ['Atlas', stats.atlasMult], [state.name + ' level ' + state.singuLevel, stats.singuMult],
-      ['Upgrades', stats.upgrades.global], ['Relics', 1 + stats.relics.global]
+      ['Upgrades', stats.upgrades.global], ['Relics & skin', 1 + stats.relics.global + (stats.skin.global || 0)]
     ];
-    const body = '<p>Everything that multiplies your income. Pulses also get <b>Pulse Focus ×' + fmtMult(stats.focusMult) + '</b>, combo and chains.</p><div class="mults">' +
-      rows.map(function (r) { return '<span>' + r[0] + '</span><span>×' + fmtMult(r[1]) + '</span>'; }).join('') + '<span><b>Total</b></span><span>×' + fmtMult(stats.globalMult) + '</span></div>';
-    openModal('mults', 'Income multipliers', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+    const other = [
+      ['Pulse value', '×' + fmtMult(stats.focusMult * stats.upgrades.tap) + ' · ' + pc(sum('pulse'))],
+      ['Harvesters', pc(sum('gen'))],
+      ['Max combo', '×' + (1 + stats.comboMax).toFixed(2)],
+      ['Chain bonus', pc(stats.chainStep) + ' per catch'],
+      ['Pulse reach', Math.round(stats.pulseRadius * 100) + '%'],
+      ['Lucky Pulses', Math.round(stats.luckChance * 100) + '% for ×' + stats.luckPower.toFixed(1)],
+      ['Comets', '×' + stats.cometRate.toFixed(2) + ' as often · Surge ' + Math.round(stats.surgeDur) + ' s'],
+      ['Away income', Math.round(stats.offlineRate * 100) + '% speed, up to 2 h'],
+      ['Ticket drops', '×' + stats.ticketMult.toFixed(2)],
+      ['Shard find', '×' + stats.shardMult.toFixed(2)],
+      ['Star Reel', 'spins every ' + Math.ceil(stats.reelNeed) + ' catches'],
+      ['Auto Pulse', stats.autoInterval ? 'every ' + stats.autoInterval.toFixed(1) + ' s' : 'not bought']
+    ];
+    return '<div class="buff-total"><span>Total income multiplier</span><b>×' + fmtMult(stats.globalMult) + '</b></div>' +
+      '<div class="mults">' + mults.map(function (r) { return '<span>' + r[0] + '</span><span>×' + fmtMult(r[1]) + '</span>'; }).join('') + '</div>' +
+      '<h3 class="buff-h">Other buffs</h3><div class="mults other">' + other.map(function (r) { return '<span>' + r[0] + '</span><span>' + r[1] + '</span>'; }).join('') + '</div>';
+  }
+  function openMults() {
+    openModal('mults', 'Your bonuses', buffsHTML(), [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
   el.multChip.addEventListener('click', openMults);
 
@@ -1548,10 +1568,9 @@
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-7 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
-      '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
+      '<h3 class="buff-h" style="margin-top:14px">Your bonuses</h3>' + buffsHTML() +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
-      '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
+      '';
     openModal('settings', 'Settings', body, [
       { label: 'Reset all progress', cls: 'danger', fn: confirmReset },
       { label: 'Done', cls: 'primary', fn: closeModal }

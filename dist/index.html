@@ -91,14 +91,16 @@ kbd { font: inherit; }
 .combo-bar i { display: block; height: 100%; width: 0; background: var(--peach); box-shadow: inset 0 2px 0 0 var(--butter); }
 .combo.full .combo-bar i { animation: fullFlash 200ms steps(2) infinite; }
 .combo b { color: var(--butter); min-width: 40px; }
-.purse { display: flex; flex-direction: column; gap: 4px; }
-.coin { pointer-events: auto; min-width: 0; height: 21px; display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 0 6px; font-size: 12px; white-space: nowrap; background: rgba(11, 11, 22, .78); box-shadow: 0 0 0 2px var(--dusk); }
+.purse { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 1px; }
+.coin { pointer-events: auto; min-width: 0; height: 18px; display: flex; align-items: center; gap: 5px; padding: 0; font-size: 12px; white-space: nowrap; text-shadow: 2px 2px 0 var(--ink); }
+.coin:hover b { color: var(--butter); }
 .coin b { color: var(--cream); }
-.coin small { margin-left: auto; font-size: 10px; color: var(--mist); }
+.coin small { display: none; }
 .coin img { width: 14px; height: auto; }
 .coin img { flex: 0 0 auto; }
-.coin.flash { animation: chipFlash 700ms steps(4); }
 @keyframes chipFlash { 50% { background: var(--plum); box-shadow: 0 0 0 2px var(--butter); } }
+.coin.flash { animation: coinFlash 700ms steps(4); }
+@keyframes coinFlash { 50% { transform: scale(1.15); filter: brightness(1.5); } }
 #btn-stardust[hidden] { display: none; }
 
 .hud-top { position: absolute; left: 50%; top: var(--gut); transform: translateX(-50%); display: flex; justify-content: center; pointer-events: none; }
@@ -538,6 +540,10 @@ kbd { font: inherit; }
 .atlas .ae.locked .an { color: var(--slate); }
 .mults { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; }
 .mults span:nth-child(even) { color: var(--lime); text-align: right; font-weight: 700; }
+.mults.other span:nth-child(even) { color: var(--cream); font-weight: 400; }
+.buff-total { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 0 8px; padding: 6px 10px; background: var(--ink); box-shadow: 0 0 0 2px var(--gold); }
+.buff-total b { color: var(--gold) !important; font-size: 22px; }
+.buff-h { margin: 12px 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--butter); }
 .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 2px dashed var(--dusk); }
 .toggle-row:last-of-type { border-bottom: 0; }
 .switch { width: 46px; height: 22px; background: var(--ink); position: relative; box-shadow: 0 0 0 2px var(--dusk); }
@@ -691,9 +697,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         <b id="combo-val" class="num">×1</b>
       </div>
       <div class="purse">
-        <button id="btn-tickets" class="coin" type="button" title="Capsule tickets"><span id="ticket-icon"></span><b id="ticket-count" class="num">0</b><small>tickets</small></button>
-        <button id="btn-shards" class="coin" type="button" title="Relic shards"><span id="shard-icon"></span><b id="shard-count" class="num">0</b><small>shards</small></button>
-        <button id="btn-keys" class="coin" type="button" title="Cosmic Keys"><span id="key-icon"></span><b id="key-count" class="num">0</b><small>keys</small></button>
+        <button id="btn-tickets" class="coin" type="button" title="Capsule tickets (Pets tab)"><span id="ticket-icon"></span><b id="ticket-count" class="num">0</b><small>tickets</small></button>
+        <button id="btn-shards" class="coin" type="button" title="Relic shards (Relics tab)"><span id="shard-icon"></span><b id="shard-count" class="num">0</b><small>shards</small></button>
+        <button id="btn-keys" class="coin" type="button" title="Cosmic Keys (Skins tab)"><span id="key-icon"></span><b id="key-count" class="num">0</b><small>keys</small></button>
         <button id="btn-stardust" class="coin" type="button" title="Stardust"><span id="sd-icon"></span><b id="sd-count" class="num">0</b><small>Stardust</small></button>
       </div>
     </div>
@@ -6187,15 +6193,35 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     if (changed) { Sound.unlock(); Sound.level(); toast('Say hi to <b>' + v + '</b>! Tap or hold to feed it.', 'pink'); }
   }
 
-  function openMults() {
-    const rows = [
+  // Every multiplier and buff the player has, grouped, for the multiplier chip and Settings.
+  function buffsHTML() {
+    const pc = function (v) { return '+' + (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%'; };
+    const sum = function (k) { return (stats.critters[k] || 0) + (stats.relics[k] || 0) + (stats.skin[k] || 0); };
+    const mults = [
       ['Form · ' + CT.FORMS[state.form].name, stats.formMult], ['Stardust', stats.sdMult], ['Pets', stats.critterMult * stats.petMult],
       ['Trophies', stats.achMult], ['Atlas', stats.atlasMult], [state.name + ' level ' + state.singuLevel, stats.singuMult],
-      ['Upgrades', stats.upgrades.global], ['Relics', 1 + stats.relics.global]
+      ['Upgrades', stats.upgrades.global], ['Relics & skin', 1 + stats.relics.global + (stats.skin.global || 0)]
     ];
-    const body = '<p>Everything that multiplies your income. Pulses also get <b>Pulse Focus ×' + fmtMult(stats.focusMult) + '</b>, combo and chains.</p><div class="mults">' +
-      rows.map(function (r) { return '<span>' + r[0] + '</span><span>×' + fmtMult(r[1]) + '</span>'; }).join('') + '<span><b>Total</b></span><span>×' + fmtMult(stats.globalMult) + '</span></div>';
-    openModal('mults', 'Income multipliers', body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+    const other = [
+      ['Pulse value', '×' + fmtMult(stats.focusMult * stats.upgrades.tap) + ' · ' + pc(sum('pulse'))],
+      ['Harvesters', pc(sum('gen'))],
+      ['Max combo', '×' + (1 + stats.comboMax).toFixed(2)],
+      ['Chain bonus', pc(stats.chainStep) + ' per catch'],
+      ['Pulse reach', Math.round(stats.pulseRadius * 100) + '%'],
+      ['Lucky Pulses', Math.round(stats.luckChance * 100) + '% for ×' + stats.luckPower.toFixed(1)],
+      ['Comets', '×' + stats.cometRate.toFixed(2) + ' as often · Surge ' + Math.round(stats.surgeDur) + ' s'],
+      ['Away income', Math.round(stats.offlineRate * 100) + '% speed, up to 2 h'],
+      ['Ticket drops', '×' + stats.ticketMult.toFixed(2)],
+      ['Shard find', '×' + stats.shardMult.toFixed(2)],
+      ['Star Reel', 'spins every ' + Math.ceil(stats.reelNeed) + ' catches'],
+      ['Auto Pulse', stats.autoInterval ? 'every ' + stats.autoInterval.toFixed(1) + ' s' : 'not bought']
+    ];
+    return '<div class="buff-total"><span>Total income multiplier</span><b>×' + fmtMult(stats.globalMult) + '</b></div>' +
+      '<div class="mults">' + mults.map(function (r) { return '<span>' + r[0] + '</span><span>×' + fmtMult(r[1]) + '</span>'; }).join('') + '</div>' +
+      '<h3 class="buff-h">Other buffs</h3><div class="mults other">' + other.map(function (r) { return '<span>' + r[0] + '</span><span>' + r[1] + '</span>'; }).join('') + '</div>';
+  }
+  function openMults() {
+    openModal('mults', 'Your bonuses', buffsHTML(), [{ label: 'Close', cls: 'primary', fn: closeModal }]);
   }
   el.multChip.addEventListener('click', openMults);
 
@@ -6217,10 +6243,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-7 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
-      '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
+      '<h3 class="buff-h" style="margin-top:14px">Your bonuses</h3>' + buffsHTML() +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
-      '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
+      '';
     openModal('settings', 'Settings', body, [
       { label: 'Reset all progress', cls: 'danger', fn: confirmReset },
       { label: 'Done', cls: 'primary', fn: closeModal }
