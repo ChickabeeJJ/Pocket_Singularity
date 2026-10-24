@@ -684,9 +684,58 @@
     shardc: function (P) { P.tri(8, 1, 13, 7, 8, 15, '#b17cff'); P.tri(8, 1, 3, 7, 8, 15, '#d6b8ff'); P.line(8, 2, 8, 14, '#ffffff'); },
     gift2: function (P) { P.rect(2, 6, 12, 9, '#ef4f6b'); P.rect(1, 4, 14, 3, '#ff6b8a'); P.rect(7, 4, 2, 11, '#ffd36b'); P.tri(4, 1, 8, 4, 4, 4, '#ffd36b'); P.tri(12, 1, 8, 4, 12, 4, '#ffd36b'); },
     lock: function (P) { P.ell(8, 5, 3.5, 3.5, '#9aa3b2'); P.ell(8, 5, 2, 2, null); P.rect(3, 7, 10, 7, '#ffcd4d'); P.rect(3, 7, 10, 1, '#fff0b0'); P.rect(7, 9, 2, 3, '#7a5a20'); },
+    key: function (P) { P.ell(5, 6, 4, 4, '#ffd36b'); P.ell(5, 6, 1.6, 1.6, '#9a6a20'); P.rect(8, 5, 7, 2, '#ffd36b'); P.rect(12, 7, 2, 3, '#ffd36b'); P.rect(9, 7, 1, 2, '#ffd36b'); P.set(3, 4, '#fff6c8'); },
     leader: function (P) { P.rect(2, 8, 4, 7, '#c9d2e3'); P.rect(6, 4, 4, 11, '#ffcd4d'); P.rect(10, 10, 4, 5, '#e8a06b'); P.set(8, 2, '#ffffff'); }
   };
   function miscCanvas(k) { const P = new Painter(16, 16); MISC_ICON[k](P); P.outline(); return P.canvas(); }
+  // Skin preview (32×32): halo, back of the disk, black core with swirl arms, front of the disk, rim.
+  let SKINS = {};
+  function setSkins(list) { SKINS = {}; list.forEach(function (k) { SKINS[k.id] = k; }); }
+  function skinCanvas(id) {
+    const L = SKINS[id].look;
+    const P = new Painter(32, 32);
+    const cx = 15.5, cy = 15.5, R = 8;
+    P.ell(cx, cy, R + 4, R + 4, function (nx, ny, x, y) { return ((x + y) % 2 === 0) ? mix(L.halo, '#0b0b16', 0.35) : null; });
+    P.ell(cx, cy, R + 2.5, R + 2.5, mix(L.halo, '#0b0b16', 0.15));
+    const disk = function (front) {
+      for (let a = 0; a < Math.PI * 2; a += 0.02) {
+        const sn = Math.sin(a);
+        if (front ? sn < 0 : sn >= 0) continue;
+        for (let k = 0; k < 3; k++) {
+          const rx = R + 3 + k * 1.6, ry = (R + 3 + k * 1.6) * 0.32;
+          P.set(cx + Math.cos(a) * rx, cy + sn * ry, L.disk[(k + Math.floor((a + 0.3) * 2)) % 4]);
+        }
+      }
+    };
+    disk(false);
+    P.ell(cx, cy, R, R, '#07070f');
+    for (let arm = 0; arm < 3; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
+      const f = rr / R, a = arm * 2.094 + f * 3.2;
+      P.set(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, L.arms[f > 0.7 ? 0 : f > 0.45 ? 1 : 2]);
+    }
+    for (let a = 0; a < Math.PI * 2; a += 0.05) P.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, L.rim);
+    disk(true);
+    P.set(cx - R * 0.55, cy - R * 0.6, '#ffffff');
+    return P.canvas();
+  }
+  // Crates (24×20): a chest in the crate's colour with a glowing keyhole.
+  let CRATES = {};
+  function setCrates(list) { CRATES = {}; list.forEach(function (c) { CRATES[c.id] = c; }); }
+  function crateCanvas(id) {
+    const c = CRATES[id], T = tones(c.color);
+    const P = new Painter(24, 20);
+    P.rect(2, 8, 20, 11, T.base); P.rect(2, 8, 20, 2, T.light); P.rect(2, 17, 20, 2, T.dark);
+    P.ell(12, 8, 10, 6, function (nx, ny) { return ny < 0 ? (ny < -0.6 ? T.light : T.base) : null; });
+    P.rect(2, 8, 20, 1, T.dark);
+    const band = id === 'horizon' ? '#b48cff' : id === 'nebula' ? '#ffd36b' : '#e8d8b0';
+    P.rect(5, 3, 2, 16, band); P.rect(17, 3, 2, 16, band);
+    P.rect(10, 9, 4, 5, '#ffd36b'); P.rect(11, 10, 2, 2, '#1a1c2c'); P.set(11, 12, '#1a1c2c');
+    if (id === 'horizon') { P.set(4, 12, '#73eff7'); P.set(20, 14, '#ff8fd8'); P.set(14, 16, '#ffffff'); }
+    if (id === 'nebula') { P.set(4, 15, '#ff8fd8'); P.set(20, 11, '#73eff7'); }
+    P.outline();
+    return P.canvas();
+  }
+
   // Trophy tiers: bronze, silver, gold, spectral.
   const TROPHY_HEX = ['#d0874a', '#c9d4e6', '#ffcd4d', '#b48cff'];
   function trophyCanvas(tier) {
@@ -736,6 +785,8 @@
     else if ((m = /^gen(\d+)$/.exec(name))) c = genCanvas(Number(m[1]));
     else if ((m = /^relic_(\w+)_(\d)$/.exec(name))) c = relicCanvas(m[1], Number(m[2]));
     else if ((m = /^trophy(\d)$/.exec(name))) c = trophyCanvas(Number(m[1]));
+    else if (name.indexOf('skin_') === 0) c = skinCanvas(name.slice(5));
+    else if (name.indexOf('crate_') === 0) c = crateCanvas(name.slice(6));
     else if ((m = /^icon_(\w+)$/.exec(name))) c = miscCanvas(m[1]);
     else {
       const rows = ART[name];
@@ -767,5 +818,5 @@
     return '<img class="px ' + (cls || '') + '" src="' + url(name, 1) + '" width="' + Math.round(s.width * k) + '" height="' + Math.round(s.height * k) + '" alt="">';
   }
 
-  root.PSSprites = { PAL: PAL, ART: ART, get: get, url: url, img: img, setPets: setPets, tones: tones, mix: mix, RARITY_HEX: RARITY_HEX, RELIC_HEX: RELIC_HEX, GEN_COUNT: GEN_ICON.length };
+  root.PSSprites = { PAL: PAL, ART: ART, get: get, url: url, img: img, setPets: setPets, setSkins: setSkins, setCrates: setCrates, tones: tones, mix: mix, RARITY_HEX: RARITY_HEX, RELIC_HEX: RELIC_HEX, GEN_COUNT: GEN_ICON.length };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

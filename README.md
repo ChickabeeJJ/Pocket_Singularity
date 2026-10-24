@@ -1,6 +1,6 @@
 # Pocket Singularity
 
-A cozy pixel-art idle tycoon / clicker for CrazyGames. Name your own tiny, hungry black hole (it defaults to **Singu**) and feed it: tap or hold to pulse cosmic bits into it and build a combo, buy 15 kinds of harvesters, unlock 260 upgrades, hatch 48 pets across 5 rarities, forge push-your-luck relics, collect 163 trophies, and grow through 12 forms from a Speck to an Omniverse Maw. A Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours), and Singu's level is submitted to the CrazyGames leaderboard.
+A cozy pixel-art idle tycoon / clicker for CrazyGames. Name your own tiny, hungry black hole (it defaults to **Singu**) and feed it: tap or hold to pulse cosmic bits into it and build a combo, buy 15 kinds of harvesters, unlock 260 upgrades, hatch 48 pets across 5 rarities, forge push-your-luck relics, open skin crates for 18 black hole skins, collect 171 trophies, and grow through 12 forms from a Speck to an Omniverse Maw. A Rewards tab brings players back every day (login calendar, daily quests, play gifts, a free capsule every 4 hours), and Singu's level is submitted to the CrazyGames leaderboard.
 
 **Play locally:** open `index.html` in a browser, or serve the folder (`npx http-server .`) and open it there. There is no build step needed to play.
 
@@ -11,7 +11,7 @@ The original design brief is [`docs/POCKET_SINGULARITY_GAME_BIBLE.md`](docs/POCK
 | Input | Action |
 |---|---|
 | Click / tap the universe, hold it down, or `Space` | Gravity pulse (fast pulses build combo) |
-| `1`–`6` | Switch tab (Harvest, Upgrades, Pets, Relics, Rewards, Trophies) |
+| `1`–`7` | Switch tab (Harvest, Upgrades, Pets, Relics, Rewards, Skins, Trophies) |
 | `M` | Mute |
 | `Esc` | Close dialog |
 
@@ -21,7 +21,7 @@ The original design brief is [`docs/POCKET_SINGULARITY_GAME_BIBLE.md`](docs/POCK
 index.html          page shell (loads the files below + the optional CrazyGames SDK)
 css/style.css       pixel UI (Sweetie 16 palette, notched panels, press buttons)
 fonts/              Pixelify Sans + Silkscreen (digits), both SIL OFL, licences included
-js/content.js       content tables: 15 harvesters, 12 forms, 260 upgrades, 163 trophies, relics, 48 pets
+js/content.js       content tables: 15 harvesters, 12 forms, 260 upgrades, 171 trophies, relics, 48 pets, skins and crates
 js/core.js          all rules and balance: economy, gacha, relic forge, Star Reel, saves, world simulation (no DOM; runs in Node)
 js/sprites.js       palette, hand-made sprites, the pet painter (25 species), capsules, machine, icons
 js/render.js        the scene: layered sky, planet horizon, parallax stars, Singu, orbiting harvesters and pets, effects

@@ -91,9 +91,10 @@ kbd { font: inherit; }
 .combo-bar i { display: block; height: 100%; width: 0; background: var(--peach); box-shadow: inset 0 2px 0 0 var(--butter); }
 .combo.full .combo-bar i { animation: fullFlash 200ms steps(2) infinite; }
 .combo b { color: var(--butter); min-width: 40px; }
-.purse { display: flex; gap: 6px; }
-.coin { pointer-events: auto; flex: 1 1 0; min-width: 0; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 4px; font-size: 13px; background: rgba(11, 11, 22, .78); box-shadow: 0 0 0 2px var(--dusk); }
-.coin b { color: var(--cream); }
+.purse { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.coin { pointer-events: auto; min-width: 0; height: 24px; display: inline-flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 6px; font-size: 13px; overflow: hidden; white-space: nowrap; background: rgba(11, 11, 22, .78); box-shadow: 0 0 0 2px var(--dusk); }
+.coin b { color: var(--cream); overflow: hidden; text-overflow: ellipsis; }
+.coin img { flex: 0 0 auto; }
 .coin.flash { animation: chipFlash 700ms steps(4); }
 @keyframes chipFlash { 50% { background: var(--plum); box-shadow: 0 0 0 2px var(--butter); } }
 #btn-stardust[hidden] { display: none; }
@@ -201,10 +202,10 @@ kbd { font: inherit; }
   background: var(--panel); box-shadow: -3px 0 0 0 var(--ink), -6px 0 0 0 var(--line);
   position: relative; z-index: 4;
 }
-.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 4px 4px 0; background: var(--ink); }
+.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px 4px 0; background: var(--ink); }
 .tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 3px 0 2px; min-width: 0; color: var(--mist); background: var(--card); font-size: 10px; box-shadow: inset 0 2px 0 0 var(--line); }
 .tab .ti img { width: 16px; height: 16px; }
-.tab .tl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tab .tl { white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; font-size: 9px; }
 .tab.on { background: var(--panel); color: var(--butter); box-shadow: inset 0 3px 0 0 var(--peach); }
 .tab:hover:not(.on) { color: var(--cream); background: var(--card-hi); }
 .badge { position: absolute; top: 1px; right: 2px; min-width: 13px; height: 13px; padding: 0 3px; font-style: normal; font-size: 9px; line-height: 13px; text-align: center; background: var(--berry); color: var(--cream); box-shadow: 0 0 0 2px var(--ink); animation: badge 800ms steps(2) infinite; }
@@ -432,6 +433,47 @@ kbd { font: inherit; }
 .free-row .ft small { display: block; color: var(--mist); }
 .cd { color: var(--butter); font-weight: 700; }
 
+/* Skins. */
+.skin-hero { flex: 0 0 auto; display: flex; gap: 12px; align-items: center; padding: 10px; background: linear-gradient(180deg, #221a44, #141530); box-shadow: var(--edge), inset 0 2px 0 0 var(--line); }
+.skin-hero .sk-art { width: 80px; height: 80px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: var(--ink); box-shadow: 0 0 0 2px var(--dusk); }
+.skin-hero .sk-art img { width: 64px; height: 64px; }
+.skin-hero .sk-name { font-weight: 700; font-size: 17px; }
+.skin-hero .sk-buff { font-size: 12px; color: var(--lime); margin-top: 3px; }
+.skin-hero .sk-sub { font-size: 11px; color: var(--mist); margin-top: 4px; }
+.crates { display: flex; flex-direction: column; gap: 8px; }
+.crate { display: grid; grid-template-columns: 56px 1fr auto; gap: 2px 10px; align-items: center; padding: 8px; background: var(--card); box-shadow: var(--edge), inset 0 2px 0 0 var(--line); }
+.crate .cr-art { grid-row: 1 / span 3; width: 56px; height: 52px; display: flex; align-items: center; justify-content: center; background: var(--ink); }
+.crate .cr-art img { width: 48px; height: 40px; }
+.crate .cr-name { font-weight: 700; font-size: 14px; color: var(--cream); }
+.crate .cr-odds { font-size: 11px; line-height: 1.35; }
+.crate .cr-pity { font-size: 11px; color: var(--mist); }
+.crate .cr-btns { grid-column: 3; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 4px; }
+.crate .cr-btns .btn { margin: 0; height: 30px; padding: 0 10px; font-size: 13px; }
+.crate .cr-btns .peek { height: 20px; font-size: 11px; color: var(--mist); background: none; box-shadow: none; text-decoration: underline; padding: 0; }
+.crate.c-stardust { background: #2a2230; } .crate.c-nebula { background: #271f45; } .crate.c-horizon { background: #141a33; box-shadow: var(--edge), inset 0 0 0 2px #3a2f5a; }
+.wardrobe { display: flex; flex-direction: column; gap: 8px; }
+.wr-head { font-size: 12px; color: var(--mist); letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+.wr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 6px; }
+.skin { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; background: var(--card); box-shadow: 0 0 0 2px var(--ink); text-align: center; }
+.skin img { width: 40px; height: 40px; }
+.skin .sn { font-size: 10px; font-weight: 700; line-height: 1.1; }
+.skin .sc { font-size: 9px; color: var(--mist); }
+.skin.locked img { filter: brightness(0) invert(.2); }
+.skin.locked .sn { color: var(--slate) !important; }
+.skin.on { box-shadow: 0 0 0 2px var(--lime); }
+.skin.on::after { content: "ON"; position: absolute; top: 2px; right: 3px; font-size: 9px; color: var(--ink); background: var(--lime); padding: 0 2px; }
+.skin.ra1:not(.locked) { background: #1d2f55; } .skin.ra2:not(.locked) { background: #2e2152; } .skin.ra3:not(.locked) { background: #3a2c14; } .skin.ra4:not(.locked) { background: #3d1838; animation: mythicGlow 1.2s steps(4) infinite; }
+.crate-open { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.crate-open .stage { position: relative; width: 240px; height: 180px; display: flex; align-items: center; justify-content: center; }
+.crate-open .box img { width: 96px; height: 80px; }
+.crate-open .box.shake img { animation: wob 100ms steps(2) infinite; }
+.crate-open .won img { width: 128px; height: 128px; position: relative; z-index: 1; animation: popIn 300ms steps(5); }
+.crate-open .hatch { min-height: 0; gap: 4px; }
+.crate-list { display: flex; flex-direction: column; gap: 6px; }
+.crate-list .row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.crate-list .row img { width: 32px; height: 32px; }
+.crate-list .row .bn { flex: 1; color: var(--mist); font-size: 12px; }
+
 /* Trophies. */
 .trophies { display: flex; flex-direction: column; gap: 8px; }
 .tcat { display: flex; flex-direction: column; gap: 4px; }
@@ -546,7 +588,7 @@ kbd { font: inherit; }
 /* Compact heights (907×510 iframe and smaller). */
 @media (max-height: 560px) {
   .matter { font-size: 28px; }
-  .tab .tl { font-size: 10px; }
+  .tab .tl { font-size: 9px; }
   .gen { grid-template-columns: 34px 1fr auto; padding: 4px 5px 5px; }
   .gen .gi { width: 34px; height: 34px; }
   .gen .gi img { width: 28px; height: 28px; }
@@ -647,6 +689,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       <div class="purse">
         <button id="btn-tickets" class="coin" type="button" title="Capsule tickets"><span id="ticket-icon"></span><b id="ticket-count" class="num">0</b></button>
         <button id="btn-shards" class="coin" type="button" title="Relic shards"><span id="shard-icon"></span><b id="shard-count" class="num">0</b></button>
+        <button id="btn-keys" class="coin" type="button" title="Cosmic Keys"><span id="key-icon"></span><b id="key-count" class="num">0</b></button>
         <button id="btn-stardust" class="coin" type="button" title="Stardust"><span id="sd-icon"></span><b id="sd-count" class="num">0</b></button>
       </div>
     </div>
@@ -702,11 +745,12 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   <aside class="panel" id="panel">
     <nav class="tabs" role="tablist" id="tabs">
       <button type="button" class="tab on" data-tab="harvest" role="tab"><span class="ti" data-icon="gen0"></span><span class="tl">Harvest</span><i class="badge" hidden></i></button>
-      <button type="button" class="tab" data-tab="upgrades" role="tab"><span class="ti" data-icon="icon_catalyst"></span><span class="tl">Upgrades</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="upgrades" role="tab"><span class="ti" data-icon="icon_catalyst"></span><span class="tl">Upgrade</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="pets" role="tab"><span class="ti" data-icon="capsule3"></span><span class="tl">Pets</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="relics" role="tab"><span class="ti" data-icon="relic_Orb_2"></span><span class="tl">Relics</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="rewards" role="tab"><span class="ti" data-icon="icon_gift2"></span><span class="tl">Rewards</span><i class="badge" hidden></i></button>
-      <button type="button" class="tab" data-tab="trophies" role="tab"><span class="ti" data-icon="icon_trophy"></span><span class="tl">Trophies</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="skins" role="tab"><span class="ti" data-icon="crate_nebula"></span><span class="tl">Skins</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="trophies" role="tab"><span class="ti" data-icon="icon_trophy"></span><span class="tl">Trophy</span><i class="badge" hidden></i></button>
     </nav>
     <div class="panel-body" id="panel-body">
       <section id="tab-harvest" class="tab-body">
@@ -753,6 +797,14 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         <div id="inventory" class="relic-grid"></div>
       </section>
       <section id="tab-rewards" class="tab-body" hidden></section>
+      <section id="tab-skins" class="tab-body" hidden>
+        <div id="skin-hero" class="skin-hero"></div>
+        <div class="sec-head"><h2>Crates</h2><span class="sec-sub"><span id="keys-icon"></span> <b id="keys-count" class="num">0</b> keys</span></div>
+        <div id="crates" class="crates"></div>
+        <div class="sec-head"><h2>Wardrobe <span id="skin-count" class="num"></span></h2><span id="skin-bonus" class="sec-sub"></span></div>
+        <div id="wardrobe" class="wardrobe"></div>
+        <p class="small earn-help">Cosmic Keys come from comets, new sectors, new forms, every 5 levels, gold and spectral trophies, Collapse, quests and the login calendar. They are only ever earned by playing.</p>
+      </section>
       <section id="tab-trophies" class="tab-body" hidden>
         <div class="sec-head"><h2>Trophies <span id="ach-count" class="num"></span></h2><span id="ach-bonus" class="sec-sub"></span></div>
         <button id="claim-all" class="btn gold wide" type="button" hidden>Claim all</button>
@@ -901,6 +953,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     [10, 50, 200, 1000].forEach(function (n, i) { add('h_' + i, ['Capsule Curious', 'Capsule Fan', 'Capsule Addict', 'Capsule Legend'][i], 'Hatch ' + n + ' capsules', 'hatches', n, 'Pets'); });
     [1, 10, 50, 200].forEach(function (n, i) { add('r_' + i, ['Relic Hunter', 'Forge Regular', 'Forgemaster', 'Relic Tycoon'][i], 'Forge ' + n + ' relic' + (n > 1 ? 's' : ''), 'relicsMade', n, 'Relics'); });
     add('r_myth', 'Touched by Myth', 'Own a Mythic relic', 'mythicRelic', 1, 'Relics');
+    [1, 10, 50, 150].forEach(function (n, i) { add('cr_' + i, ['Unboxer', 'Crate Cracker', 'Key Master', 'Vault Raider'][i], 'Open ' + n + ' skin crate' + (n > 1 ? 's' : ''), 'crates', n, 'Skins'); });
+    [3, 8, 13, 18].forEach(function (n, i) { add('sk_' + i, ['New Look', 'Fashionista', 'Trendsetter', 'Every Shade of Void'][i], 'Own ' + n + ' skins', 'skins', n, 'Skins'); });
     add('r_push', 'Push It', 'Push a relic up 3 times in a row', 'bestPush', 3, 'Relics');
     for (let i = 1; i < FORMS.length; i++) add('f_' + i, FORMS[i].name, 'Evolve Singu into a ' + FORMS[i].name, 'form', i, 'Forms');
     [2, 3, 4, 5, 7, 10, 15].forEach(function (n, i) { add('s_' + i, 'Explorer ' + roman(i + 1), 'Reach sector ' + n, 'maxSector', n, 'Space'); });
@@ -1012,6 +1066,46 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     ['unicorn_void', 'Void Unicorn', 4, 'unicorn', '#3a3f7a', { mult: 1 }]
   ].map(function (p) { return { id: p[0], name: p[1], rarity: p[2], species: p[3], color: p[4], bonus: p[5] }; });
 
+  // ---------------------------------------------------------------------------
+  // Skins for the black hole, from crates opened with Cosmic Keys (earned only by playing).
+  // Each crate has its own skins and its own rarity table; odds and pity are always shown.
+  // A skin has colours for the halo, rim, swirl arms (outer → inner) and accretion disk,
+  // an optional particle effect, and a buff that applies while it is equipped.
+  // ---------------------------------------------------------------------------
+  const CRATES = [
+    { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
+      weights: [60, 28, 10, 2, 0], pity: { rarity: 3, within: 30 } },
+    { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
+      weights: [0, 55, 33, 10, 2], pity: { rarity: 4, within: 45 } },
+    { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
+      weights: [0, 0, 60, 32, 8], pity: { rarity: 4, within: 20 } }
+  ];
+  const SKINS = [
+    // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
+    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'] }, {}],
+    // Stardust Crate
+    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'] }, { pulse: 0.05 }],
+    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'] }, { gen: 0.05 }],
+    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'] }, { combo: 0.05 }],
+    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow' }, { gen: 0.12 }],
+    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame' }, { pulse: 0.12 }],
+    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts' }, { global: 0.12 }],
+    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle' }, { global: 0.2, combo: 0.1 }],
+    // Nebula Crate
+    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles' }, { combo: 0.15 }],
+    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'] }, { comet: 0.15 }],
+    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame' }, { pulse: 0.25, crystal: 0.2 }],
+    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles' }, { gen: 0.25, offline: 0.1 }],
+    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow' }, { global: 0.35 }],
+    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars' }, { global: 0.6, luck: 0.02 }],
+    // Event Horizon Crate
+    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void' }, { gen: 0.35 }],
+    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame' }, { pulse: 0.35, combo: 0.1 }],
+    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle' }, { global: 0.45, shards: 0.15 }],
+    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch' }, { global: 0.45, luck: 0.03 }],
+    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow' }, { global: 1, combo: 0.25 }]
+  ].map(function (x) { return { id: x[0], name: x[1], crate: x[2], rarity: x[3], look: x[4], buff: x[5] }; });
+
   // Old pet ids from version 2 saves.
   const PET_MIGRATE = { mouse: 'mouse_mote', pup: 'pup_pebble', bun: 'bun_dusty', snail: 'snail_glow', cat: 'cat_comet', penguin: 'penguin_ice', frog: 'frog_lucky', owl: 'owl_orbit', jelly: 'jelly_nebula', fox: 'fox_quasar', crab: 'crab_shard', dragon: 'dragon_sun', whale: 'whale_cosmo' };
 
@@ -1024,7 +1118,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
 
   const API = {
     roman: roman, GENERATORS: GENERATORS, GEN_GROWTH: GEN_GROWTH, GEN_MILESTONES: GEN_MILESTONES,
-    FORMS: FORMS, FORM_MULT: FORM_MULT, UPGRADES: buildUpgrades(), ACHIEVEMENTS: buildAchievements(),
+    FORMS: FORMS, FORM_MULT: FORM_MULT, CRATES: CRATES, SKINS: SKINS, UPGRADES: buildUpgrades(), ACHIEVEMENTS: buildAchievements(),
     RELICS: RELICS, PETS: PETS, PET_MIGRATE: PET_MIGRATE, BONUS_TEXT: BONUS_TEXT
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -1135,6 +1229,10 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     },
 
     // Relic shards (Relic Forge currency). Earned only by playing.
+    // Cosmic Keys open skin crates. Earned only by playing.
+    keys: { start: 3, comet: 1, sector: 1, form: 2, collapse: 3, levelEvery: 5, trophyGold: 1, questBonus: 2, login7: 5 },
+    skinOwnBonus: 0.01,       // +1% Matter for every skin you own
+    skinRefund: [2, 4, 8, 16, 40],   // relic shards for a duplicate skin, by rarity
     shards: { start: 10, comet: 1, sector: 3, reelBig: 2, jackpot: 10, collapse: 5, ach: 1, questBonus: 5, login7: 15 },
     achStep: 0.015,           // +1.5% Matter per unlocked achievement
 
@@ -1169,7 +1267,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         { tickets: 20, capsule: [1] },
         { tickets: 40, mins: 20 },
         { tickets: 50, surge: 60 },
-        { tickets: 60, shards: 15, capsule: [2] }
+        { tickets: 60, shards: 15, keys: 5, capsule: [2] }
       ],
       loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
       questsPerDay: 3,
@@ -1185,7 +1283,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
         { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
       ],
-      questBonus: { tickets: 25, shards: 5, capsule: [1] },
+      questBonus: { tickets: 25, shards: 5, keys: 2, capsule: [1] },
       playChests: [
         { at: 120,  reward: { tickets: 5 } },
         { at: 300,  reward: { tickets: 8 } },
@@ -1330,11 +1428,12 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       equipped: [],            // relic uids
       relicSeq: 0,
       forge: null,             // relic waiting for Push or Keep
+      skins: { own: { classic: 1 }, on: 'classic', keys: 3, pity: {} },
       login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
       daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
       freeCapAt: 0,            // when the next free capsule is ready (ms)
       discoveries: {},
-      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0 },
+      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0, crates: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
       name: 'Singu',           // the player's name for their black hole
       named: false,
@@ -1385,6 +1484,11 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     s.relics.forEach(function (r) { if (r.uid >= s.relicSeq) s.relicSeq = r.uid + 1; });
     if (Array.isArray(raw.equipped)) s.equipped = raw.equipped.filter(function (u) { return s.relics.some(function (r) { return r.uid === u; }); }).slice(0, 6);
     s.forge = cleanRelic(raw.forge);
+    const sk = raw.skins && typeof raw.skins === 'object' ? raw.skins : {};
+    s.skins = { own: { classic: 1 }, on: 'classic', keys: raw.skins ? int(sk.keys, 0, 1e6) : CONFIG.keys.start, pity: {} };
+    if (sk.own && typeof sk.own === 'object') Object.keys(sk.own).forEach(function (id) { if (SKIN[id]) s.skins.own[id] = int(sk.own[id], 1, 1e6); });
+    if (typeof sk.on === 'string' && s.skins.own[sk.on]) s.skins.on = sk.on;
+    if (sk.pity && typeof sk.pity === 'object') CT.CRATES.forEach(function (c) { s.skins.pity[c.id] = int(sk.pity[c.id], 0, c.pity.within); });
     s.stardust = Math.floor(nonNeg(raw.stardust));
     s.collapses = Math.floor(nonNeg(raw.collapses));
     s.tickets = Math.floor(Math.min(nonNeg(raw.tickets), 1e7));
@@ -1647,6 +1751,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       case 'form': return state.form;
       case 'upgrades': return Object.keys(state.bought).length;
       case 'pets': return Object.keys(state.critters).length;
+      case 'skins': return Object.keys(state.skins.own).filter(function (id) { return id !== 'classic'; }).length;
       case 'mythicRelic': return state.relics.some(function (r) { return r.r === 4; }) ? 1 : 0;
       default:
         if (stat.indexOf('gen:') === 0) return state.gens[stat.slice(4)] || 0;
@@ -1745,10 +1850,11 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   // Applies a reward. Free capsules hatch immediately (they count toward pity like any hatch).
   function grantReward(state, stats, world, reward, rng) {
     rng = rng || Math.random;
-    const out = { tickets: 0, shards: 0, matter: 0, surge: 0, hatches: [] };
+    const out = { tickets: 0, shards: 0, keys: 0, matter: 0, surge: 0, hatches: [] };
     if (!reward) return out;
     if (reward.tickets) { state.tickets += reward.tickets; out.tickets = reward.tickets; }
     if (reward.shards) { state.shards += reward.shards; out.shards = reward.shards; }
+    if (reward.keys) { state.skins.keys += reward.keys; out.keys = reward.keys; }
     if (reward.mins) out.matter = earn(state, stats.refIncome * 60 * reward.mins);
     if (reward.surge && world) { world.surge = Math.max(0, world.surge) + reward.surge; out.surge = reward.surge; }
     (reward.capsule || []).forEach(function (min) { out.hatches.push(pullOnce(state, rng, min)); });
@@ -1869,7 +1975,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   function claimAchievement(state, id) {
     if (state.ach[id] !== 1) return null;
     state.ach[id] = 2;
-    return { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
+    const r = { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
+    if (ACH[id] && ACH[id].tier >= 2) r.keys = CONFIG.keys.trophyGold;
+    return r;
   }
 
   // Relic Forge ----------------------------------------------------------------------
@@ -1977,6 +2085,62 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     if (ev) ev.push({ t: 'shards', n: g, why: why });
   }
 
+  // Skin crates ------------------------------------------------------------------
+  const SKIN = {}, CRATE = {};
+  CT.SKINS.forEach(function (k) { SKIN[k.id] = k; });
+  CT.CRATES.forEach(function (c) { CRATE[c.id] = c; });
+  function giveKeys(state, n, why, ev) {
+    if (!(n > 0)) return;
+    state.skins.keys += n;
+    if (ev) ev.push({ t: 'keys', n: n, why: why });
+  }
+  // Exact odds of each rarity for the next opening of this crate, pity included.
+  function crateOdds(state, id) {
+    const c = CRATE[id];
+    const has = function (r) { return CT.SKINS.some(function (k) { return k.crate === id && k.rarity === r; }); };
+    let w = c.weights.map(function (x, r) { return has(r) ? x : 0; });
+    if ((state.skins.pity[id] || 0) + 1 >= c.pity.within) w = w.map(function (x, r) { return r >= c.pity.rarity ? x : 0; });
+    const t = w.reduce(function (a, b) { return a + b; }, 0);
+    return w.map(function (x) { return x / t; });
+  }
+  function openCrate(state, id, rng) {
+    const c = CRATE[id];
+    if (!c || state.skins.keys < c.cost) return null;
+    state.skins.keys -= c.cost;
+    const odds = crateOdds(state, id);
+    let roll = rng(), rarity = 0;
+    for (let r = 0; r < odds.length; r++) { if (roll < odds[r]) { rarity = r; break; } roll -= odds[r]; rarity = r; }
+    while (!odds[rarity]) rarity--;
+    const pool = CT.SKINS.filter(function (k) { return k.crate === id && k.rarity === rarity; });
+    const skin = pool[Math.floor(rng() * pool.length)];
+    state.skins.pity[id] = rarity >= c.pity.rarity ? 0 : (state.skins.pity[id] || 0) + 1;
+    const isNew = !state.skins.own[skin.id];
+    let refund = 0;
+    if (isNew) state.skins.own[skin.id] = 1;
+    else { state.skins.own[skin.id]++; refund = CONFIG.skinRefund[rarity]; state.shards += refund; }
+    state.stats.crates = (state.stats.crates || 0) + 1;
+    return { skin: skin, rarity: rarity, isNew: isNew, refund: refund };
+  }
+  function equipSkin(state, id) {
+    if (!state.skins.own[id] || !SKIN[id]) return false;
+    state.skins.on = id;
+    return true;
+  }
+  function skinBonus(state) {
+    const b = {};
+    const on = SKIN[state.skins.on];
+    if (on) Object.keys(on.buff).forEach(function (k) { b[k] = on.buff[k]; });
+    const owned = Object.keys(state.skins.own).filter(function (id) { return id !== 'classic' && SKIN[id]; }).length;
+    b.global = (b.global || 0) + CONFIG.skinOwnBonus * owned;
+    return b;
+  }
+  const BUFF_NAMES = { global: 'All Matter', pulse: 'Pulse value', gen: 'Harvesters', combo: 'Max combo', luck: 'Lucky chance', comet: 'Comet rate', crystal: 'Crystal value', offline: 'Away income', shards: 'Shard find', tickets: 'Ticket drops' };
+  function skinText(skin) {
+    const keys = Object.keys(skin.buff);
+    if (!keys.length) return 'No bonus';
+    return keys.map(function (k) { return BUFF_NAMES[k] + ' +' + Math.round(skin.buff[k] * 100) + '%'; }).join(' · ');
+  }
+
   function derive(state, mut) {
     mut = mut || {};
     const L = state.levels;
@@ -1988,7 +2152,10 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const critterMult = (1 + cb.matter) * cb.mult;
     const focusMult = Math.pow(1.32, L.focus);
     const uf = upgradeEffects(state);
-    const rb = relicBonus(state);
+    const rb0 = relicBonus(state);
+    const sb = skinBonus(state);
+    const rb = {};
+    Object.keys(rb0).forEach(function (k) { rb[k] = rb0[k] + (sb[k] || 0); });
     const petCount = Object.keys(state.critters).length;
     const achMult = 1 + CONFIG.achStep * achievementCount(state) * (1 + uf.achSyn);
     const formMult = Math.pow(CT.FORM_MULT, state.form);
@@ -2019,7 +2186,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       singuMult: singuMult,
       critterMult: critterMult,
       critters: cb,
-      relics: rb,
+      relics: rb0,
+      skin: sb,
       upgrades: uf,
       globalMult: globalMult,
       achMult: achMult,
@@ -2097,6 +2265,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     state.bought = {};
     if (r.memory) state.gens.sweeper = 10;
     state.shards += CONFIG.shards.collapse * gain;
+    state.skins.keys += CONFIG.keys.collapse;
     state.stats.runTime = 0;
     return gain;
   }
@@ -2127,17 +2296,19 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       mark(state, 'sector' + state.sector);
       giveTickets(state, CONFIG.tickets.sector, 'sector', null);
       state.shards += CONFIG.shards.sector;
+      giveKeys(state, CONFIG.keys.sector, 'sector', null);
       if (ev) ev.push({ t: 'sector', index: state.sector });
     }
     const lvl = singuLevelFor(state.lifetime);
     while (state.singuLevel < lvl) {
       state.singuLevel++;
+      if (state.singuLevel % CONFIG.keys.levelEvery === 0) giveKeys(state, 1, 'level', ev);
       giveTickets(state, CONFIG.tickets.level, 'level', null);
       if (ev) ev.push({ t: 'level', level: state.singuLevel });
     }
     if ((state.gens.drone || 0) >= 25) discover(state, 'drones25', ev);
     const form = formFor(state.lifetime);
-    while (state.form < form) { state.form++; mark(state, 'form' + state.form); if (ev) ev.push({ t: 'form', form: state.form }); }
+    while (state.form < form) { state.form++; mark(state, 'form' + state.form); giveKeys(state, CONFIG.keys.form, 'form', ev); if (ev) ev.push({ t: 'form', form: state.form }); }
     checkAchievements(state, ev);
     if (state.collapses > 0) discover(state, 'collapse', ev);
   }
@@ -2530,6 +2701,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
           discover(state, 'comet', ev);
           giveTickets(state, CONFIG.tickets.comet + stats.bonusTickets, 'comet', ev);
           earnShards(state, stats, CONFIG.shards.comet, ev, 'comet');
+          giveKeys(state, CONFIG.keys.comet, 'comet', ev);
           if (ev) ev.push({ t: 'surge', dur: w.surge });
         }
       } else {
@@ -2578,6 +2750,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     CT: CT, GEN: GEN, UPGI: UPGI, ACH: ACH, genCost: genCost, genQuote: genQuote, buyGen: buyGen, genVisible: genVisible, genMilestones: genMilestones, nextGenMilestone: nextGenMilestone,
     upgradeUnlocked: upgradeUnlocked, availableUpgrades: availableUpgrades, buyUpgrade: buyUpgrade, upgradeEffects: upgradeEffects,
     formFor: formFor, achievementCount: achievementCount, checkAchievements: checkAchievements, claimAchievement: claimAchievement,
+    SKIN: SKIN, CRATE: CRATE, crateOdds: crateOdds, openCrate: openCrate, equipSkin: equipSkin, skinBonus: skinBonus, skinText: skinText,
     relicSlots: relicSlots, relicBonus: relicBonus, relicOdds: relicOdds, forgeStart: forgeStart, forgePush: forgePush, forgeKeep: forgeKeep,
     equipRelic: equipRelic, unequipRelic: unequipRelic, salvageRelic: salvageRelic, fuseRelics: fuseRelics, relicText: relicText, earnShards: earnShards,
     upgradeCost: upgradeCost, bulkQuote: bulkQuote, buy: buy, derive: derive, chainMult: chainMult, earn: earn,
@@ -3279,9 +3452,58 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     shardc: function (P) { P.tri(8, 1, 13, 7, 8, 15, '#b17cff'); P.tri(8, 1, 3, 7, 8, 15, '#d6b8ff'); P.line(8, 2, 8, 14, '#ffffff'); },
     gift2: function (P) { P.rect(2, 6, 12, 9, '#ef4f6b'); P.rect(1, 4, 14, 3, '#ff6b8a'); P.rect(7, 4, 2, 11, '#ffd36b'); P.tri(4, 1, 8, 4, 4, 4, '#ffd36b'); P.tri(12, 1, 8, 4, 12, 4, '#ffd36b'); },
     lock: function (P) { P.ell(8, 5, 3.5, 3.5, '#9aa3b2'); P.ell(8, 5, 2, 2, null); P.rect(3, 7, 10, 7, '#ffcd4d'); P.rect(3, 7, 10, 1, '#fff0b0'); P.rect(7, 9, 2, 3, '#7a5a20'); },
+    key: function (P) { P.ell(5, 6, 4, 4, '#ffd36b'); P.ell(5, 6, 1.6, 1.6, '#9a6a20'); P.rect(8, 5, 7, 2, '#ffd36b'); P.rect(12, 7, 2, 3, '#ffd36b'); P.rect(9, 7, 1, 2, '#ffd36b'); P.set(3, 4, '#fff6c8'); },
     leader: function (P) { P.rect(2, 8, 4, 7, '#c9d2e3'); P.rect(6, 4, 4, 11, '#ffcd4d'); P.rect(10, 10, 4, 5, '#e8a06b'); P.set(8, 2, '#ffffff'); }
   };
   function miscCanvas(k) { const P = new Painter(16, 16); MISC_ICON[k](P); P.outline(); return P.canvas(); }
+  // Skin preview (32×32): halo, back of the disk, black core with swirl arms, front of the disk, rim.
+  let SKINS = {};
+  function setSkins(list) { SKINS = {}; list.forEach(function (k) { SKINS[k.id] = k; }); }
+  function skinCanvas(id) {
+    const L = SKINS[id].look;
+    const P = new Painter(32, 32);
+    const cx = 15.5, cy = 15.5, R = 8;
+    P.ell(cx, cy, R + 4, R + 4, function (nx, ny, x, y) { return ((x + y) % 2 === 0) ? mix(L.halo, '#0b0b16', 0.35) : null; });
+    P.ell(cx, cy, R + 2.5, R + 2.5, mix(L.halo, '#0b0b16', 0.15));
+    const disk = function (front) {
+      for (let a = 0; a < Math.PI * 2; a += 0.02) {
+        const sn = Math.sin(a);
+        if (front ? sn < 0 : sn >= 0) continue;
+        for (let k = 0; k < 3; k++) {
+          const rx = R + 3 + k * 1.6, ry = (R + 3 + k * 1.6) * 0.32;
+          P.set(cx + Math.cos(a) * rx, cy + sn * ry, L.disk[(k + Math.floor((a + 0.3) * 2)) % 4]);
+        }
+      }
+    };
+    disk(false);
+    P.ell(cx, cy, R, R, '#07070f');
+    for (let arm = 0; arm < 3; arm++) for (let rr = R * 0.95; rr > R * 0.2; rr -= 0.35) {
+      const f = rr / R, a = arm * 2.094 + f * 3.2;
+      P.set(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, L.arms[f > 0.7 ? 0 : f > 0.45 ? 1 : 2]);
+    }
+    for (let a = 0; a < Math.PI * 2; a += 0.05) P.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, L.rim);
+    disk(true);
+    P.set(cx - R * 0.55, cy - R * 0.6, '#ffffff');
+    return P.canvas();
+  }
+  // Crates (24×20): a chest in the crate's colour with a glowing keyhole.
+  let CRATES = {};
+  function setCrates(list) { CRATES = {}; list.forEach(function (c) { CRATES[c.id] = c; }); }
+  function crateCanvas(id) {
+    const c = CRATES[id], T = tones(c.color);
+    const P = new Painter(24, 20);
+    P.rect(2, 8, 20, 11, T.base); P.rect(2, 8, 20, 2, T.light); P.rect(2, 17, 20, 2, T.dark);
+    P.ell(12, 8, 10, 6, function (nx, ny) { return ny < 0 ? (ny < -0.6 ? T.light : T.base) : null; });
+    P.rect(2, 8, 20, 1, T.dark);
+    const band = id === 'horizon' ? '#b48cff' : id === 'nebula' ? '#ffd36b' : '#e8d8b0';
+    P.rect(5, 3, 2, 16, band); P.rect(17, 3, 2, 16, band);
+    P.rect(10, 9, 4, 5, '#ffd36b'); P.rect(11, 10, 2, 2, '#1a1c2c'); P.set(11, 12, '#1a1c2c');
+    if (id === 'horizon') { P.set(4, 12, '#73eff7'); P.set(20, 14, '#ff8fd8'); P.set(14, 16, '#ffffff'); }
+    if (id === 'nebula') { P.set(4, 15, '#ff8fd8'); P.set(20, 11, '#73eff7'); }
+    P.outline();
+    return P.canvas();
+  }
+
   // Trophy tiers: bronze, silver, gold, spectral.
   const TROPHY_HEX = ['#d0874a', '#c9d4e6', '#ffcd4d', '#b48cff'];
   function trophyCanvas(tier) {
@@ -3331,6 +3553,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     else if ((m = /^gen(\d+)$/.exec(name))) c = genCanvas(Number(m[1]));
     else if ((m = /^relic_(\w+)_(\d)$/.exec(name))) c = relicCanvas(m[1], Number(m[2]));
     else if ((m = /^trophy(\d)$/.exec(name))) c = trophyCanvas(Number(m[1]));
+    else if (name.indexOf('skin_') === 0) c = skinCanvas(name.slice(5));
+    else if (name.indexOf('crate_') === 0) c = crateCanvas(name.slice(6));
     else if ((m = /^icon_(\w+)$/.exec(name))) c = miscCanvas(m[1]);
     else {
       const rows = ART[name];
@@ -3362,7 +3586,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     return '<img class="px ' + (cls || '') + '" src="' + url(name, 1) + '" width="' + Math.round(s.width * k) + '" height="' + Math.round(s.height * k) + '" alt="">';
   }
 
-  root.PSSprites = { PAL: PAL, ART: ART, get: get, url: url, img: img, setPets: setPets, tones: tones, mix: mix, RARITY_HEX: RARITY_HEX, RELIC_HEX: RELIC_HEX, GEN_COUNT: GEN_ICON.length };
+  root.PSSprites = { PAL: PAL, ART: ART, get: get, url: url, img: img, setPets: setPets, setSkins: setSkins, setCrates: setCrates, tones: tones, mix: mix, RARITY_HEX: RARITY_HEX, RELIC_HEX: RELIC_HEX, GEN_COUNT: GEN_ICON.length };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 </script>
 <script>
@@ -3962,6 +4186,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       case 'tickets':
         addFloat('+' + e.n + ' TICKET' + (e.n > 1 ? 'S' : ''), CX * PXS + 70, (CY - r * 1.5) * PXS, P['4'], 13, 1.4, P['2']);
         break;
+      case 'keys':
+        addFloat('+' + e.n + ' KEY' + (e.n > 1 ? 'S' : ''), CX * PXS, (CY - r * 1.9) * PXS, '#ffd36b', 14, 1.5, P['1']);
+        break;
       case 'shards':
         addFloat('+' + fmt(e.n) + ' SHARD' + (e.n >= 2 ? 'S' : ''), CX * PXS - 70, (CY - r * 1.2) * PXS, P.v, 13, 1.4, P['1']);
         break;
@@ -4233,7 +4460,9 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   function drawDisk(t, r, back, st, surge) {
     const stage = PS.coreStage(st);
     const rings = 2 + Math.min(3, stage);
-    const bands = surge ? ['4', 'c', '4', '3'] : ['4', '3', '2', '3'];
+    const look = skinLook();
+    let bands = surge ? ['4', 'c', '4', '3'] : look.disk;
+    if (!surge && look.fx === 'rainbow') bands = [0, 1, 2, 3].map(function (k) { return 'hsl(' + Math.round((t * 90 + k * 70) % 360) + ',90%,70%)'; });
     for (let i = 0; i < rings; i++) {
       const rx = r * (1.55 + i * 0.32), ry = Math.max(2, rx * 0.3);
       const steps = Math.ceil(Math.PI * 2 * rx * 1.2);
@@ -4245,7 +4474,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         if (back ? sn >= 0 : sn < 0) continue;
         if (i > 0 && (s + i) % (i + 1) === 0) continue;
         const band = Math.floor(((a + spin) / (Math.PI * 2)) * 10 + i) % bands.length;
-        b.fillStyle = P[outer ? (s % 2 ? 'v' : 'w') : bands[(band + 4) % bands.length]];
+        const key = outer ? (s % 2 ? look.halo : look.rim) : bands[(band + 4) % bands.length];
+        b.fillStyle = P[key] || key;
         b.fillRect(Math.round(CX + Math.cos(a) * rx), Math.round(CY + sn * ry), 1, 1);
       }
     }
@@ -4281,12 +4511,13 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const R = Math.max(5, Math.round(r0 * (1 + fx.gulp * 0.1)));
     const rx = Math.round(R * (1 + sq * 0.12)), ry = Math.round(R * (1 - sq * 0.12));
     const cx = CX, cy = CY;
-    const haloKey = surge ? '3' : mood.kind === 'happy' ? '1' : '9';
+    const look = skinLook();
+    const haloKey = surge ? P['3'] : look.halo;
     for (let dy = -ry - 4; dy <= ry + 4; dy++) for (let dx = -rx - 4; dx <= rx + 4; dx++) {
       const d = Math.hypot(dx / rx, dy / ry) * R;
-      if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = P[haloKey]; b.fillRect(cx + dx, cy + dy, 1, 1); }
+      if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = haloKey; b.fillRect(cx + dx, cy + dy, 1, 1); }
     }
-    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'happy' ? 'p' : mood.kind === 'dizzy' ? 'e' : 'b';
+    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'dizzy' ? 'e' : look.fx === 'rainbow' ? 'hsl(' + Math.round(t * 120 % 360) + ',90%,75%)' : look.rim;
     for (let dy = -ry; dy <= ry; dy++) {
       const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
       b.fillStyle = P.k; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
@@ -4298,7 +4529,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         const a = arm * 2.094 + spin + fr * 3.2;
         const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
         if (!dith(x, y, fr * 0.9)) continue;
-        b.fillStyle = P[fr > 0.7 ? 'w' : fr > 0.45 ? '1' : 'f'];
+        b.fillStyle = look.arms[fr > 0.7 ? 0 : fr > 0.45 ? 1 : 2];
         b.fillRect(x, y, 1, 1);
       }
     }
@@ -4306,6 +4537,43 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     ellipse(cx, cy, rx, ry, rimKey, 0);
     b.fillStyle = P.c;
     for (let i = 0; i < 7; i++) { const a = t * 1.6 + i * 0.08; b.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1); }
+    skinFx(look, t, dt, cx, cy, rx, ry);
+  }
+
+  // The equipped skin's look ({ halo, rim, arms, disk, fx }).
+  const CLASSIC = { halo: P['9'], rim: P.b, arms: [P.w, P['1'], P.f], disk: ['4', '3', '2', '3'] };
+  function skinLook() { const k = G.skin && G.skin(); return k ? k.look : CLASSIC; }
+  // Particle effects for skins.
+  function skinFx(look, t, dt, cx, cy, rx, ry) {
+    if (!look.fx || G.reduced()) return;
+    const rnd = Math.random;
+    const a = rnd() * Math.PI * 2;
+    const ex = cx + Math.cos(a) * rx * (1 + rnd() * 0.6), ey = cy + Math.sin(a) * ry * (1 + rnd() * 0.6);
+    switch (look.fx) {
+      case 'snow': if (rnd() < 0.5) addParticle(cx + (rnd() - 0.5) * rx * 4, cy - ry * 2.2, (rnd() - 0.5) * 6, 10 + rnd() * 10, 1.6, rnd() < 0.5 ? '#ffffff' : '#c9e4ff'); break;
+      case 'flame': if (rnd() < 0.8) addParticle(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry * 0.9, 0, -18 - rnd() * 22, 0.5 + rnd() * 0.3, rnd() < 0.4 ? '#fff3b0' : rnd() < 0.7 ? '#ff9a3d' : '#d04040'); break;
+      case 'hearts': if (rnd() < 0.15) { addParticle(ex, ey, 0, -10, 1.2, '#ff8fd8'); addParticle(ex + 1, ey, 0, -10, 1.2, '#ff8fd8'); addParticle(ex + 0.5, ey + 1, 0, -10, 1.2, '#ff6fd0'); } break;
+      case 'sparkle': if (rnd() < 0.35) addParticle(ex, ey, 0, 0, 0.4 + rnd() * 0.4, rnd() < 0.5 ? '#ffffff' : look.rim); break;
+      case 'bubbles': if (rnd() < 0.25) addParticle(cx + (rnd() - 0.5) * rx * 3, cy + ry * 1.6, (rnd() - 0.5) * 4, -14 - rnd() * 8, 1.4, rnd() < 0.5 ? '#c9f7ff' : look.rim); break;
+      case 'void': if (rnd() < 0.6) { const d = 2.2 + rnd(); addParticle(cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, -Math.cos(a) * rx * 2.2, -Math.sin(a) * ry * 2.2, 0.6, rnd() < 0.5 ? '#a884f3' : '#5d275d'); } break;
+      case 'stars': {
+        for (let i = 0; i < 4; i++) {
+          const sa = t * 0.9 + i * Math.PI / 2, sx2 = Math.round(cx + Math.cos(sa) * rx * 2.1), sy2 = Math.round(cy + Math.sin(sa) * ry * 0.9);
+          b.fillStyle = i % 2 ? '#ffd36b' : '#ffffff';
+          b.fillRect(sx2, sy2, 1, 1); b.fillRect(sx2 - 1, sy2, 3, 1); b.fillRect(sx2, sy2 - 1, 1, 3);
+        }
+        if (rnd() < 0.3) addParticle(ex, ey, 0, 0, 0.5, '#ffd36b');
+        break;
+      }
+      case 'rainbow': if (rnd() < 0.5) addParticle(ex, ey, (ex - cx) * 0.8, (ey - cy) * 0.8, 0.6, 'hsl(' + Math.round(rnd() * 360) + ',90%,70%)'); break;
+      case 'glitch':
+        if (Math.floor(t * 8) % 7 === 0) {
+          const off = Math.round((rnd() - 0.5) * 6);
+          ellipse(cx + off, cy, rx, ry, look.arms[0], 2);
+          ellipse(cx - off, cy + 1, rx, ry, look.rim, 3);
+        }
+        break;
+    }
   }
 
   // Harvesters orbit Singu and send little streams of matter into it.
@@ -4410,6 +4678,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   const CT = PS.CT;
   const fmt = PS.fmt;
   SPR.setPets(CT.PETS);
+  SPR.setSkins(CT.SKINS);
+  SPR.setCrates(CT.CRATES);
 
   const SAVE_KEY = 'pocket-singularity:save';
   const BAK_KEY = 'pocket-singularity:backup';
@@ -4493,6 +4763,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     machine: $('machine'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'), odds: $('odds'), collection: $('collection'), colCount: $('col-count'), petBonus: $('pet-bonus'),
     forge: $('forge'), equipped: $('equipped'), slotCount: $('slot-count'), relicSum: $('relic-sum'), invCount: $('inv-count'), fuseRow: $('fuse-row'), inventory: $('inventory'),
     rewards: $('tab-rewards'),
+    skinHero: $('skin-hero'), keysCount: $('keys-count'), crates: $('crates'), wardrobe: $('wardrobe'), skinCount: $('skin-count'), skinBonus: $('skin-bonus'),
+    keyBtn: $('btn-keys'), keyCount: $('key-count'),
     achCount: $('ach-count'), achBonus: $('ach-bonus'), claimAll: $('claim-all'), trophies: $('trophies'),
     modal: $('modal'), modalTitle: $('modal-title'), modalBody: $('modal-body'), modalActions: $('modal-actions'), modalX: $('modal-x')
   };
@@ -4531,6 +4803,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   function staticArt() {
     $('ticket-icon').innerHTML = SPR.img('ticket', 1.5);
     $('shard-icon').innerHTML = SPR.img('icon_shardc', 1);
+    $('key-icon').innerHTML = SPR.img('icon_key', 1);
+    $('keys-icon').innerHTML = SPR.img('icon_key', 1);
     $('sd-icon').innerHTML = SPR.img('stardust', 1.5);
     $('leader-icon').innerHTML = SPR.img('icon_leader', 1.25);
     $('atlas-icon').innerHTML = SPR.img('star', 1.5);
@@ -4545,7 +4819,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   // Tabs
   // ---------------------------------------------------------------------------
   let tab = 'harvest';
-  const TAB_NAMES = ['harvest', 'upgrades', 'pets', 'relics', 'rewards', 'trophies'];
+  const TAB_NAMES = ['harvest', 'upgrades', 'pets', 'relics', 'rewards', 'skins', 'trophies'];
   function setTab(name) {
     tab = name;
     el.tabs.querySelectorAll('.tab').forEach(function (btn) { btn.classList.toggle('on', btn.dataset.tab === name); btn.setAttribute('aria-selected', btn.dataset.tab === name); });
@@ -5174,6 +5448,119 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   el.shards.addEventListener('click', function () { setTab('relics'); });
 
   // ---------------------------------------------------------------------------
+  // Skins tab: crates opened with Cosmic Keys, and the wardrobe
+  // ---------------------------------------------------------------------------
+  let skinKey = '';
+  let opening = false;
+  function oddsHTML(id) {
+    const o = PS.crateOdds(state, id);
+    return o.map(function (p, r) { return p > 0 ? '<b class="r' + r + '">' + RARITY_NAMES[r] + ' ' + (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%</b>' : ''; }).filter(Boolean).join(' · ');
+  }
+  function updateSkins() {
+    const key = JSON.stringify([state.skins, Math.floor(state.shards)]);
+    if (key === skinKey) return;
+    skinKey = key;
+    const on = PS.SKIN[state.skins.on];
+    el.skinHero.innerHTML = '<div class="sk-art">' + SPR.img('skin_' + on.id, 2) + '</div><div><div class="small">Equipped on ' + state.name + '</div>' +
+      '<div class="sk-name r' + on.rarity + '">' + on.name + '</div><div class="sk-buff">' + PS.skinText(on) + '</div>' +
+      '<div class="sk-sub">Every skin you own also adds +' + Math.round(C.skinOwnBonus * 100) + '% Matter</div></div>';
+    setText(el.keysCount, fmt(state.skins.keys));
+    el.crates.innerHTML = CT.CRATES.map(function (c) {
+      const pity = c.pity.within - (state.skins.pity[c.id] || 0);
+      return '<div class="crate c-' + c.id + '"><div class="cr-art">' + SPR.img('crate_' + c.id, 2) + '</div>' +
+        '<div class="cr-name">' + c.name + ' <span class="small">· ' + c.desc + '</span></div>' +
+        '<div class="cr-odds">' + oddsHTML(c.id) + '</div>' +
+        '<div class="cr-pity">' + RARITY_NAMES[c.pity.rarity] + '+ guaranteed within <b>' + pity + '</b></div>' +
+        '<div class="cr-btns"><button class="btn gold" type="button" data-crate="' + c.id + '"' + (state.skins.keys < c.cost ? ' disabled' : '') + '>Open ' + SPR.img('icon_key', 1) + ' ' + c.cost + '</button>' +
+        '<button class="peek" type="button" data-peek="' + c.id + '">See skins</button></div></div>';
+    }).join('');
+    const owned = Object.keys(state.skins.own).length;
+    setText(el.skinCount, owned + '/' + CT.SKINS.length);
+    setText(el.skinBonus, '+' + Math.round((stats.skin.global || 0) * 100) + '% Matter from skins');
+    const groups = [{ id: null, name: 'Starter' }].concat(CT.CRATES.map(function (c) { return { id: c.id, name: c.name }; }));
+    el.wardrobe.innerHTML = groups.map(function (g) {
+      const list = CT.SKINS.filter(function (k) { return k.crate === g.id; });
+      return '<div class="wr-head">' + g.name + '</div><div class="wr-grid">' + list.map(function (k) {
+        const own = state.skins.own[k.id];
+        return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
+          SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+  el.crates.addEventListener('click', function (e) {
+    const o = e.target.closest('[data-crate]');
+    if (o && !o.disabled) { openCrateFlow(o.dataset.crate); return; }
+    const pk = e.target.closest('[data-peek]');
+    if (pk) openCrateContents(pk.dataset.peek);
+  });
+  el.wardrobe.addEventListener('click', function (e) {
+    const n = e.target.closest('[data-skin]');
+    if (!n) return;
+    const k = PS.SKIN[n.dataset.skin];
+    Sound.unlock();
+    if (state.skins.own[k.id]) {
+      if (PS.equipSkin(state, k.id)) { refreshStats(); markDirty(); skinKey = ''; Sound.buy(); Scene.onEvent({ t: 'buy' }); toast('<b>' + k.name + '</b> equipped · ' + PS.skinText(k), 'green'); save(); }
+    } else {
+      toast('<b class="r' + k.rarity + '">' + RARITY_NAMES[k.rarity] + '</b> skin from the ' + (k.crate ? PS.CRATE[k.crate].name : 'start') + ' · ' + PS.skinText(k));
+    }
+  });
+  el.keyBtn.addEventListener('click', function () { setTab('skins'); });
+
+  function openCrateContents(id) {
+    const c = PS.CRATE[id];
+    const list = CT.SKINS.filter(function (k) { return k.crate === id; }).sort(function (a, b) { return a.rarity - b.rarity; });
+    const odds = PS.crateOdds(state, id);
+    const body = '<p>' + c.desc + '. Odds for the next opening: ' + oddsHTML(id) + '.</p><div class="crate-list">' + list.map(function (k) {
+      const own = state.skins.own[k.id];
+      const share = odds[k.rarity] / list.filter(function (x) { return x.rarity === k.rarity; }).length;
+      return '<div class="row">' + SPR.img('skin_' + k.id, 1) + '<span><b class="r' + k.rarity + '">' + k.name + '</b> ' + (own ? '✓' : '') + '<br><span class="bn">' + PS.skinText(k) + '</span></span><span class="bn" style="text-align:right">' + (share * 100).toFixed(share < 0.1 ? 1 : 0) + '%</span></div>';
+    }).join('') + '</div><p class="small">Duplicates give back relic shards (' + C.skinRefund.join(' / ') + ' by rarity).</p>';
+    openModal('crate-info', c.name, body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+  }
+
+  function openCrateFlow(id) {
+    if (opening) return;
+    Sound.unlock();
+    const res = PS.openCrate(state, id, Math.random);
+    if (!res) { Sound.deny(); return; }
+    opening = true;
+    PS.checkProgress(state, ev);
+    refreshStats(); markDirty(); skinKey = ''; save();
+    const k = res.skin;
+    const body = '<div class="crate-open"><div class="stage"><div class="rays"></div><div class="box">' + SPR.img('crate_' + id, 4) + '</div></div><div class="reveal-text"></div></div>';
+    openModal('crate', PS.CRATE[id].name, body, []);
+    const stage = el.modalBody.querySelector('.stage'), box = el.modalBody.querySelector('.box'), rays = el.modalBody.querySelector('.rays'), text = el.modalBody.querySelector('.reveal-text');
+    let done = false;
+    const timers = [];
+    function reveal() {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      box.remove();
+      rays.className = 'rays on r' + k.rarity;
+      stage.insertAdjacentHTML('beforeend', '<div class="won">' + SPR.img('skin_' + k.id, 4) + '</div>');
+      text.innerHTML = '<div class="hatch"><div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
+        (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div>';
+      el.modalTitle.textContent = res.isNew ? 'New skin!' : 'Skin found';
+      Sound.reveal(k.rarity);
+      if (k.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
+      const acts = [];
+      if (state.skins.on !== k.id) acts.push({ label: 'Equip', cls: 'gold', fn: function () { PS.equipSkin(state, k.id); refreshStats(); markDirty(); skinKey = ''; save(); closeModal(); toast('<b>' + k.name + '</b> equipped', 'green'); } });
+      if (state.skins.keys >= PS.CRATE[id].cost) acts.push({ label: 'Open another', cls: 'pink', fn: function () { closeModal(); openCrateFlow(id); } });
+      acts.push({ label: 'Nice!', cls: 'primary', fn: closeModal });
+      setActions(acts);
+      opening = false;
+    }
+    Sound.crank();
+    timers.push(setTimeout(function () { box.classList.add('shake'); Sound.wobble(); }, 200));
+    timers.push(setTimeout(function () { Sound.wobble(); }, 600));
+    timers.push(setTimeout(function () { Sound.forge(); }, 1000));
+    timers.push(setTimeout(reveal, k.rarity >= 3 ? 1500 : 1200));
+    setActions([{ label: 'Skip', fn: reveal }]);
+    hatchCleanup = reveal;
+  }
+
+  // ---------------------------------------------------------------------------
   // Rewards tab: daily login, free capsule, play gifts, quests
   // ---------------------------------------------------------------------------
   const RW = C.rewards;
@@ -5195,6 +5582,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const parts = [];
     if (r.tickets) parts.push(SPR.img('ticket', 1) + '<b>' + r.tickets + '</b>');
     if (r.shards) parts.push(SPR.img('icon_shardc', 0.75) + '<b>' + r.shards + '</b>');
+    if (r.keys) parts.push(SPR.img('icon_key', 0.75) + '<b>' + r.keys + '</b>');
     if (r.mins) parts.push(SPR.img('matter', 1.5) + '<b>' + r.mins + 'm</b>');
     if (r.surge) parts.push(SPR.img('comet', 1) + '<b>' + r.surge + 's</b>');
     (r.capsule || []).forEach(function (min) { parts.push(SPR.img('capsule' + min, 1) + '<b class="r' + min + '">' + (min ? RARITY_NAMES[min] + '+' : 'Free') + '</b>'); });
@@ -5289,6 +5677,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     const bits = [];
     if (out.tickets) bits.push('+' + out.tickets + ' tickets');
     if (out.shards) bits.push('+' + out.shards + ' shards');
+    if (out.keys) bits.push('+' + out.keys + ' key' + (out.keys > 1 ? 's' : ''));
     if (out.matter) bits.push('+' + fmt(out.matter) + ' Matter');
     if (out.surge) bits.push('Surge +' + out.surge + 's');
     if (kind === 'ach') Sound.achieve(); else Sound.reelWin(out.hatches.length > 0 || kind === 'login');
@@ -5353,7 +5742,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     CT.ACHIEVEMENTS.forEach(function (a) { (cats[a.cat] = cats[a.cat] || []).push(a); });
     let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for tickets and a shard.') + '</div>';
     Object.keys(cats).forEach(function (c) {
-      const list = cats[c];
+      const list = cats[c].slice().sort(function (x, y) { return x.tier - y.tier || x.n - y.n; });
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
       h += '<div class="tcat"><h3><span>' + c + '</span><span class="num">' + got + '/' + list.length + '</span></h3><div class="tgrid">' + list.map(function (a) {
         const s = state.ach[a.id] || 0;
@@ -5395,6 +5784,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     else if (tab === 'pets') updatePets();
     else if (tab === 'relics') updateRelics();
     else if (tab === 'rewards') updateRewards();
+    else if (tab === 'skins') updateSkins();
     else if (tab === 'trophies') updateTrophies();
     updateBadges();
   }
@@ -5424,6 +5814,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     let ach = 0;
     for (const id in state.ach) if (state.ach[id] === 1) ach++;
     setBadge('trophies', ach);
+    setBadge('skins', CT.CRATES.some(function (c) { return state.skins.keys >= c.cost; }) ? 1 : 0, '!');
     const n = PS.claimables(state, todayKey, now()) - ach;
     setBadge('rewards', n);
     if (lastClaimables >= 0 && n > lastClaimables && !modalOpen) { toast('<b>Reward ready!</b> Open the Rewards tab', 'pink'); Sound.ticket(); }
@@ -5447,6 +5838,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     el.combo.classList.toggle('full', world.combo >= 0.99);
     setText(el.ticketCount, fmt(state.tickets));
     setText(el.shardCount, fmt(Math.floor(state.shards)));
+    setText(el.keyCount, fmt(state.skins.keys));
     el.sdBtn.hidden = !state.stardust;
     setText(el.sdCount, fmt(state.stardust));
     setText(el.sectorNum, String(state.sector + 1));
@@ -5519,6 +5911,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
         case 'payout': if (e.total > 0) { if (!e.auto) Sound.payout(e.chain); flash(el.matter, 'bump'); } break;
         case 'tickets': Sound.ticket(); flash(el.tickets, 'flash'); break;
         case 'shards': flash(el.shards, 'flash'); break;
+        case 'keys': flash(el.keyBtn, 'flash'); Sound.ticket(); break;
         case 'level': Sound.level(); Platform.submitScore(state.singuLevel); break;
         case 'comet': Sound.comet(); break;
         case 'comboFull': Sound.lucky(); break;
@@ -5679,7 +6072,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
   }
   function closeModal() {
     if (!modalOpen) return;
-    if (modalOpen === 'hatch' && hatchCleanup) hatchCleanup();
+    if ((modalOpen === 'hatch' || modalOpen === 'crate') && hatchCleanup) { const f = hatchCleanup; hatchCleanup = null; f(); }
     const kind = modalOpen;
     modalOpen = null;
     el.modal.hidden = true;
@@ -5819,7 +6212,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
+      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-7 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
       '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
       '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
@@ -5856,7 +6249,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     ]);
   }
   function resetKeys() { $('powers-head').textContent = state.name + ' powers'; resetPanelKeys(); }
-  function resetPanelKeys() { collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
+  function resetPanelKeys() {
+    skinKey = ''; collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
   function playTimeText(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? h + 'h ' + m + 'm' : m + 'm ' + Math.floor(s % 60) + 's';
@@ -6035,6 +6429,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-tr, 
     Scene.init({
       canvas: el.cv, container: el.scene,
       name: function () { return state.name; },
+      skin: function () { return PS.SKIN[state.skins.on]; },
       state: function () { return state; }, stats: function () { return stats; }, world: function () { return world; }, reduced: function () { return reduced; }
     });
     staticArt();

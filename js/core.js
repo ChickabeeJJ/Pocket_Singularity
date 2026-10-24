@@ -101,6 +101,10 @@
     },
 
     // Relic shards (Relic Forge currency). Earned only by playing.
+    // Cosmic Keys open skin crates. Earned only by playing.
+    keys: { start: 3, comet: 1, sector: 1, form: 2, collapse: 3, levelEvery: 5, trophyGold: 1, questBonus: 2, login7: 5 },
+    skinOwnBonus: 0.01,       // +1% Matter for every skin you own
+    skinRefund: [2, 4, 8, 16, 40],   // relic shards for a duplicate skin, by rarity
     shards: { start: 10, comet: 1, sector: 3, reelBig: 2, jackpot: 10, collapse: 5, ach: 1, questBonus: 5, login7: 15 },
     achStep: 0.015,           // +1.5% Matter per unlocked achievement
 
@@ -135,7 +139,7 @@
         { tickets: 20, capsule: [1] },
         { tickets: 40, mins: 20 },
         { tickets: 50, surge: 60 },
-        { tickets: 60, shards: 15, capsule: [2] }
+        { tickets: 60, shards: 15, keys: 5, capsule: [2] }
       ],
       loginWeekBonus: 0.25, loginWeekCap: 4,   // each completed week adds +25% tickets, up to +100%
       questsPerDay: 3,
@@ -151,7 +155,7 @@
         { id: 'play',        stat: 'playTime',    n: 600, text: 'Play for 10 minutes',           reward: { tickets: 10, mins: 5 } },
         { id: 'overcharges', stat: 'overcharges', n: 2,   text: 'Overcharge {n} times',          reward: { tickets: 10 } }
       ],
-      questBonus: { tickets: 25, shards: 5, capsule: [1] },
+      questBonus: { tickets: 25, shards: 5, keys: 2, capsule: [1] },
       playChests: [
         { at: 120,  reward: { tickets: 5 } },
         { at: 300,  reward: { tickets: 8 } },
@@ -296,11 +300,12 @@
       equipped: [],            // relic uids
       relicSeq: 0,
       forge: null,             // relic waiting for Push or Keep
+      skins: { own: { classic: 1 }, on: 'classic', keys: 3, pity: {} },
       login: { day: 0, week: 0, last: '' },   // next calendar day to claim, weeks completed, last claim day
       daily: { key: '', quests: [], base: {}, chainToday: 0, bonus: false, play0: 0, chests: 0 },
       freeCapAt: 0,            // when the next free capsule is ready (ms)
       discoveries: {},
-      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0 },
+      stats: { pulses: 0, captures: 0, bestChain: 0, comets: 0, playTime: 0, runTime: 0, lucky: 0, spins: 0, jackpots: 0, overcharges: 0, buys: 0, comboMaxed: 0, relicsMade: 0, bestPush: 0, crates: 0 },
       milestones: {},          // seconds of play when key moments first happened (local playtest telemetry)
       name: 'Singu',           // the player's name for their black hole
       named: false,
@@ -351,6 +356,11 @@
     s.relics.forEach(function (r) { if (r.uid >= s.relicSeq) s.relicSeq = r.uid + 1; });
     if (Array.isArray(raw.equipped)) s.equipped = raw.equipped.filter(function (u) { return s.relics.some(function (r) { return r.uid === u; }); }).slice(0, 6);
     s.forge = cleanRelic(raw.forge);
+    const sk = raw.skins && typeof raw.skins === 'object' ? raw.skins : {};
+    s.skins = { own: { classic: 1 }, on: 'classic', keys: raw.skins ? int(sk.keys, 0, 1e6) : CONFIG.keys.start, pity: {} };
+    if (sk.own && typeof sk.own === 'object') Object.keys(sk.own).forEach(function (id) { if (SKIN[id]) s.skins.own[id] = int(sk.own[id], 1, 1e6); });
+    if (typeof sk.on === 'string' && s.skins.own[sk.on]) s.skins.on = sk.on;
+    if (sk.pity && typeof sk.pity === 'object') CT.CRATES.forEach(function (c) { s.skins.pity[c.id] = int(sk.pity[c.id], 0, c.pity.within); });
     s.stardust = Math.floor(nonNeg(raw.stardust));
     s.collapses = Math.floor(nonNeg(raw.collapses));
     s.tickets = Math.floor(Math.min(nonNeg(raw.tickets), 1e7));
@@ -613,6 +623,7 @@
       case 'form': return state.form;
       case 'upgrades': return Object.keys(state.bought).length;
       case 'pets': return Object.keys(state.critters).length;
+      case 'skins': return Object.keys(state.skins.own).filter(function (id) { return id !== 'classic'; }).length;
       case 'mythicRelic': return state.relics.some(function (r) { return r.r === 4; }) ? 1 : 0;
       default:
         if (stat.indexOf('gen:') === 0) return state.gens[stat.slice(4)] || 0;
@@ -711,10 +722,11 @@
   // Applies a reward. Free capsules hatch immediately (they count toward pity like any hatch).
   function grantReward(state, stats, world, reward, rng) {
     rng = rng || Math.random;
-    const out = { tickets: 0, shards: 0, matter: 0, surge: 0, hatches: [] };
+    const out = { tickets: 0, shards: 0, keys: 0, matter: 0, surge: 0, hatches: [] };
     if (!reward) return out;
     if (reward.tickets) { state.tickets += reward.tickets; out.tickets = reward.tickets; }
     if (reward.shards) { state.shards += reward.shards; out.shards = reward.shards; }
+    if (reward.keys) { state.skins.keys += reward.keys; out.keys = reward.keys; }
     if (reward.mins) out.matter = earn(state, stats.refIncome * 60 * reward.mins);
     if (reward.surge && world) { world.surge = Math.max(0, world.surge) + reward.surge; out.surge = reward.surge; }
     (reward.capsule || []).forEach(function (min) { out.hatches.push(pullOnce(state, rng, min)); });
@@ -835,7 +847,9 @@
   function claimAchievement(state, id) {
     if (state.ach[id] !== 1) return null;
     state.ach[id] = 2;
-    return { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
+    const r = { tickets: CONFIG.tickets.ach, shards: CONFIG.shards.ach };
+    if (ACH[id] && ACH[id].tier >= 2) r.keys = CONFIG.keys.trophyGold;
+    return r;
   }
 
   // Relic Forge ----------------------------------------------------------------------
@@ -943,6 +957,62 @@
     if (ev) ev.push({ t: 'shards', n: g, why: why });
   }
 
+  // Skin crates ------------------------------------------------------------------
+  const SKIN = {}, CRATE = {};
+  CT.SKINS.forEach(function (k) { SKIN[k.id] = k; });
+  CT.CRATES.forEach(function (c) { CRATE[c.id] = c; });
+  function giveKeys(state, n, why, ev) {
+    if (!(n > 0)) return;
+    state.skins.keys += n;
+    if (ev) ev.push({ t: 'keys', n: n, why: why });
+  }
+  // Exact odds of each rarity for the next opening of this crate, pity included.
+  function crateOdds(state, id) {
+    const c = CRATE[id];
+    const has = function (r) { return CT.SKINS.some(function (k) { return k.crate === id && k.rarity === r; }); };
+    let w = c.weights.map(function (x, r) { return has(r) ? x : 0; });
+    if ((state.skins.pity[id] || 0) + 1 >= c.pity.within) w = w.map(function (x, r) { return r >= c.pity.rarity ? x : 0; });
+    const t = w.reduce(function (a, b) { return a + b; }, 0);
+    return w.map(function (x) { return x / t; });
+  }
+  function openCrate(state, id, rng) {
+    const c = CRATE[id];
+    if (!c || state.skins.keys < c.cost) return null;
+    state.skins.keys -= c.cost;
+    const odds = crateOdds(state, id);
+    let roll = rng(), rarity = 0;
+    for (let r = 0; r < odds.length; r++) { if (roll < odds[r]) { rarity = r; break; } roll -= odds[r]; rarity = r; }
+    while (!odds[rarity]) rarity--;
+    const pool = CT.SKINS.filter(function (k) { return k.crate === id && k.rarity === rarity; });
+    const skin = pool[Math.floor(rng() * pool.length)];
+    state.skins.pity[id] = rarity >= c.pity.rarity ? 0 : (state.skins.pity[id] || 0) + 1;
+    const isNew = !state.skins.own[skin.id];
+    let refund = 0;
+    if (isNew) state.skins.own[skin.id] = 1;
+    else { state.skins.own[skin.id]++; refund = CONFIG.skinRefund[rarity]; state.shards += refund; }
+    state.stats.crates = (state.stats.crates || 0) + 1;
+    return { skin: skin, rarity: rarity, isNew: isNew, refund: refund };
+  }
+  function equipSkin(state, id) {
+    if (!state.skins.own[id] || !SKIN[id]) return false;
+    state.skins.on = id;
+    return true;
+  }
+  function skinBonus(state) {
+    const b = {};
+    const on = SKIN[state.skins.on];
+    if (on) Object.keys(on.buff).forEach(function (k) { b[k] = on.buff[k]; });
+    const owned = Object.keys(state.skins.own).filter(function (id) { return id !== 'classic' && SKIN[id]; }).length;
+    b.global = (b.global || 0) + CONFIG.skinOwnBonus * owned;
+    return b;
+  }
+  const BUFF_NAMES = { global: 'All Matter', pulse: 'Pulse value', gen: 'Harvesters', combo: 'Max combo', luck: 'Lucky chance', comet: 'Comet rate', crystal: 'Crystal value', offline: 'Away income', shards: 'Shard find', tickets: 'Ticket drops' };
+  function skinText(skin) {
+    const keys = Object.keys(skin.buff);
+    if (!keys.length) return 'No bonus';
+    return keys.map(function (k) { return BUFF_NAMES[k] + ' +' + Math.round(skin.buff[k] * 100) + '%'; }).join(' · ');
+  }
+
   function derive(state, mut) {
     mut = mut || {};
     const L = state.levels;
@@ -954,7 +1024,10 @@
     const critterMult = (1 + cb.matter) * cb.mult;
     const focusMult = Math.pow(1.32, L.focus);
     const uf = upgradeEffects(state);
-    const rb = relicBonus(state);
+    const rb0 = relicBonus(state);
+    const sb = skinBonus(state);
+    const rb = {};
+    Object.keys(rb0).forEach(function (k) { rb[k] = rb0[k] + (sb[k] || 0); });
     const petCount = Object.keys(state.critters).length;
     const achMult = 1 + CONFIG.achStep * achievementCount(state) * (1 + uf.achSyn);
     const formMult = Math.pow(CT.FORM_MULT, state.form);
@@ -985,7 +1058,8 @@
       singuMult: singuMult,
       critterMult: critterMult,
       critters: cb,
-      relics: rb,
+      relics: rb0,
+      skin: sb,
       upgrades: uf,
       globalMult: globalMult,
       achMult: achMult,
@@ -1063,6 +1137,7 @@
     state.bought = {};
     if (r.memory) state.gens.sweeper = 10;
     state.shards += CONFIG.shards.collapse * gain;
+    state.skins.keys += CONFIG.keys.collapse;
     state.stats.runTime = 0;
     return gain;
   }
@@ -1093,17 +1168,19 @@
       mark(state, 'sector' + state.sector);
       giveTickets(state, CONFIG.tickets.sector, 'sector', null);
       state.shards += CONFIG.shards.sector;
+      giveKeys(state, CONFIG.keys.sector, 'sector', null);
       if (ev) ev.push({ t: 'sector', index: state.sector });
     }
     const lvl = singuLevelFor(state.lifetime);
     while (state.singuLevel < lvl) {
       state.singuLevel++;
+      if (state.singuLevel % CONFIG.keys.levelEvery === 0) giveKeys(state, 1, 'level', ev);
       giveTickets(state, CONFIG.tickets.level, 'level', null);
       if (ev) ev.push({ t: 'level', level: state.singuLevel });
     }
     if ((state.gens.drone || 0) >= 25) discover(state, 'drones25', ev);
     const form = formFor(state.lifetime);
-    while (state.form < form) { state.form++; mark(state, 'form' + state.form); if (ev) ev.push({ t: 'form', form: state.form }); }
+    while (state.form < form) { state.form++; mark(state, 'form' + state.form); giveKeys(state, CONFIG.keys.form, 'form', ev); if (ev) ev.push({ t: 'form', form: state.form }); }
     checkAchievements(state, ev);
     if (state.collapses > 0) discover(state, 'collapse', ev);
   }
@@ -1496,6 +1573,7 @@
           discover(state, 'comet', ev);
           giveTickets(state, CONFIG.tickets.comet + stats.bonusTickets, 'comet', ev);
           earnShards(state, stats, CONFIG.shards.comet, ev, 'comet');
+          giveKeys(state, CONFIG.keys.comet, 'comet', ev);
           if (ev) ev.push({ t: 'surge', dur: w.surge });
         }
       } else {
@@ -1544,6 +1622,7 @@
     CT: CT, GEN: GEN, UPGI: UPGI, ACH: ACH, genCost: genCost, genQuote: genQuote, buyGen: buyGen, genVisible: genVisible, genMilestones: genMilestones, nextGenMilestone: nextGenMilestone,
     upgradeUnlocked: upgradeUnlocked, availableUpgrades: availableUpgrades, buyUpgrade: buyUpgrade, upgradeEffects: upgradeEffects,
     formFor: formFor, achievementCount: achievementCount, checkAchievements: checkAchievements, claimAchievement: claimAchievement,
+    SKIN: SKIN, CRATE: CRATE, crateOdds: crateOdds, openCrate: openCrate, equipSkin: equipSkin, skinBonus: skinBonus, skinText: skinText,
     relicSlots: relicSlots, relicBonus: relicBonus, relicOdds: relicOdds, forgeStart: forgeStart, forgePush: forgePush, forgeKeep: forgeKeep,
     equipRelic: equipRelic, unequipRelic: unequipRelic, salvageRelic: salvageRelic, fuseRelics: fuseRelics, relicText: relicText, earnShards: earnShards,
     upgradeCost: upgradeCost, bulkQuote: bulkQuote, buy: buy, derive: derive, chainMult: chainMult, earn: earn,

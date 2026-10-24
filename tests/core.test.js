@@ -504,3 +504,38 @@ test('black hole names are cleaned and default to Singu', () => {
   assert.strictEqual(s.named, true);
   assert.strictEqual(PS.sanitize({ v: 3, name: 42 }, 0).state.name, 'Singu');
 });
+
+test('skin crates: cost keys, follow their own odds and pity, equip buffs', () => {
+  const s = PS.createState(0);
+  assert.strictEqual(s.skins.keys, 3);
+  assert.strictEqual(PS.openCrate(s, 'horizon', Math.random), null, 'not enough keys');
+  s.skins.keys = 10000;
+  const crateOf = {};
+  PS.CT.SKINS.forEach((k) => { crateOf[k.id] = k.crate; });
+  let sawCommonInNebula = false;
+  for (let i = 0; i < 400; i++) {
+    const r = PS.openCrate(s, 'nebula', Math.random);
+    assert.strictEqual(crateOf[r.skin.id], 'nebula', 'skin from its own crate');
+    if (r.rarity === 0) sawCommonInNebula = true;
+    assert.ok((s.skins.pity.nebula || 0) < PS.CRATE.nebula.pity.within, 'pity respected');
+  }
+  assert.ok(!sawCommonInNebula, 'the Nebula Crate has no commons');
+  const odds = PS.crateOdds(s, 'stardust');
+  assert.ok(Math.abs(odds.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  // Pity: one opening before the limit, only the guaranteed rarity or better can come out.
+  s.skins.pity.horizon = PS.CRATE.horizon.pity.within - 1;
+  assert.deepStrictEqual(PS.crateOdds(s, 'horizon').slice(0, 4), [0, 0, 0, 0]);
+  // Equipping applies the buff; owning skins adds +1% each.
+  const before = PS.derive(s, {}).globalMult;
+  s.skins.own.prime = 1;
+  assert.ok(PS.equipSkin(s, 'prime'));
+  assert.ok(PS.derive(s, {}).globalMult > before * 1.9);
+  assert.ok(!PS.equipSkin(s, 'nope'));
+  // Saves keep skins and drop unknown ones.
+  const back = PS.sanitize(JSON.parse(PS.serialize(s)), 0).state;
+  assert.strictEqual(back.skins.on, 'prime');
+  const bad = PS.sanitize({ v: 3, skins: { own: { fake: 3, golden: 2 }, on: 'fake', keys: -5 } }, 0).state;
+  assert.deepStrictEqual(Object.keys(bad.skins.own).sort(), ['classic', 'golden']);
+  assert.strictEqual(bad.skins.on, 'classic');
+  assert.strictEqual(bad.skins.keys, 0);
+});

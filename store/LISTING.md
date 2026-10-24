@@ -39,16 +39,17 @@ Then build your space empire:
 - **260 upgrades**, from Gravity Gloves to Cosmic Catalysts
 - **48 cute pets** to hatch from Cosmo Capsules, in five rarities from Common to Mythic, each with its own bonus
 - **The Relic Forge**: forge relics and push your luck for a rarer one, or keep what you have
+- **18 black hole skins** in three crates, each with its own rarities, particle effects and bonuses
 - **12 forms** to evolve through, from a Speck to an Omniverse Maw
-- **163 trophies**, the Star Reel, Lucky Pulses, daily quests, a 7-day login calendar and free capsules
+- **171 trophies** in bronze, silver, gold and spectral, the Star Reel, Lucky Pulses, daily quests, a 7-day login calendar and free capsules
 - **Collapse** your universe for Stardust and start again stronger
 
-Every ticket and shard is earned by playing, and capsule and forge odds are always shown. Climb the leaderboard by growing your black hole's level!
+Every ticket, shard and key is earned by playing, and capsule, crate and forge odds are always shown. Climb the leaderboard by growing your black hole's level!
 
 ## Controls
 
 - **Tap / click / hold** the universe (or **Space**): pulse gravity
-- **1–6**: switch tabs (Harvest, Upgrades, Pets, Relics, Rewards, Trophies)
+- **1–7**: switch tabs (Harvest, Upgrades, Pets, Relics, Rewards, Skins, Trophies)
 - **M**: mute · **Esc**: close a window
 - Works with touch on phones and tablets
 

@@ -127,6 +127,8 @@
     [10, 50, 200, 1000].forEach(function (n, i) { add('h_' + i, ['Capsule Curious', 'Capsule Fan', 'Capsule Addict', 'Capsule Legend'][i], 'Hatch ' + n + ' capsules', 'hatches', n, 'Pets'); });
     [1, 10, 50, 200].forEach(function (n, i) { add('r_' + i, ['Relic Hunter', 'Forge Regular', 'Forgemaster', 'Relic Tycoon'][i], 'Forge ' + n + ' relic' + (n > 1 ? 's' : ''), 'relicsMade', n, 'Relics'); });
     add('r_myth', 'Touched by Myth', 'Own a Mythic relic', 'mythicRelic', 1, 'Relics');
+    [1, 10, 50, 150].forEach(function (n, i) { add('cr_' + i, ['Unboxer', 'Crate Cracker', 'Key Master', 'Vault Raider'][i], 'Open ' + n + ' skin crate' + (n > 1 ? 's' : ''), 'crates', n, 'Skins'); });
+    [3, 8, 13, 18].forEach(function (n, i) { add('sk_' + i, ['New Look', 'Fashionista', 'Trendsetter', 'Every Shade of Void'][i], 'Own ' + n + ' skins', 'skins', n, 'Skins'); });
     add('r_push', 'Push It', 'Push a relic up 3 times in a row', 'bestPush', 3, 'Relics');
     for (let i = 1; i < FORMS.length; i++) add('f_' + i, FORMS[i].name, 'Evolve Singu into a ' + FORMS[i].name, 'form', i, 'Forms');
     [2, 3, 4, 5, 7, 10, 15].forEach(function (n, i) { add('s_' + i, 'Explorer ' + roman(i + 1), 'Reach sector ' + n, 'maxSector', n, 'Space'); });
@@ -238,6 +240,46 @@
     ['unicorn_void', 'Void Unicorn', 4, 'unicorn', '#3a3f7a', { mult: 1 }]
   ].map(function (p) { return { id: p[0], name: p[1], rarity: p[2], species: p[3], color: p[4], bonus: p[5] }; });
 
+  // ---------------------------------------------------------------------------
+  // Skins for the black hole, from crates opened with Cosmic Keys (earned only by playing).
+  // Each crate has its own skins and its own rarity table; odds and pity are always shown.
+  // A skin has colours for the halo, rim, swirl arms (outer → inner) and accretion disk,
+  // an optional particle effect, and a buff that applies while it is equipped.
+  // ---------------------------------------------------------------------------
+  const CRATES = [
+    { id: 'stardust', name: 'Stardust Crate', cost: 1, color: '#c98a4a', desc: 'Cosy everyday looks',
+      weights: [60, 28, 10, 2, 0], pity: { rarity: 3, within: 30 } },
+    { id: 'nebula', name: 'Nebula Crate', cost: 4, color: '#8a5ad6', desc: 'Colourful cosmic weather',
+      weights: [0, 55, 33, 10, 2], pity: { rarity: 4, within: 45 } },
+    { id: 'horizon', name: 'Event Horizon Crate', cost: 10, color: '#1f2a4a', desc: 'Only the rarest singularities',
+      weights: [0, 0, 60, 32, 8], pity: { rarity: 4, within: 20 } }
+  ];
+  const SKINS = [
+    // id, name, crate, rarity, { halo, rim, arms[3], disk[4], fx }, buff
+    ['classic', 'Classic', null, 0, { halo: '#3b5dc9', rim: '#41a6f6', arms: ['#a884f3', '#5d275d', '#29366f'], disk: ['#ffcd75', '#ef7d57', '#b13e53', '#ef7d57'] }, {}],
+    // Stardust Crate
+    ['dusty', 'Dusty', 'stardust', 0, { halo: '#566c86', rim: '#c2c3c7', arms: ['#94b0c2', '#566c86', '#333c57'], disk: ['#e4d4b0', '#c2a37a', '#8a6a4a', '#c2a37a'] }, { pulse: 0.05 }],
+    ['mint', 'Mint Swirl', 'stardust', 0, { halo: '#257179', rim: '#a7f070', arms: ['#73eff7', '#38b764', '#257179'], disk: ['#d6ffb8', '#a7f070', '#38b764', '#a7f070'] }, { gen: 0.05 }],
+    ['peach', 'Peach Fizz', 'stardust', 0, { halo: '#b13e53', rim: '#ffa8c5', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff0c8', '#ffcd75', '#ef7d57', '#ffcd75'] }, { combo: 0.05 }],
+    ['frostbite', 'Frostbite', 'stardust', 1, { halo: '#41a6f6', rim: '#dff6ff', arms: ['#ffffff', '#73eff7', '#41a6f6'], disk: ['#ffffff', '#c9e4ff', '#73eff7', '#c9e4ff'], fx: 'snow' }, { gen: 0.12 }],
+    ['ember', 'Ember', 'stardust', 1, { halo: '#b13e53', rim: '#ff9a3d', arms: ['#ffcd75', '#ef7d57', '#b13e53'], disk: ['#fff3b0', '#ffcd75', '#ff7a3d', '#d04040'], fx: 'flame' }, { pulse: 0.12 }],
+    ['candy', 'Candy Nebula', 'stardust', 2, { halo: '#ff6fd0', rim: '#ffb3f0', arms: ['#73eff7', '#ff8fd8', '#a884f3'], disk: ['#ffffff', '#ffb3f0', '#73eff7', '#ffb3f0'], fx: 'hearts' }, { global: 0.12 }],
+    ['golden', 'Golden Hour', 'stardust', 3, { halo: '#ffc23d', rim: '#fff0b0', arms: ['#fff0b0', '#ffc23d', '#b0702a'], disk: ['#ffffff', '#fff0b0', '#ffc23d', '#fff0b0'], fx: 'sparkle' }, { global: 0.2, combo: 0.1 }],
+    // Nebula Crate
+    ['bubblegum', 'Bubblegum', 'nebula', 1, { halo: '#ff6fd0', rim: '#ffa8c5', arms: ['#ffd4e3', '#ff8fb1', '#b13e53'], disk: ['#ffffff', '#ffd4e3', '#ff8fb1', '#ffd4e3'], fx: 'bubbles' }, { combo: 0.15 }],
+    ['aurora', 'Aurora', 'nebula', 1, { halo: '#38b764', rim: '#73eff7', arms: ['#a7f070', '#73eff7', '#3b5dc9'], disk: ['#d6ffb8', '#a7f070', '#73eff7', '#a884f3'] }, { comet: 0.15 }],
+    ['supernova', 'Supernova', 'nebula', 2, { halo: '#ff7a3d', rim: '#ffffff', arms: ['#ffffff', '#fff0b0', '#ff7a3d'], disk: ['#ffffff', '#fff3b0', '#ffcd75', '#ff7a3d'], fx: 'flame' }, { pulse: 0.25, crystal: 0.2 }],
+    ['deepsea', 'Deep Sea', 'nebula', 2, { halo: '#29366f', rim: '#41a6f6', arms: ['#73eff7', '#3b5dc9', '#29366f'], disk: ['#73eff7', '#41a6f6', '#3b5dc9', '#41a6f6'], fx: 'bubbles' }, { gen: 0.25, offline: 0.1 }],
+    ['prism', 'Prism', 'nebula', 3, { halo: '#a884f3', rim: '#ffffff', arms: ['#ff8fd8', '#73eff7', '#ffcd75'], disk: ['#ff6b6b', '#ffcd75', '#a7f070', '#73eff7'], fx: 'rainbow' }, { global: 0.35 }],
+    ['starforge', 'Starforge', 'nebula', 4, { halo: '#b48cff', rim: '#ffd36b', arms: ['#fff0b0', '#ffc23d', '#8a5ad6'], disk: ['#ffffff', '#ffd36b', '#b48cff', '#ffd36b'], fx: 'stars' }, { global: 0.6, luck: 0.02 }],
+    // Event Horizon Crate
+    ['voidwalker', 'Void Walker', 'horizon', 2, { halo: '#3a1a5a', rim: '#a884f3', arms: ['#5d275d', '#3a1a5a', '#1a0f2a'], disk: ['#a884f3', '#5d275d', '#3a1a5a', '#5d275d'], fx: 'void' }, { gen: 0.35 }],
+    ['solarflare', 'Solar Flare', 'horizon', 2, { halo: '#ff7a3d', rim: '#fff3b0', arms: ['#ffcd75', '#ff7a3d', '#b13e53'], disk: ['#ffffff', '#ffcd75', '#ff7a3d', '#b13e53'], fx: 'flame' }, { pulse: 0.35, combo: 0.1 }],
+    ['quasar', 'Quasar', 'horizon', 3, { halo: '#73eff7', rim: '#ffffff', arms: ['#ffffff', '#73eff7', '#3b5dc9'], disk: ['#ffffff', '#c9f7ff', '#73eff7', '#41a6f6'], fx: 'sparkle' }, { global: 0.45, shards: 0.15 }],
+    ['glitch', 'Glitch', 'horizon', 3, { halo: '#38b764', rim: '#ff6fd0', arms: ['#a7f070', '#ff6fd0', '#29366f'], disk: ['#a7f070', '#ff6fd0', '#73eff7', '#ff6fd0'], fx: 'glitch' }, { global: 0.45, luck: 0.03 }],
+    ['prime', 'Singularity Prime', 'horizon', 4, { halo: '#ffffff', rim: '#ffffff', arms: ['#ffffff', '#c9d4e6', '#566c86'], disk: ['#ffffff', '#ff8fd8', '#73eff7', '#ffd36b'], fx: 'rainbow' }, { global: 1, combo: 0.25 }]
+  ].map(function (x) { return { id: x[0], name: x[1], crate: x[2], rarity: x[3], look: x[4], buff: x[5] }; });
+
   // Old pet ids from version 2 saves.
   const PET_MIGRATE = { mouse: 'mouse_mote', pup: 'pup_pebble', bun: 'bun_dusty', snail: 'snail_glow', cat: 'cat_comet', penguin: 'penguin_ice', frog: 'frog_lucky', owl: 'owl_orbit', jelly: 'jelly_nebula', fox: 'fox_quasar', crab: 'crab_shard', dragon: 'dragon_sun', whale: 'whale_cosmo' };
 
@@ -250,7 +292,7 @@
 
   const API = {
     roman: roman, GENERATORS: GENERATORS, GEN_GROWTH: GEN_GROWTH, GEN_MILESTONES: GEN_MILESTONES,
-    FORMS: FORMS, FORM_MULT: FORM_MULT, UPGRADES: buildUpgrades(), ACHIEVEMENTS: buildAchievements(),
+    FORMS: FORMS, FORM_MULT: FORM_MULT, CRATES: CRATES, SKINS: SKINS, UPGRADES: buildUpgrades(), ACHIEVEMENTS: buildAchievements(),
     RELICS: RELICS, PETS: PETS, PET_MIGRATE: PET_MIGRATE, BONUS_TEXT: BONUS_TEXT
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

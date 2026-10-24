@@ -132,9 +132,11 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
     assert(after.p === before.p, 'buying must not pulse');
   });
 
-  await check('keys 1–6 switch tabs and unaffordable buys are refused', async () => {
+  await check('keys 1–7 switch tabs and unaffordable buys are refused', async () => {
     await p.keyboard.press('3');
     assert(await p.isVisible('#tab-pets'), 'key 3 opens Pets');
+    await p.keyboard.press('6');
+    assert(await p.isVisible('#tab-skins'), 'key 6 opens Skins');
     await p.keyboard.press('1');
     assert(await p.isVisible('#tab-harvest'), 'key 1 opens Harvest');
     await S(p, () => { __ps.state.matter = 0; });
@@ -458,6 +460,40 @@ function assert(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
       await p.click('#claim-all');
       assert((await S(p, () => Object.values(__ps.state.ach).filter((v) => v === 1).length)) === 0, 'claim all');
     }
+    await S(p, () => __ps.setTab('harvest'));
+  });
+
+  await check('trophies are listed bronze to spectral within each group', async () => {
+    await S(p, () => __ps.setTab('trophies'));
+    await p.waitForTimeout(200);
+    const ok = await S(p, () => {
+      const tier = {};
+      __ps.PS.CT.ACHIEVEMENTS.forEach((a) => { tier[a.id] = a.tier; });
+      return [...document.querySelectorAll('.tgrid')].every((g) => {
+        const ts = [...g.querySelectorAll('[data-ach]')].map((n) => tier[n.dataset.ach]);
+        return ts.every((t, i) => i === 0 || t >= ts[i - 1]);
+      });
+    });
+    assert(ok, 'tiers out of order');
+    await S(p, () => __ps.setTab('harvest'));
+  });
+
+  await check('skins: open a crate with keys, reveal a skin from that crate, equip it', async () => {
+    await S(p, () => { __ps.state.skins.keys = 10; __ps.setTab('skins'); });
+    await p.waitForSelector('[data-crate="stardust"]');
+    await p.click('[data-crate="stardust"]');
+    await p.waitForSelector('#modal:not([hidden]) .crate-open');
+    await p.click('#modal-actions .btn');   // Skip
+    await p.waitForSelector('.crate-open .won');
+    await shot(p, '907-crate');
+    const st = await S(p, () => ({ keys: __ps.state.skins.keys, own: Object.keys(__ps.state.skins.own) }));
+    assert(st.keys === 9 && st.own.length >= 2, JSON.stringify(st));
+    const id = st.own.find((x) => x !== 'classic');
+    assert(await S(p, (id) => __ps.PS.SKIN[id].crate === 'stardust', id), 'skin from the Stardust Crate');
+    await p.keyboard.press('Escape');
+    await p.click('[data-skin="' + id + '"]');
+    assert((await S(p, () => __ps.state.skins.on)) === id, 'equipped');
+    await shot(p, '907-skins');
     await S(p, () => __ps.setTab('harvest'));
   });
 

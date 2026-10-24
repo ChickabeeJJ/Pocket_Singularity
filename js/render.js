@@ -264,6 +264,9 @@
       case 'tickets':
         addFloat('+' + e.n + ' TICKET' + (e.n > 1 ? 'S' : ''), CX * PXS + 70, (CY - r * 1.5) * PXS, P['4'], 13, 1.4, P['2']);
         break;
+      case 'keys':
+        addFloat('+' + e.n + ' KEY' + (e.n > 1 ? 'S' : ''), CX * PXS, (CY - r * 1.9) * PXS, '#ffd36b', 14, 1.5, P['1']);
+        break;
       case 'shards':
         addFloat('+' + fmt(e.n) + ' SHARD' + (e.n >= 2 ? 'S' : ''), CX * PXS - 70, (CY - r * 1.2) * PXS, P.v, 13, 1.4, P['1']);
         break;
@@ -535,7 +538,9 @@
   function drawDisk(t, r, back, st, surge) {
     const stage = PS.coreStage(st);
     const rings = 2 + Math.min(3, stage);
-    const bands = surge ? ['4', 'c', '4', '3'] : ['4', '3', '2', '3'];
+    const look = skinLook();
+    let bands = surge ? ['4', 'c', '4', '3'] : look.disk;
+    if (!surge && look.fx === 'rainbow') bands = [0, 1, 2, 3].map(function (k) { return 'hsl(' + Math.round((t * 90 + k * 70) % 360) + ',90%,70%)'; });
     for (let i = 0; i < rings; i++) {
       const rx = r * (1.55 + i * 0.32), ry = Math.max(2, rx * 0.3);
       const steps = Math.ceil(Math.PI * 2 * rx * 1.2);
@@ -547,7 +552,8 @@
         if (back ? sn >= 0 : sn < 0) continue;
         if (i > 0 && (s + i) % (i + 1) === 0) continue;
         const band = Math.floor(((a + spin) / (Math.PI * 2)) * 10 + i) % bands.length;
-        b.fillStyle = P[outer ? (s % 2 ? 'v' : 'w') : bands[(band + 4) % bands.length]];
+        const key = outer ? (s % 2 ? look.halo : look.rim) : bands[(band + 4) % bands.length];
+        b.fillStyle = P[key] || key;
         b.fillRect(Math.round(CX + Math.cos(a) * rx), Math.round(CY + sn * ry), 1, 1);
       }
     }
@@ -583,12 +589,13 @@
     const R = Math.max(5, Math.round(r0 * (1 + fx.gulp * 0.1)));
     const rx = Math.round(R * (1 + sq * 0.12)), ry = Math.round(R * (1 - sq * 0.12));
     const cx = CX, cy = CY;
-    const haloKey = surge ? '3' : mood.kind === 'happy' ? '1' : '9';
+    const look = skinLook();
+    const haloKey = surge ? P['3'] : look.halo;
     for (let dy = -ry - 4; dy <= ry + 4; dy++) for (let dx = -rx - 4; dx <= rx + 4; dx++) {
       const d = Math.hypot(dx / rx, dy / ry) * R;
-      if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = P[haloKey]; b.fillRect(cx + dx, cy + dy, 1, 1); }
+      if (d > R + 0.5 && d < R + 4.5 && dith(cx + dx, cy + dy, (R + 4.5 - d) / 4 * (0.5 + Math.min(1, fx.flash) * 0.35))) { b.fillStyle = haloKey; b.fillRect(cx + dx, cy + dy, 1, 1); }
     }
-    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'happy' ? 'p' : mood.kind === 'dizzy' ? 'e' : 'b';
+    const rimKey = surge || mood.kind === 'star' ? '4' : mood.kind === 'dizzy' ? 'e' : look.fx === 'rainbow' ? 'hsl(' + Math.round(t * 120 % 360) + ',90%,75%)' : look.rim;
     for (let dy = -ry; dy <= ry; dy++) {
       const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))));
       b.fillStyle = P.k; b.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
@@ -600,7 +607,7 @@
         const a = arm * 2.094 + spin + fr * 3.2;
         const x = Math.round(cx + Math.cos(a) * rr * rx / R), y = Math.round(cy + Math.sin(a) * rr * ry / R);
         if (!dith(x, y, fr * 0.9)) continue;
-        b.fillStyle = P[fr > 0.7 ? 'w' : fr > 0.45 ? '1' : 'f'];
+        b.fillStyle = look.arms[fr > 0.7 ? 0 : fr > 0.45 ? 1 : 2];
         b.fillRect(x, y, 1, 1);
       }
     }
@@ -608,6 +615,43 @@
     ellipse(cx, cy, rx, ry, rimKey, 0);
     b.fillStyle = P.c;
     for (let i = 0; i < 7; i++) { const a = t * 1.6 + i * 0.08; b.fillRect(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), 1, 1); }
+    skinFx(look, t, dt, cx, cy, rx, ry);
+  }
+
+  // The equipped skin's look ({ halo, rim, arms, disk, fx }).
+  const CLASSIC = { halo: P['9'], rim: P.b, arms: [P.w, P['1'], P.f], disk: ['4', '3', '2', '3'] };
+  function skinLook() { const k = G.skin && G.skin(); return k ? k.look : CLASSIC; }
+  // Particle effects for skins.
+  function skinFx(look, t, dt, cx, cy, rx, ry) {
+    if (!look.fx || G.reduced()) return;
+    const rnd = Math.random;
+    const a = rnd() * Math.PI * 2;
+    const ex = cx + Math.cos(a) * rx * (1 + rnd() * 0.6), ey = cy + Math.sin(a) * ry * (1 + rnd() * 0.6);
+    switch (look.fx) {
+      case 'snow': if (rnd() < 0.5) addParticle(cx + (rnd() - 0.5) * rx * 4, cy - ry * 2.2, (rnd() - 0.5) * 6, 10 + rnd() * 10, 1.6, rnd() < 0.5 ? '#ffffff' : '#c9e4ff'); break;
+      case 'flame': if (rnd() < 0.8) addParticle(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry * 0.9, 0, -18 - rnd() * 22, 0.5 + rnd() * 0.3, rnd() < 0.4 ? '#fff3b0' : rnd() < 0.7 ? '#ff9a3d' : '#d04040'); break;
+      case 'hearts': if (rnd() < 0.15) { addParticle(ex, ey, 0, -10, 1.2, '#ff8fd8'); addParticle(ex + 1, ey, 0, -10, 1.2, '#ff8fd8'); addParticle(ex + 0.5, ey + 1, 0, -10, 1.2, '#ff6fd0'); } break;
+      case 'sparkle': if (rnd() < 0.35) addParticle(ex, ey, 0, 0, 0.4 + rnd() * 0.4, rnd() < 0.5 ? '#ffffff' : look.rim); break;
+      case 'bubbles': if (rnd() < 0.25) addParticle(cx + (rnd() - 0.5) * rx * 3, cy + ry * 1.6, (rnd() - 0.5) * 4, -14 - rnd() * 8, 1.4, rnd() < 0.5 ? '#c9f7ff' : look.rim); break;
+      case 'void': if (rnd() < 0.6) { const d = 2.2 + rnd(); addParticle(cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, -Math.cos(a) * rx * 2.2, -Math.sin(a) * ry * 2.2, 0.6, rnd() < 0.5 ? '#a884f3' : '#5d275d'); } break;
+      case 'stars': {
+        for (let i = 0; i < 4; i++) {
+          const sa = t * 0.9 + i * Math.PI / 2, sx2 = Math.round(cx + Math.cos(sa) * rx * 2.1), sy2 = Math.round(cy + Math.sin(sa) * ry * 0.9);
+          b.fillStyle = i % 2 ? '#ffd36b' : '#ffffff';
+          b.fillRect(sx2, sy2, 1, 1); b.fillRect(sx2 - 1, sy2, 3, 1); b.fillRect(sx2, sy2 - 1, 1, 3);
+        }
+        if (rnd() < 0.3) addParticle(ex, ey, 0, 0, 0.5, '#ffd36b');
+        break;
+      }
+      case 'rainbow': if (rnd() < 0.5) addParticle(ex, ey, (ex - cx) * 0.8, (ey - cy) * 0.8, 0.6, 'hsl(' + Math.round(rnd() * 360) + ',90%,70%)'); break;
+      case 'glitch':
+        if (Math.floor(t * 8) % 7 === 0) {
+          const off = Math.round((rnd() - 0.5) * 6);
+          ellipse(cx + off, cy, rx, ry, look.arms[0], 2);
+          ellipse(cx - off, cy + 1, rx, ry, look.rim, 3);
+        }
+        break;
+    }
   }
 
   // Harvesters orbit Singu and send little streams of matter into it.

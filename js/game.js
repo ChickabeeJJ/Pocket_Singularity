@@ -13,6 +13,8 @@
   const CT = PS.CT;
   const fmt = PS.fmt;
   SPR.setPets(CT.PETS);
+  SPR.setSkins(CT.SKINS);
+  SPR.setCrates(CT.CRATES);
 
   const SAVE_KEY = 'pocket-singularity:save';
   const BAK_KEY = 'pocket-singularity:backup';
@@ -96,6 +98,8 @@
     machine: $('machine'), mTickets: $('m-tickets'), pull1: $('pull1'), pull10: $('pull10'), odds: $('odds'), collection: $('collection'), colCount: $('col-count'), petBonus: $('pet-bonus'),
     forge: $('forge'), equipped: $('equipped'), slotCount: $('slot-count'), relicSum: $('relic-sum'), invCount: $('inv-count'), fuseRow: $('fuse-row'), inventory: $('inventory'),
     rewards: $('tab-rewards'),
+    skinHero: $('skin-hero'), keysCount: $('keys-count'), crates: $('crates'), wardrobe: $('wardrobe'), skinCount: $('skin-count'), skinBonus: $('skin-bonus'),
+    keyBtn: $('btn-keys'), keyCount: $('key-count'),
     achCount: $('ach-count'), achBonus: $('ach-bonus'), claimAll: $('claim-all'), trophies: $('trophies'),
     modal: $('modal'), modalTitle: $('modal-title'), modalBody: $('modal-body'), modalActions: $('modal-actions'), modalX: $('modal-x')
   };
@@ -134,6 +138,8 @@
   function staticArt() {
     $('ticket-icon').innerHTML = SPR.img('ticket', 1.5);
     $('shard-icon').innerHTML = SPR.img('icon_shardc', 1);
+    $('key-icon').innerHTML = SPR.img('icon_key', 1);
+    $('keys-icon').innerHTML = SPR.img('icon_key', 1);
     $('sd-icon').innerHTML = SPR.img('stardust', 1.5);
     $('leader-icon').innerHTML = SPR.img('icon_leader', 1.25);
     $('atlas-icon').innerHTML = SPR.img('star', 1.5);
@@ -148,7 +154,7 @@
   // Tabs
   // ---------------------------------------------------------------------------
   let tab = 'harvest';
-  const TAB_NAMES = ['harvest', 'upgrades', 'pets', 'relics', 'rewards', 'trophies'];
+  const TAB_NAMES = ['harvest', 'upgrades', 'pets', 'relics', 'rewards', 'skins', 'trophies'];
   function setTab(name) {
     tab = name;
     el.tabs.querySelectorAll('.tab').forEach(function (btn) { btn.classList.toggle('on', btn.dataset.tab === name); btn.setAttribute('aria-selected', btn.dataset.tab === name); });
@@ -777,6 +783,119 @@
   el.shards.addEventListener('click', function () { setTab('relics'); });
 
   // ---------------------------------------------------------------------------
+  // Skins tab: crates opened with Cosmic Keys, and the wardrobe
+  // ---------------------------------------------------------------------------
+  let skinKey = '';
+  let opening = false;
+  function oddsHTML(id) {
+    const o = PS.crateOdds(state, id);
+    return o.map(function (p, r) { return p > 0 ? '<b class="r' + r + '">' + RARITY_NAMES[r] + ' ' + (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%</b>' : ''; }).filter(Boolean).join(' · ');
+  }
+  function updateSkins() {
+    const key = JSON.stringify([state.skins, Math.floor(state.shards)]);
+    if (key === skinKey) return;
+    skinKey = key;
+    const on = PS.SKIN[state.skins.on];
+    el.skinHero.innerHTML = '<div class="sk-art">' + SPR.img('skin_' + on.id, 2) + '</div><div><div class="small">Equipped on ' + state.name + '</div>' +
+      '<div class="sk-name r' + on.rarity + '">' + on.name + '</div><div class="sk-buff">' + PS.skinText(on) + '</div>' +
+      '<div class="sk-sub">Every skin you own also adds +' + Math.round(C.skinOwnBonus * 100) + '% Matter</div></div>';
+    setText(el.keysCount, fmt(state.skins.keys));
+    el.crates.innerHTML = CT.CRATES.map(function (c) {
+      const pity = c.pity.within - (state.skins.pity[c.id] || 0);
+      return '<div class="crate c-' + c.id + '"><div class="cr-art">' + SPR.img('crate_' + c.id, 2) + '</div>' +
+        '<div class="cr-name">' + c.name + ' <span class="small">· ' + c.desc + '</span></div>' +
+        '<div class="cr-odds">' + oddsHTML(c.id) + '</div>' +
+        '<div class="cr-pity">' + RARITY_NAMES[c.pity.rarity] + '+ guaranteed within <b>' + pity + '</b></div>' +
+        '<div class="cr-btns"><button class="btn gold" type="button" data-crate="' + c.id + '"' + (state.skins.keys < c.cost ? ' disabled' : '') + '>Open ' + SPR.img('icon_key', 1) + ' ' + c.cost + '</button>' +
+        '<button class="peek" type="button" data-peek="' + c.id + '">See skins</button></div></div>';
+    }).join('');
+    const owned = Object.keys(state.skins.own).length;
+    setText(el.skinCount, owned + '/' + CT.SKINS.length);
+    setText(el.skinBonus, '+' + Math.round((stats.skin.global || 0) * 100) + '% Matter from skins');
+    const groups = [{ id: null, name: 'Starter' }].concat(CT.CRATES.map(function (c) { return { id: c.id, name: c.name }; }));
+    el.wardrobe.innerHTML = groups.map(function (g) {
+      const list = CT.SKINS.filter(function (k) { return k.crate === g.id; });
+      return '<div class="wr-head">' + g.name + '</div><div class="wr-grid">' + list.map(function (k) {
+        const own = state.skins.own[k.id];
+        return '<button type="button" class="skin ra' + k.rarity + (own ? '' : ' locked') + (state.skins.on === k.id ? ' on' : '') + '" data-skin="' + k.id + '" title="' + k.name + ': ' + PS.skinText(k) + '">' +
+          SPR.img('skin_' + k.id, 1.25) + '<span class="sn r' + k.rarity + '">' + (own ? k.name : '???') + '</span><span class="sc">' + RARITY_NAMES[k.rarity] + (own > 1 ? ' ×' + own : '') + '</span></button>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+  el.crates.addEventListener('click', function (e) {
+    const o = e.target.closest('[data-crate]');
+    if (o && !o.disabled) { openCrateFlow(o.dataset.crate); return; }
+    const pk = e.target.closest('[data-peek]');
+    if (pk) openCrateContents(pk.dataset.peek);
+  });
+  el.wardrobe.addEventListener('click', function (e) {
+    const n = e.target.closest('[data-skin]');
+    if (!n) return;
+    const k = PS.SKIN[n.dataset.skin];
+    Sound.unlock();
+    if (state.skins.own[k.id]) {
+      if (PS.equipSkin(state, k.id)) { refreshStats(); markDirty(); skinKey = ''; Sound.buy(); Scene.onEvent({ t: 'buy' }); toast('<b>' + k.name + '</b> equipped · ' + PS.skinText(k), 'green'); save(); }
+    } else {
+      toast('<b class="r' + k.rarity + '">' + RARITY_NAMES[k.rarity] + '</b> skin from the ' + (k.crate ? PS.CRATE[k.crate].name : 'start') + ' · ' + PS.skinText(k));
+    }
+  });
+  el.keyBtn.addEventListener('click', function () { setTab('skins'); });
+
+  function openCrateContents(id) {
+    const c = PS.CRATE[id];
+    const list = CT.SKINS.filter(function (k) { return k.crate === id; }).sort(function (a, b) { return a.rarity - b.rarity; });
+    const odds = PS.crateOdds(state, id);
+    const body = '<p>' + c.desc + '. Odds for the next opening: ' + oddsHTML(id) + '.</p><div class="crate-list">' + list.map(function (k) {
+      const own = state.skins.own[k.id];
+      const share = odds[k.rarity] / list.filter(function (x) { return x.rarity === k.rarity; }).length;
+      return '<div class="row">' + SPR.img('skin_' + k.id, 1) + '<span><b class="r' + k.rarity + '">' + k.name + '</b> ' + (own ? '✓' : '') + '<br><span class="bn">' + PS.skinText(k) + '</span></span><span class="bn" style="text-align:right">' + (share * 100).toFixed(share < 0.1 ? 1 : 0) + '%</span></div>';
+    }).join('') + '</div><p class="small">Duplicates give back relic shards (' + C.skinRefund.join(' / ') + ' by rarity).</p>';
+    openModal('crate-info', c.name, body, [{ label: 'Close', cls: 'primary', fn: closeModal }]);
+  }
+
+  function openCrateFlow(id) {
+    if (opening) return;
+    Sound.unlock();
+    const res = PS.openCrate(state, id, Math.random);
+    if (!res) { Sound.deny(); return; }
+    opening = true;
+    PS.checkProgress(state, ev);
+    refreshStats(); markDirty(); skinKey = ''; save();
+    const k = res.skin;
+    const body = '<div class="crate-open"><div class="stage"><div class="rays"></div><div class="box">' + SPR.img('crate_' + id, 4) + '</div></div><div class="reveal-text"></div></div>';
+    openModal('crate', PS.CRATE[id].name, body, []);
+    const stage = el.modalBody.querySelector('.stage'), box = el.modalBody.querySelector('.box'), rays = el.modalBody.querySelector('.rays'), text = el.modalBody.querySelector('.reveal-text');
+    let done = false;
+    const timers = [];
+    function reveal() {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      box.remove();
+      rays.className = 'rays on r' + k.rarity;
+      stage.insertAdjacentHTML('beforeend', '<div class="won">' + SPR.img('skin_' + k.id, 4) + '</div>');
+      text.innerHTML = '<div class="hatch"><div class="rarity" style="color:' + RARITY_COL[k.rarity] + '">' + RARITY_NAMES[k.rarity] + ' skin</div><div class="cname">' + k.name + '</div><div class="cbonus">' + PS.skinText(k) + '</div>' +
+        (res.isNew ? '<span class="tag">NEW!</span>' : '<span class="tag up">Duplicate · +' + res.refund + ' shards</span>') + '</div>';
+      el.modalTitle.textContent = res.isNew ? 'New skin!' : 'Skin found';
+      Sound.reveal(k.rarity);
+      if (k.rarity >= 3) { Scene.bigFlash(2); Platform.happytime(); }
+      const acts = [];
+      if (state.skins.on !== k.id) acts.push({ label: 'Equip', cls: 'gold', fn: function () { PS.equipSkin(state, k.id); refreshStats(); markDirty(); skinKey = ''; save(); closeModal(); toast('<b>' + k.name + '</b> equipped', 'green'); } });
+      if (state.skins.keys >= PS.CRATE[id].cost) acts.push({ label: 'Open another', cls: 'pink', fn: function () { closeModal(); openCrateFlow(id); } });
+      acts.push({ label: 'Nice!', cls: 'primary', fn: closeModal });
+      setActions(acts);
+      opening = false;
+    }
+    Sound.crank();
+    timers.push(setTimeout(function () { box.classList.add('shake'); Sound.wobble(); }, 200));
+    timers.push(setTimeout(function () { Sound.wobble(); }, 600));
+    timers.push(setTimeout(function () { Sound.forge(); }, 1000));
+    timers.push(setTimeout(reveal, k.rarity >= 3 ? 1500 : 1200));
+    setActions([{ label: 'Skip', fn: reveal }]);
+    hatchCleanup = reveal;
+  }
+
+  // ---------------------------------------------------------------------------
   // Rewards tab: daily login, free capsule, play gifts, quests
   // ---------------------------------------------------------------------------
   const RW = C.rewards;
@@ -798,6 +917,7 @@
     const parts = [];
     if (r.tickets) parts.push(SPR.img('ticket', 1) + '<b>' + r.tickets + '</b>');
     if (r.shards) parts.push(SPR.img('icon_shardc', 0.75) + '<b>' + r.shards + '</b>');
+    if (r.keys) parts.push(SPR.img('icon_key', 0.75) + '<b>' + r.keys + '</b>');
     if (r.mins) parts.push(SPR.img('matter', 1.5) + '<b>' + r.mins + 'm</b>');
     if (r.surge) parts.push(SPR.img('comet', 1) + '<b>' + r.surge + 's</b>');
     (r.capsule || []).forEach(function (min) { parts.push(SPR.img('capsule' + min, 1) + '<b class="r' + min + '">' + (min ? RARITY_NAMES[min] + '+' : 'Free') + '</b>'); });
@@ -892,6 +1012,7 @@
     const bits = [];
     if (out.tickets) bits.push('+' + out.tickets + ' tickets');
     if (out.shards) bits.push('+' + out.shards + ' shards');
+    if (out.keys) bits.push('+' + out.keys + ' key' + (out.keys > 1 ? 's' : ''));
     if (out.matter) bits.push('+' + fmt(out.matter) + ' Matter');
     if (out.surge) bits.push('Surge +' + out.surge + 's');
     if (kind === 'ach') Sound.achieve(); else Sound.reelWin(out.hatches.length > 0 || kind === 'login');
@@ -956,7 +1077,7 @@
     CT.ACHIEVEMENTS.forEach(function (a) { (cats[a.cat] = cats[a.cat] || []).push(a); });
     let h = '<div class="tinfo">' + (trophySel ? tInfo(PS.ACH[trophySel]) : 'Tap a trophy to see it. Each one unlocked gives <b>+' + (C.achStep * 100).toFixed(1) + '% Matter</b> forever; claim it for tickets and a shard.') + '</div>';
     Object.keys(cats).forEach(function (c) {
-      const list = cats[c];
+      const list = cats[c].slice().sort(function (x, y) { return x.tier - y.tier || x.n - y.n; });
       const got = list.filter(function (a) { return state.ach[a.id]; }).length;
       h += '<div class="tcat"><h3><span>' + c + '</span><span class="num">' + got + '/' + list.length + '</span></h3><div class="tgrid">' + list.map(function (a) {
         const s = state.ach[a.id] || 0;
@@ -998,6 +1119,7 @@
     else if (tab === 'pets') updatePets();
     else if (tab === 'relics') updateRelics();
     else if (tab === 'rewards') updateRewards();
+    else if (tab === 'skins') updateSkins();
     else if (tab === 'trophies') updateTrophies();
     updateBadges();
   }
@@ -1027,6 +1149,7 @@
     let ach = 0;
     for (const id in state.ach) if (state.ach[id] === 1) ach++;
     setBadge('trophies', ach);
+    setBadge('skins', CT.CRATES.some(function (c) { return state.skins.keys >= c.cost; }) ? 1 : 0, '!');
     const n = PS.claimables(state, todayKey, now()) - ach;
     setBadge('rewards', n);
     if (lastClaimables >= 0 && n > lastClaimables && !modalOpen) { toast('<b>Reward ready!</b> Open the Rewards tab', 'pink'); Sound.ticket(); }
@@ -1050,6 +1173,7 @@
     el.combo.classList.toggle('full', world.combo >= 0.99);
     setText(el.ticketCount, fmt(state.tickets));
     setText(el.shardCount, fmt(Math.floor(state.shards)));
+    setText(el.keyCount, fmt(state.skins.keys));
     el.sdBtn.hidden = !state.stardust;
     setText(el.sdCount, fmt(state.stardust));
     setText(el.sectorNum, String(state.sector + 1));
@@ -1122,6 +1246,7 @@
         case 'payout': if (e.total > 0) { if (!e.auto) Sound.payout(e.chain); flash(el.matter, 'bump'); } break;
         case 'tickets': Sound.ticket(); flash(el.tickets, 'flash'); break;
         case 'shards': flash(el.shards, 'flash'); break;
+        case 'keys': flash(el.keyBtn, 'flash'); Sound.ticket(); break;
         case 'level': Sound.level(); Platform.submitScore(state.singuLevel); break;
         case 'comet': Sound.comet(); break;
         case 'comboFull': Sound.lucky(); break;
@@ -1282,7 +1407,7 @@
   }
   function closeModal() {
     if (!modalOpen) return;
-    if (modalOpen === 'hatch' && hatchCleanup) hatchCleanup();
+    if ((modalOpen === 'hatch' || modalOpen === 'crate') && hatchCleanup) { const f = hatchCleanup; hatchCleanup = null; f(); }
     const kind = modalOpen;
     modalOpen = null;
     el.modal.hidden = true;
@@ -1422,7 +1547,7 @@
       '<div class="toggle-row"><span>Sound</span><button class="switch' + (state.settings.muted ? '' : ' on') + '" data-set="sound" type="button" aria-label="Sound"></button></div>' +
       '<div class="toggle-row"><span>Music</span><button class="switch' + (state.settings.music ? ' on' : '') + '" data-set="music" type="button" aria-label="Music"></button></div>' +
       '<div class="toggle-row"><span>Reduced motion</span><button class="switch' + (reduced ? ' on' : '') + '" data-set="motion" type="button" aria-label="Reduced motion"></button></div>' +
-      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-6 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
+      '<p class="small" style="margin-top:12px">Pulse: click, tap or hold the universe, or Space · Tabs: keys 1-7 · Mute: M · Close: Esc<br>Progress saves automatically on this device.</p>' +
       '<p class="small">Capsule and forge odds are always shown. Tickets and shards are earned only by playing and cannot be bought.</p>' +
       (QS.has('debug') ? '<p class="small">Playtest timings (s): ' + Object.keys(state.milestones).map(function (k) { return k + ' ' + state.milestones[k]; }).join(' · ') + '</p>' : '') +
       '<p class="small">Played ' + playTimeText(state.stats.playTime) + ' · ' + fmt(state.stats.pulses) + ' pulses · best chain ' + state.stats.bestChain + ' · ' + fmt(state.stats.lucky) + ' lucky pulses · ' + fmt(state.gacha.pulls) + ' hatches · lifetime ' + fmt(state.lifetime) + ' Matter</p>';
@@ -1459,7 +1584,8 @@
     ]);
   }
   function resetKeys() { $('powers-head').textContent = state.name + ' powers'; resetPanelKeys(); }
-  function resetPanelKeys() { collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
+  function resetPanelKeys() {
+    skinKey = ''; collapseKey = ''; collectionKey = ''; relicKey = ''; trophyKey = ''; catalogKey = ''; rewardsKey = ''; powKey = ''; markDirty(); }
   function playTimeText(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? h + 'h ' + m + 'm' : m + 'm ' + Math.floor(s % 60) + 's';
@@ -1638,6 +1764,7 @@
     Scene.init({
       canvas: el.cv, container: el.scene,
       name: function () { return state.name; },
+      skin: function () { return PS.SKIN[state.skins.on]; },
       state: function () { return state; }, stats: function () { return stats; }, world: function () { return world; }, reduced: function () { return reduced; }
     });
     staticArt();

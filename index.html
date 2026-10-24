@@ -29,6 +29,7 @@
       <div class="purse">
         <button id="btn-tickets" class="coin" type="button" title="Capsule tickets"><span id="ticket-icon"></span><b id="ticket-count" class="num">0</b></button>
         <button id="btn-shards" class="coin" type="button" title="Relic shards"><span id="shard-icon"></span><b id="shard-count" class="num">0</b></button>
+        <button id="btn-keys" class="coin" type="button" title="Cosmic Keys"><span id="key-icon"></span><b id="key-count" class="num">0</b></button>
         <button id="btn-stardust" class="coin" type="button" title="Stardust"><span id="sd-icon"></span><b id="sd-count" class="num">0</b></button>
       </div>
     </div>
@@ -84,11 +85,12 @@
   <aside class="panel" id="panel">
     <nav class="tabs" role="tablist" id="tabs">
       <button type="button" class="tab on" data-tab="harvest" role="tab"><span class="ti" data-icon="gen0"></span><span class="tl">Harvest</span><i class="badge" hidden></i></button>
-      <button type="button" class="tab" data-tab="upgrades" role="tab"><span class="ti" data-icon="icon_catalyst"></span><span class="tl">Upgrades</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="upgrades" role="tab"><span class="ti" data-icon="icon_catalyst"></span><span class="tl">Upgrade</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="pets" role="tab"><span class="ti" data-icon="capsule3"></span><span class="tl">Pets</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="relics" role="tab"><span class="ti" data-icon="relic_Orb_2"></span><span class="tl">Relics</span><i class="badge" hidden></i></button>
       <button type="button" class="tab" data-tab="rewards" role="tab"><span class="ti" data-icon="icon_gift2"></span><span class="tl">Rewards</span><i class="badge" hidden></i></button>
-      <button type="button" class="tab" data-tab="trophies" role="tab"><span class="ti" data-icon="icon_trophy"></span><span class="tl">Trophies</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="skins" role="tab"><span class="ti" data-icon="crate_nebula"></span><span class="tl">Skins</span><i class="badge" hidden></i></button>
+      <button type="button" class="tab" data-tab="trophies" role="tab"><span class="ti" data-icon="icon_trophy"></span><span class="tl">Trophy</span><i class="badge" hidden></i></button>
     </nav>
     <div class="panel-body" id="panel-body">
       <section id="tab-harvest" class="tab-body">
@@ -135,6 +137,14 @@
         <div id="inventory" class="relic-grid"></div>
       </section>
       <section id="tab-rewards" class="tab-body" hidden></section>
+      <section id="tab-skins" class="tab-body" hidden>
+        <div id="skin-hero" class="skin-hero"></div>
+        <div class="sec-head"><h2>Crates</h2><span class="sec-sub"><span id="keys-icon"></span> <b id="keys-count" class="num">0</b> keys</span></div>
+        <div id="crates" class="crates"></div>
+        <div class="sec-head"><h2>Wardrobe <span id="skin-count" class="num"></span></h2><span id="skin-bonus" class="sec-sub"></span></div>
+        <div id="wardrobe" class="wardrobe"></div>
+        <p class="small earn-help">Cosmic Keys come from comets, new sectors, new forms, every 5 levels, gold and spectral trophies, Collapse, quests and the login calendar. They are only ever earned by playing.</p>
+      </section>
       <section id="tab-trophies" class="tab-body" hidden>
         <div class="sec-head"><h2>Trophies <span id="ach-count" class="num"></span></h2><span id="ach-bonus" class="sec-sub"></span></div>
         <button id="claim-all" class="btn gold wide" type="button" hidden>Claim all</button>
