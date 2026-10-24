@@ -267,6 +267,20 @@
       '.....6......',
       '....6.......'
     ],
+    up_auto: [
+      '....bbbb....',
+      '..bb....bb..',
+      '.b..aaaa..b.',
+      '.b.a....a.b.',
+      'b.a..cc..a.b',
+      'b.a.c00c.a.b',
+      'b.a.c00c.a.b',
+      'b.a..cc..a.b',
+      '.b.a....a.b.',
+      '.b..aaaa..b.',
+      '..bb....bb..',
+      '....bbbb....'
+    ],
     // Capsule machine (24×28), drawn for the gacha panel.
     machine: [
       '......00000000000.......',

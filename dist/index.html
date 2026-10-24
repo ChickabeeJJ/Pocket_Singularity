@@ -159,8 +159,8 @@ kbd { font: inherit; }
 .banner .b-title { font-size: 30px; font-weight: 700; color: var(--butter); text-shadow: 3px 3px 0 var(--berry), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink); }
 .banner .b-sub { color: var(--cream); font-size: 13px; text-shadow: 2px 2px 0 var(--ink); }
 
-.toasts { position: absolute; right: 12px; top: 84px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(34%, 240px); }
-.toast { background: var(--ink); padding: 4px 8px; font-size: 12px; color: var(--cream); box-shadow: 0 0 0 2px var(--butter); animation: toastIn 200ms steps(3); }
+.toasts { position: absolute; right: 12px; top: 84px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(30%, 200px); }
+.toast { background: var(--ink); padding: 2px 6px; font-size: 11px; color: var(--cream); box-shadow: 0 0 0 2px var(--butter); animation: toastIn 200ms steps(3); }
 .toast b { color: var(--butter); }
 .toast.green { box-shadow: 0 0 0 2px var(--lime); } .toast.green b { color: var(--lime); }
 .toast.violet { box-shadow: 0 0 0 2px var(--lav); } .toast.violet b { color: var(--lav); }
@@ -198,13 +198,13 @@ kbd { font: inherit; }
   background: var(--panel); box-shadow: -3px 0 0 0 var(--ink), -6px 0 0 0 var(--line);
   position: relative; z-index: 4;
 }
-.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 6px 6px 0; background: var(--ink); }
-.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 0 3px; min-width: 0; color: var(--mist); background: var(--card); font-size: 11px; box-shadow: inset 0 2px 0 0 var(--line); }
-.tab .ti img { width: 24px; height: 24px; }
+.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 4px 4px 0; background: var(--ink); }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 3px 0 2px; min-width: 0; color: var(--mist); background: var(--card); font-size: 10px; box-shadow: inset 0 2px 0 0 var(--line); }
+.tab .ti img { width: 16px; height: 16px; }
 .tab .tl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tab.on { background: var(--panel); color: var(--butter); box-shadow: inset 0 3px 0 0 var(--peach); }
 .tab:hover:not(.on) { color: var(--cream); background: var(--card-hi); }
-.badge { position: absolute; top: 1px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; font-style: normal; font-size: 11px; line-height: 16px; text-align: center; background: var(--berry); color: var(--cream); box-shadow: 0 0 0 2px var(--ink); animation: badge 800ms steps(2) infinite; }
+.badge { position: absolute; top: 1px; right: 2px; min-width: 13px; height: 13px; padding: 0 3px; font-style: normal; font-size: 9px; line-height: 13px; text-align: center; background: var(--berry); color: var(--cream); box-shadow: 0 0 0 2px var(--ink); animation: badge 800ms steps(2) infinite; }
 .badge[hidden] { display: none; }
 @keyframes badge { 50% { background: var(--peach); } }
 .panel-body { flex: 1 1 auto; min-height: 0; position: relative; }
@@ -497,7 +497,6 @@ kbd { font: inherit; }
 @media (max-height: 560px) {
   .matter { font-size: 28px; }
   .tab .tl { font-size: 10px; }
-  .tab .ti img { width: 20px; height: 20px; }
   .gen { grid-template-columns: 34px 1fr auto; padding: 4px 5px 5px; }
   .gen .gi { width: 34px; height: 34px; }
   .gen .gi img { width: 28px; height: 28px; }
@@ -519,6 +518,7 @@ kbd { font: inherit; }
   .panel { flex: 1 1 auto; box-shadow: 0 -3px 0 0 var(--ink), 0 -6px 0 0 var(--line); }
   .tabs { order: 2; padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); gap: 3px; }
   .tab { padding: 5px 0 3px; }
+  .tab .ti img { width: 22px; height: 22px; }
   .tab .tl { font-size: 10px; }
   .tab.on { box-shadow: inset 0 -3px 0 0 var(--peach); }
   .hud-tl { left: 8px; top: 8px; width: 168px; gap: 3px; }
@@ -555,6 +555,7 @@ kbd { font: inherit; }
   .panel { flex-basis: clamp(280px, 40vw, 360px); }
   .tab .tl { display: none; }
   .tab { padding: 4px 0; }
+  .tab .ti img { width: 20px; height: 20px; }
   .hud-bottom { left: 140px; }
   .hud-tl { width: 160px; }
   .hud-top { left: 184px; }
@@ -1010,7 +1011,8 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       { id: 'density',   name: 'Matter Density', desc: 'More fragments drift in',     base: 22,  growth: 1.48, max: 25 },
       { id: 'resonance', name: 'Resonance',      desc: 'Bigger chain bonus',          base: 60,  growth: 1.62, max: 25 },
       { id: 'focus',     name: 'Pulse Focus',    desc: 'Everything is worth more',    base: 120, growth: 1.9,  max: 200 },
-      { id: 'luck',      name: 'Lucky Charm',    desc: 'More Lucky Pulses; the Star Reel fills faster', base: 150, growth: 1.75, max: 20 }
+      { id: 'luck',      name: 'Lucky Charm',    desc: 'More Lucky Pulses; the Star Reel fills faster', base: 150, growth: 1.75, max: 20 },
+      { id: 'auto',      name: 'Auto Pulse',     desc: 'Singu pulses by itself, faster each level', base: 300, growth: 1.9, max: 20 }
     ],
 
     // Five hand-made sectors; later ones are generated from these (see sectorInfo).
@@ -1035,6 +1037,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
 
     comet: { first: 45, min: 70, max: 140, speed: 0.24, surge: 20, surgeMult: 3 },
     echoInterval: 5,
+    autoPulse: { base: 4, speedup: 0.3 },   // seconds between auto pulses: base / (1 + speedup × (level − 1))
     atlasStep: 0.03,
 
     // Singu grows a level each time lifetime Matter doubles past `base`.
@@ -1968,6 +1971,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       cometRate: (mut.comets || 1) * (research.lure ? 1.4 : 1) * (1 + cb.comet + uf.comet + rb.comet),
       surgeDur: CONFIG.comet.surge * (research.lure ? 1.5 : 1),
       echo: research.echo,
+      autoInterval: L.auto > 0 ? CONFIG.autoPulse.base / (1 + CONFIG.autoPulse.speedup * (L.auto - 1)) : 0,
       offlineRate: Math.min(1, (research.memory ? 0.8 : CONFIG.offlineRate) + cb.offline + rb.offline),
       luckChance: Math.min(0.6, (CONFIG.lucky.chance + CONFIG.lucky.perLevel * L.luck + cb.luck + uf.luck + rb.luck) * (mut.luck || 1)),
       luckPower: CONFIG.lucky.power + cb.luckPow + rb.luckPow,
@@ -2089,6 +2093,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       queued: false,
       spawnAcc: 0,
       echoTimer: CONFIG.echoInterval,
+      autoTimer: 1,
       reel: null,              // active Star Reel spin
       overcharge: null,        // pending push-your-luck offer
       overchargeCd: 0,
@@ -2474,6 +2479,10 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       w.echoTimer -= dt;
       if (w.echoTimer <= 0) { w.echoTimer = CONFIG.echoInterval; firePulse(w, state, stats, ev, true); }
     }
+    if (stats.autoInterval > 0) {
+      w.autoTimer -= dt;
+      if (w.autoTimer <= 0) { w.autoTimer = stats.autoInterval; firePulse(w, state, stats, ev, true); }
+    }
 
     checkProgress(state, ev);
   }
@@ -2781,6 +2790,20 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       '..66.66.66..',
       '.....6......',
       '....6.......'
+    ],
+    up_auto: [
+      '....bbbb....',
+      '..bb....bb..',
+      '.b..aaaa..b.',
+      '.b.a....a.b.',
+      'b.a..cc..a.b',
+      'b.a.c00c.a.b',
+      'b.a.c00c.a.b',
+      'b.a..cc..a.b',
+      '.b.a....a.b.',
+      '.b..aaaa..b.',
+      '..bb....bb..',
+      '....bbbb....'
     ],
     // Capsule machine (24×28), drawn for the gacha panel.
     machine: [
@@ -4569,6 +4592,7 @@ body.cover .panel, body.cover .hud-tl, body.cover .hud-top, body.cover .hud-bl, 
       case 'resonance': return 'Chain ' + pair('+' + Math.round(s0.chainStep * 100) + '%', '+' + Math.round(s1.chainStep * 100) + '%') + ' each';
       case 'focus': return 'Value ' + pair('×' + fmtMult(s0.focusMult), '×' + fmtMult(s1.focusMult));
       case 'luck': return 'Lucky ' + pair(Math.round(s0.luckChance * 100) + '%', Math.round(s1.luckChance * 100) + '%');
+      case 'auto': return 'Auto ' + pair(lvl ? 'every ' + s0.autoInterval.toFixed(1) + 's' : 'off', 'every ' + s1.autoInterval.toFixed(1) + 's');
     }
     return '';
   }

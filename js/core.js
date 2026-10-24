@@ -37,7 +37,8 @@
       { id: 'density',   name: 'Matter Density', desc: 'More fragments drift in',     base: 22,  growth: 1.48, max: 25 },
       { id: 'resonance', name: 'Resonance',      desc: 'Bigger chain bonus',          base: 60,  growth: 1.62, max: 25 },
       { id: 'focus',     name: 'Pulse Focus',    desc: 'Everything is worth more',    base: 120, growth: 1.9,  max: 200 },
-      { id: 'luck',      name: 'Lucky Charm',    desc: 'More Lucky Pulses; the Star Reel fills faster', base: 150, growth: 1.75, max: 20 }
+      { id: 'luck',      name: 'Lucky Charm',    desc: 'More Lucky Pulses; the Star Reel fills faster', base: 150, growth: 1.75, max: 20 },
+      { id: 'auto',      name: 'Auto Pulse',     desc: 'Singu pulses by itself, faster each level', base: 300, growth: 1.9, max: 20 }
     ],
 
     // Five hand-made sectors; later ones are generated from these (see sectorInfo).
@@ -62,6 +63,7 @@
 
     comet: { first: 45, min: 70, max: 140, speed: 0.24, surge: 20, surgeMult: 3 },
     echoInterval: 5,
+    autoPulse: { base: 4, speedup: 0.3 },   // seconds between auto pulses: base / (1 + speedup × (level − 1))
     atlasStep: 0.03,
 
     // Singu grows a level each time lifetime Matter doubles past `base`.
@@ -995,6 +997,7 @@
       cometRate: (mut.comets || 1) * (research.lure ? 1.4 : 1) * (1 + cb.comet + uf.comet + rb.comet),
       surgeDur: CONFIG.comet.surge * (research.lure ? 1.5 : 1),
       echo: research.echo,
+      autoInterval: L.auto > 0 ? CONFIG.autoPulse.base / (1 + CONFIG.autoPulse.speedup * (L.auto - 1)) : 0,
       offlineRate: Math.min(1, (research.memory ? 0.8 : CONFIG.offlineRate) + cb.offline + rb.offline),
       luckChance: Math.min(0.6, (CONFIG.lucky.chance + CONFIG.lucky.perLevel * L.luck + cb.luck + uf.luck + rb.luck) * (mut.luck || 1)),
       luckPower: CONFIG.lucky.power + cb.luckPow + rb.luckPow,
@@ -1116,6 +1119,7 @@
       queued: false,
       spawnAcc: 0,
       echoTimer: CONFIG.echoInterval,
+      autoTimer: 1,
       reel: null,              // active Star Reel spin
       overcharge: null,        // pending push-your-luck offer
       overchargeCd: 0,
@@ -1500,6 +1504,10 @@
     if (stats.echo) {
       w.echoTimer -= dt;
       if (w.echoTimer <= 0) { w.echoTimer = CONFIG.echoInterval; firePulse(w, state, stats, ev, true); }
+    }
+    if (stats.autoInterval > 0) {
+      w.autoTimer -= dt;
+      if (w.autoTimer <= 0) { w.autoTimer = stats.autoInterval; firePulse(w, state, stats, ev, true); }
     }
 
     checkProgress(state, ev);

@@ -150,8 +150,8 @@ kbd { font: inherit; }
 .banner .b-title { font-size: 30px; font-weight: 700; color: var(--butter); text-shadow: 3px 3px 0 var(--berry), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink); }
 .banner .b-sub { color: var(--cream); font-size: 13px; text-shadow: 2px 2px 0 var(--ink); }
 
-.toasts { position: absolute; right: 12px; top: 84px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(34%, 240px); }
-.toast { background: var(--ink); padding: 4px 8px; font-size: 12px; color: var(--cream); box-shadow: 0 0 0 2px var(--butter); animation: toastIn 200ms steps(3); }
+.toasts { position: absolute; right: 12px; top: 84px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(30%, 200px); }
+.toast { background: var(--ink); padding: 2px 6px; font-size: 11px; color: var(--cream); box-shadow: 0 0 0 2px var(--butter); animation: toastIn 200ms steps(3); }
 .toast b { color: var(--butter); }
 .toast.green { box-shadow: 0 0 0 2px var(--lime); } .toast.green b { color: var(--lime); }
 .toast.violet { box-shadow: 0 0 0 2px var(--lav); } .toast.violet b { color: var(--lav); }
@@ -189,13 +189,13 @@ kbd { font: inherit; }
   background: var(--panel); box-shadow: -3px 0 0 0 var(--ink), -6px 0 0 0 var(--line);
   position: relative; z-index: 4;
 }
-.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 6px 6px 0; background: var(--ink); }
-.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 0 3px; min-width: 0; color: var(--mist); background: var(--card); font-size: 11px; box-shadow: inset 0 2px 0 0 var(--line); }
-.tab .ti img { width: 24px; height: 24px; }
+.tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 4px 4px 0; background: var(--ink); }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 3px 0 2px; min-width: 0; color: var(--mist); background: var(--card); font-size: 10px; box-shadow: inset 0 2px 0 0 var(--line); }
+.tab .ti img { width: 16px; height: 16px; }
 .tab .tl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tab.on { background: var(--panel); color: var(--butter); box-shadow: inset 0 3px 0 0 var(--peach); }
 .tab:hover:not(.on) { color: var(--cream); background: var(--card-hi); }
-.badge { position: absolute; top: 1px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; font-style: normal; font-size: 11px; line-height: 16px; text-align: center; background: var(--berry); color: var(--cream); box-shadow: 0 0 0 2px var(--ink); animation: badge 800ms steps(2) infinite; }
+.badge { position: absolute; top: 1px; right: 2px; min-width: 13px; height: 13px; padding: 0 3px; font-style: normal; font-size: 9px; line-height: 13px; text-align: center; background: var(--berry); color: var(--cream); box-shadow: 0 0 0 2px var(--ink); animation: badge 800ms steps(2) infinite; }
 .badge[hidden] { display: none; }
 @keyframes badge { 50% { background: var(--peach); } }
 .panel-body { flex: 1 1 auto; min-height: 0; position: relative; }
@@ -488,7 +488,6 @@ kbd { font: inherit; }
 @media (max-height: 560px) {
   .matter { font-size: 28px; }
   .tab .tl { font-size: 10px; }
-  .tab .ti img { width: 20px; height: 20px; }
   .gen { grid-template-columns: 34px 1fr auto; padding: 4px 5px 5px; }
   .gen .gi { width: 34px; height: 34px; }
   .gen .gi img { width: 28px; height: 28px; }
@@ -510,6 +509,7 @@ kbd { font: inherit; }
   .panel { flex: 1 1 auto; box-shadow: 0 -3px 0 0 var(--ink), 0 -6px 0 0 var(--line); }
   .tabs { order: 2; padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); gap: 3px; }
   .tab { padding: 5px 0 3px; }
+  .tab .ti img { width: 22px; height: 22px; }
   .tab .tl { font-size: 10px; }
   .tab.on { box-shadow: inset 0 -3px 0 0 var(--peach); }
   .hud-tl { left: 8px; top: 8px; width: 168px; gap: 3px; }
@@ -546,6 +546,7 @@ kbd { font: inherit; }
   .panel { flex-basis: clamp(280px, 40vw, 360px); }
   .tab .tl { display: none; }
   .tab { padding: 4px 0; }
+  .tab .ti img { width: 20px; height: 20px; }
   .hud-bottom { left: 140px; }
   .hud-tl { width: 160px; }
   .hud-top { left: 184px; }

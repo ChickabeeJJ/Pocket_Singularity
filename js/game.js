@@ -360,6 +360,7 @@
       case 'resonance': return 'Chain ' + pair('+' + Math.round(s0.chainStep * 100) + '%', '+' + Math.round(s1.chainStep * 100) + '%') + ' each';
       case 'focus': return 'Value ' + pair('×' + fmtMult(s0.focusMult), '×' + fmtMult(s1.focusMult));
       case 'luck': return 'Lucky ' + pair(Math.round(s0.luckChance * 100) + '%', Math.round(s1.luckChance * 100) + '%');
+      case 'auto': return 'Auto ' + pair(lvl ? 'every ' + s0.autoInterval.toFixed(1) + 's' : 'off', 'every ' + s1.autoInterval.toFixed(1) + 's');
     }
     return '';
   }
